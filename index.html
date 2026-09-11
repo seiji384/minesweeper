@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>マインスイーパー PLUS</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -160,7 +160,7 @@
         0 3px 6px rgba(0,0,0,0.7);
       border: 1px solid #6048b0;
       line-height: 1;
-      touch-action: none;
+      touch-action: manipulation;
       transition: transform 0.08s;
     }
     .cell.open {
@@ -615,13 +615,13 @@
       });
 
       // スマホ操作：タップ→開く / 長押し(0.5秒)→旗
+      // passive:true でスクロール・ピンチズームをブロックしない
       el.addEventListener('touchstart', e => {
-        if (e.touches.length > 1) {           // ピンチ操作は無視・キャンセル
+        if (e.touches.length > 1) {           // ピンチ操作：キャンセル
           clearTimeout(pressTimer); pressTimer = null;
-          longPressed = true;                 // ← touchend でのclick呼び出しを防ぐ
+          longPressed = true;
           el.classList.remove('pressing'); return;
         }
-        e.preventDefault();
         const t = e.touches[0];
         touchStartX = t.clientX; touchStartY = t.clientY;
         longPressed = false;
@@ -632,12 +632,11 @@
           doFlag(r, c);
           if (navigator.vibrate) navigator.vibrate(40);
         }, 500);
-      }, { passive: false });
+      }, { passive: true });   // ← passive:true でブラウザのスクロール/ズームを妨げない
 
       el.addEventListener('touchend', e => {
-        e.preventDefault();
+        e.preventDefault();    // ← ここだけ preventDefault：ゴーストクリック防止
         el.classList.remove('pressing');
-        // pressTimer が null（スクロール/ピンチでキャンセル済み）ならクリックしない
         const wasTap = pressTimer !== null && !longPressed;
         clearTimeout(pressTimer); pressTimer = null;
         if (wasTap) onClick(r, c);
@@ -653,7 +652,7 @@
         if (!pressTimer) return;
         const t = e.touches[0];
         const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
-        if (Math.sqrt(dx * dx + dy * dy) > 10) {   // 10px以上移動したらキャンセル
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {   // 10px以上移動 → スクロール扱いでキャンセル
           el.classList.remove('pressing');
           clearTimeout(pressTimer); pressTimer = null;
         }
