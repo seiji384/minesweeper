@@ -13,7 +13,7 @@
         radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
         radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
       display: flex; justify-content: center; align-items: center;
-      min-height: 100vh; padding: 16px 8px;
+      min-height: 100vh; padding: 16px 8px 72px;
       font-family: Arial, sans-serif; overflow-x: hidden;
     }
     #stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
@@ -163,7 +163,15 @@
     .n7{color:#ffffff;text-shadow:0 0 8px #fff,0 0 16px #ccccff}
     .n8{color:#ffee40;text-shadow:0 0 8px #ffee40,0 0 16px #ccaa00}
 
-    .action-bar { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+    .action-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
+      display: flex; gap: 6px; padding: 8px 12px 10px;
+      background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+      border-top: 1px solid #4030a0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+      flex-wrap: wrap; justify-content: center;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
     .act-btn {
       padding: 5px 12px; font-size: 11px; border-radius: 14px;
       background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
@@ -177,14 +185,7 @@
       color: #ffd080; border-color: #ff8030; box-shadow: 0 0 14px rgba(255,128,48,0.65);
     }
 
-    /* ===== ハイスコアパネル ===== */
-    .hs-panel {
-      display: none; margin-top: 8px;
-      border: 1px solid #4030a0; border-radius: 10px;
-      background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
-      overflow: hidden;
-    }
-    .hs-panel.visible { display: block; }
+    /* ===== ハイスコア（モーダル内） ===== */
     .hs-item {
       padding: 8px 10px; border-bottom: 1px solid #2a1870;
     }
@@ -199,7 +200,7 @@
     .hs-record { color: #60ff90; font-weight: 900; text-shadow: 0 0 6px #60ff90; }
     .hs-val { color: #a090d0; font-weight: bold; }
     .hs-date { color: #7060a0; font-size: 9px; margin-left: 3px; }
-    .hs-footer { padding: 6px 10px; text-align: right; border-top: 1px solid #2a1870; }
+    .hs-footer { padding: 8px 14px; text-align: right; border-top: 1px solid #2a1870; }
 
     /* ===== Confetti / Win ===== */
     #confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
@@ -398,11 +399,19 @@
       <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
     </div>
 
-    <div class="hs-panel" id="hs-panel">
-      <div id="hs-content"></div>
-      <div class="hs-footer">
-        <button class="act-btn" id="clear-hs" style="font-size:10px;padding:3px 8px;">記録をリセット</button>
-      </div>
+  </div>
+</div>
+
+<!-- ハイスコアモーダル -->
+<div class="modal-overlay" id="hs-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" id="hs-close">✕</button>
+    </div>
+    <div id="hs-content"></div>
+    <div class="hs-footer">
+      <button class="act-btn" id="clear-hs" style="font-size:10px;padding:3px 8px;">記録をリセット</button>
     </div>
   </div>
 </div>
@@ -824,11 +833,13 @@
     render();
   });
 
-  document.getElementById('hs-btn').addEventListener('click',function(){
-    const panel=document.getElementById('hs-panel');
-    panel.classList.toggle('visible');
-    if(panel.classList.contains('visible')) refreshHSPanel();
+  const hsModal=document.getElementById('hs-modal');
+  document.getElementById('hs-btn').addEventListener('click',()=>{
+    refreshHSPanel();
+    hsModal.classList.add('visible');
   });
+  document.getElementById('hs-close').addEventListener('click',()=>hsModal.classList.remove('visible'));
+  hsModal.addEventListener('click',e=>{if(e.target===hsModal)hsModal.classList.remove('visible');});
 
   document.getElementById('clear-hs').addEventListener('click',()=>{
     HS_DIFFS.forEach(d=>localStorage.removeItem('ms_hs3_'+d.key));
