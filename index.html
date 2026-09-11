@@ -16,10 +16,8 @@
       min-height: 100vh; padding: 16px 8px;
       font-family: Arial, sans-serif; overflow-x: hidden;
     }
-
     #stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
 
-    /* ===== Window ===== */
     .window {
       position: relative; z-index: 1;
       background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
@@ -34,24 +32,29 @@
       border-bottom: 2px solid #804000;
     }
 
-    /* ===== Difficulty bar ===== */
     .diff-bar {
       display: flex; padding: 5px 8px; gap: 4px;
       background: linear-gradient(160deg, #150d38 0%, #0d0820 100%);
-      border-bottom: 1px solid #4030a0; justify-content: center;
+      border-bottom: 1px solid #4030a0; justify-content: center; flex-wrap: wrap;
     }
     .diff-btn {
-      padding: 4px 12px; font-size: 11px; border-radius: 14px;
+      padding: 4px 11px; font-size: 11px; border-radius: 14px;
       background: linear-gradient(160deg, #2a1a6a 0%, #1a0a4a 100%);
       color: #a080ff; border: 1px solid #4030a0; font-weight: bold; cursor: pointer;
     }
     .diff-btn.active {
       background: linear-gradient(160deg, #6040cc 0%, #4020aa 100%);
-      color: #e8d0ff; border-color: #9070ee;
-      box-shadow: 0 0 10px rgba(144,112,238,0.6);
+      color: #e8d0ff; border-color: #9070ee; box-shadow: 0 0 10px rgba(144,112,238,0.6);
+    }
+    .ultra-btn {
+      background: linear-gradient(160deg, #602000 0%, #300800 100%);
+      color: #ff9050; border-color: #a04010; font-style: italic; letter-spacing: 1px;
+    }
+    .ultra-btn.active {
+      background: linear-gradient(160deg, #c04000 0%, #801800 100%);
+      color: #ffd080; border-color: #ff6020; box-shadow: 0 0 14px rgba(255,96,32,0.7);
     }
 
-    /* ===== Character bar ===== */
     .char-bar {
       display: flex; padding: 4px 8px; gap: 5px; align-items: center;
       background: linear-gradient(160deg, #100830 0%, #080520 100%);
@@ -66,12 +69,10 @@
     }
     .char-btn.active {
       background: radial-gradient(circle at 38% 32%, #ffe060, #c88010 60%, #804000);
-      border: 2px solid #ffe080;
-      box-shadow: 0 0 10px rgba(245,200,66,0.7);
+      border: 2px solid #ffe080; box-shadow: 0 0 10px rgba(245,200,66,0.7);
     }
     .char-btn:active { transform: scale(0.88); }
 
-    /* ===== Custom row ===== */
     .custom-row {
       display: none; padding: 5px 8px; gap: 8px; align-items: center;
       font-size: 11px; border-bottom: 1px solid #4030a0;
@@ -90,9 +91,7 @@
       color: #d0b8ff; border: 1px solid #6040c0; border-radius: 10px;
     }
 
-    /* ===== Content ===== */
     .content { padding: 8px; }
-
     .status-panel {
       background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
       border: 1px solid #4030a0; border-radius: 10px;
@@ -106,15 +105,13 @@
       background: linear-gradient(160deg, #080518 0%, #040210 100%);
       color: #ff44aa; font-family: 'Courier New', monospace;
       font-size: 22px; font-weight: bold; padding: 3px 10px;
-      min-width: 54px; text-align: right; border-radius: 6px;
-      border: 1px solid #4020a0;
+      min-width: 54px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
       text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
     }
     .smiley-btn {
       font-size: 20px; width: 52px; height: 52px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
       background: radial-gradient(circle at 38% 32%, #ffe060 0%, #c88010 60%, #804000 100%);
       border-radius: 50%; border: 2px solid #ffe080;
       box-shadow: 0 0 16px rgba(245,200,66,0.7), 0 4px 10px rgba(0,0,0,0.6);
@@ -122,10 +119,8 @@
     }
     .smiley-btn:active { transform: scale(0.88); }
 
-    /* ===== Grid ===== */
     .grid-wrap {
-      border: 2px solid #4030a0; border-radius: 10px;
-      background: #04020e; padding: 5px;
+      border: 2px solid #4030a0; border-radius: 10px; background: #04020e; padding: 5px;
       box-shadow: inset 0 4px 16px rgba(0,0,0,0.9), 0 0 20px rgba(64,48,160,0.3);
       overflow: auto; max-width: calc(100vw - 30px);
     }
@@ -150,16 +145,13 @@
     }
     .cell.hint-hl {
       background: radial-gradient(circle at 38% 32%, #ffff80 0%, #ddaa00 60%, #aa7700 100%) !important;
-      box-shadow: 0 0 16px #ffff00, 0 0 32px #ffcc00 !important;
-      border-color: #ffee40 !important;
+      box-shadow: 0 0 16px #ffff00, 0 0 32px #ffcc00 !important; border-color: #ffee40 !important;
     }
     .cell.replay-hl { background: linear-gradient(145deg, #8a6000 0%, #604000 100%); border-color: #c09020; }
     .cell.pressing {
-      background: linear-gradient(145deg, #8060cc 0%, #5840aa 100%);
-      transform: scale(0.84);
+      background: linear-gradient(145deg, #8060cc 0%, #5840aa 100%); transform: scale(0.84);
       box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 22px rgba(160,128,255,0.7);
     }
-
     @keyframes explode { 0%{transform:scale(1)} 40%{transform:scale(1.38)} 100%{transform:scale(1)} }
 
     .n1{color:#60b8ff;text-shadow:0 0 8px #60b8ff,0 0 16px #2088ff}
@@ -171,10 +163,7 @@
     .n7{color:#ffffff;text-shadow:0 0 8px #fff,0 0 16px #ccccff}
     .n8{color:#ffee40;text-shadow:0 0 8px #ffee40,0 0 16px #ccaa00}
 
-    /* ===== Action bar ===== */
-    .action-bar {
-      display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; justify-content: center;
-    }
+    .action-bar { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
     .act-btn {
       padding: 5px 12px; font-size: 11px; border-radius: 14px;
       background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
@@ -185,25 +174,34 @@
     .act-btn:active { transform: scale(0.93); }
     .act-btn.on {
       background: linear-gradient(160deg, #c05000 0%, #802800 100%);
-      color: #ffd080; border-color: #ff8030;
-      box-shadow: 0 0 14px rgba(255,128,48,0.65);
+      color: #ffd080; border-color: #ff8030; box-shadow: 0 0 14px rgba(255,128,48,0.65);
     }
 
-    /* ===== High score panel ===== */
+    /* ===== ハイスコアパネル ===== */
     .hs-panel {
       display: none; margin-top: 8px;
       border: 1px solid #4030a0; border-radius: 10px;
-      padding: 6px 8px; font-size: 11px;
       background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+      overflow: hidden;
     }
     .hs-panel.visible { display: block; }
-    .hs-table { width: 100%; border-collapse: collapse; color: #a090d0; }
-    .hs-table th { text-align: left; padding: 3px 6px; border-bottom: 1px solid #3020a0; color: #c0a8ff; font-size: 11px; }
-    .hs-table td { padding: 3px 8px; }
-    .hs-record { font-weight: bold; color: #60ff90; text-shadow: 0 0 6px #60ff90; }
-    .hs-footer { text-align: right; margin-top: 5px; }
+    .hs-item {
+      padding: 8px 10px; border-bottom: 1px solid #2a1870;
+    }
+    .hs-item:last-child { border-bottom: none; }
+    .hs-diff-label {
+      font-size: 11px; font-weight: 900; color: #f5c842;
+      text-shadow: 0 0 6px #f5c842; margin-bottom: 5px; letter-spacing: 0.5px;
+    }
+    .hs-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+    .hs-row { display: flex; align-items: baseline; gap: 5px; font-size: 11px; }
+    .hs-period { color: #6050a0; font-size: 10px; white-space: nowrap; min-width: 30px; }
+    .hs-record { color: #60ff90; font-weight: 900; text-shadow: 0 0 6px #60ff90; }
+    .hs-val { color: #a090d0; font-weight: bold; }
+    .hs-date { color: #7060a0; font-size: 9px; margin-left: 3px; }
+    .hs-footer { padding: 6px 10px; text-align: right; border-top: 1px solid #2a1870; }
 
-    /* ===== Confetti / Win msg ===== */
+    /* ===== Confetti / Win ===== */
     #confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
     .win-msg {
       display: none; margin-top: 7px; text-align: center;
@@ -250,12 +248,12 @@
     .num-cell .n { font-size: 15px; font-weight: 900; }
     .num-cell .desc { color: #8878b8; font-size: 10px; margin-top: 1px; }
 
-    /* ===== Bomb chance popup ===== */
+    /* ===== 爆弾チャンスポップアップ ===== */
     .bomb-popup-box {
       background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
       border: 2px solid #ff4040; border-radius: 16px;
       box-shadow: 0 0 40px rgba(255,64,64,0.5), 0 24px 64px rgba(0,0,0,0.9);
-      max-width: 300px; width: 100%; padding: 0;
+      max-width: 300px; width: 100%;
     }
     .bomb-popup-title {
       background: linear-gradient(90deg, #800000 0%, #cc2000 30%, #ff4020 50%, #cc2000 70%, #800000 100%);
@@ -270,14 +268,12 @@
     .challenge-btn {
       padding: 9px 22px; font-size: 13px; border-radius: 14px; font-weight: 900; cursor: pointer;
       background: linear-gradient(160deg, #2060c0 0%, #104080 100%);
-      color: #c8e8ff; border: 1px solid #4080e0;
-      box-shadow: 0 0 12px rgba(64,128,224,0.5);
+      color: #c8e8ff; border: 1px solid #4080e0; box-shadow: 0 0 12px rgba(64,128,224,0.5);
     }
     .giveup-btn {
       padding: 9px 22px; font-size: 13px; border-radius: 14px; font-weight: 900; cursor: pointer;
       background: linear-gradient(160deg, #a02000 0%, #600800 100%);
-      color: #ffd0c0; border: 1px solid #e04020;
-      box-shadow: 0 0 12px rgba(224,64,32,0.5);
+      color: #ffd0c0; border: 1px solid #e04020; box-shadow: 0 0 12px rgba(224,64,32,0.5);
     }
   </style>
 </head>
@@ -292,7 +288,7 @@
     <div class="bomb-popup-body">
       <div class="bomb-char-face" id="bomb-char-face">😱</div>
       <div class="chance-count-line" id="chance-msg">
-        あと <span class="big" id="chance-count">5</span> 回チャレンジできます
+        あと <span class="big">5</span> 回チャレンジできます
       </div>
       <div class="bomb-btns">
         <button class="challenge-btn" id="chance-challenge-btn">チャレンジ</button>
@@ -354,22 +350,22 @@
     <button class="diff-btn active" data-diff="beginner">初級</button>
     <button class="diff-btn" data-diff="intermediate">中級</button>
     <button class="diff-btn" data-diff="expert">上級</button>
+    <button class="diff-btn ultra-btn" data-diff="ultra">⚡ULTRA</button>
     <button class="diff-btn" data-diff="custom">カスタム</button>
   </div>
 
-  <!-- キャラクター選択 -->
   <div class="char-bar">
     <span class="char-label">キャラ選択:</span>
     <button class="char-btn active" data-char="default" title="デフォルト">😊</button>
-    <button class="char-btn"        data-char="neko"    title="ネコ">🐱</button>
-    <button class="char-btn"        data-char="inu"     title="イヌ">🐶</button>
-    <button class="char-btn"        data-char="kuma"    title="クマ">🐻</button>
-    <button class="char-btn"        data-char="usagi"   title="うさぎ">🐰</button>
+    <button class="char-btn" data-char="neko"    title="ネコ">🐱</button>
+    <button class="char-btn" data-char="inu"     title="イヌ">🐶</button>
+    <button class="char-btn" data-char="kuma"    title="クマ">🐻</button>
+    <button class="char-btn" data-char="usagi"   title="うさぎ">🐰</button>
   </div>
 
   <div class="custom-row" id="custom-row">
-    <label>縦 <input type="number" id="c-rows" value="9" min="5" max="30"></label>
-    <label>横 <input type="number" id="c-cols" value="9" min="5" max="50"></label>
+    <label>縦 <input type="number" id="c-rows" value="9" min="5" max="64"></label>
+    <label>横 <input type="number" id="c-cols" value="9" min="5" max="64"></label>
     <label>地雷 <input type="number" id="c-mines" value="10" min="1"></label>
     <button id="c-apply">適用</button>
   </div>
@@ -393,21 +389,17 @@
 
     <div class="win-msg" id="win-msg"></div>
 
+    <!-- タブの順: ルール, 旗モード, ヒント, ハイスコア -->
     <div class="action-bar">
-      <button class="act-btn" id="hint-btn">💡 ヒント</button>
-      <button class="act-btn" id="flag-btn">🚩 旗モード</button>
-      <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
-      <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
       <button class="act-btn" id="rules-btn">📖 ルール</button>
+      <button class="act-btn" id="flag-btn">🚩 旗モード</button>
+      <button class="act-btn" id="hint-btn">💡 ヒント</button>
+      <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
+      <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
     </div>
 
     <div class="hs-panel" id="hs-panel">
-      <table class="hs-table">
-        <tr><th>難易度</th><th>ベストタイム</th></tr>
-        <tr><td>初級 (9×9, 10個)</td>  <td class="hs-record" id="hs-beginner">--</td></tr>
-        <tr><td>中級 (16×16, 40個)</td><td class="hs-record" id="hs-intermediate">--</td></tr>
-        <tr><td>上級 (16×30, 99個)</td><td class="hs-record" id="hs-expert">--</td></tr>
-      </table>
+      <div id="hs-content"></div>
       <div class="hs-footer">
         <button class="act-btn" id="clear-hs" style="font-size:10px;padding:3px 8px;">記録をリセット</button>
       </div>
@@ -439,23 +431,24 @@
     draw();
   })();
 
-  // ===== キャラクター定義 =====
+  // ===== キャラ =====
   const CHARS = {
-    default: { name:'デフォルト', normal:'🙂', tense:'😮', win:'😎', lose:'😵', oops:'😱' },
-    neko:    { name:'ネコ',       normal:'😺', tense:'🙀', win:'😸', lose:'😿', oops:'😾' },
-    inu:     { name:'イヌ',       normal:'🐶', tense:'😟', win:'🐶🎊', lose:'🐶😭', oops:'🐶😱' },
-    kuma:    { name:'クマ',       normal:'🐻', tense:'😰', win:'🐻🎉', lose:'🐻😢', oops:'🐻😱' },
-    usagi:   { name:'うさぎ',     normal:'🐰', tense:'😨', win:'🐰🌟', lose:'🐰😭', oops:'🐰😱' },
+    default: { name:'デフォルト', normal:'🙂', tense:'😮', win:'😎',  lose:'😵', oops:'😱' },
+    neko:    { name:'ネコ',       normal:'😺', tense:'🙀', win:'😸',  lose:'😿', oops:'😾' },
+    inu:     { name:'イヌ',       normal:'🐶', tense:'😟', win:'🐶🎊',lose:'🐶😭',oops:'🐶😱' },
+    kuma:    { name:'クマ',       normal:'🐻', tense:'😰', win:'🐻🎉',lose:'🐻😢',oops:'🐻😱' },
+    usagi:   { name:'うさぎ',     normal:'🐰', tense:'😨', win:'🐰🌟',lose:'🐰😭',oops:'🐰😱' },
   };
   let currentChar = 'default';
   function face(st) { return CHARS[currentChar][st] || '🙂'; }
   function updateSmiley(st) { smileyEl.textContent = face(st); }
 
-  // ===== ゲーム定数・変数 =====
+  // ===== 難易度（縦>横でスマホ縦長に合わせる） =====
   const DIFF = {
-    beginner:     { r:9,  c:9,  m:10 },
-    intermediate: { r:16, c:16, m:40 },
-    expert:       { r:16, c:30, m:99 },
+    beginner:     { r:9,  c:9,  m:10  },
+    intermediate: { r:16, c:16, m:40  },
+    expert:       { r:30, c:16, m:99  },  // 縦30 × 横16
+    ultra:        { r:64, c:30, m:300 },  // 縦64 × 横30
   };
   const BOMB_CHANCES = 5;
 
@@ -465,19 +458,18 @@
   let pressTimer=null, longPressed=false, touchStartX=0, touchStartY=0;
   let chancesLeft=BOMB_CHANCES, pendingBombR=-1, pendingBombC=-1;
 
-  const gridEl   = document.getElementById('grid');
-  const smileyEl = document.getElementById('smiley');
-  const ledM     = document.getElementById('led-mines');
-  const ledT     = document.getElementById('led-timer');
-  const replayBtn= document.getElementById('replay-btn');
-  const winMsgEl = document.getElementById('win-msg');
-  const confCvs  = document.getElementById('confetti');
+  const gridEl    = document.getElementById('grid');
+  const smileyEl  = document.getElementById('smiley');
+  const ledM      = document.getElementById('led-mines');
+  const ledT      = document.getElementById('led-timer');
+  const replayBtn = document.getElementById('replay-btn');
+  const winMsgEl  = document.getElementById('win-msg');
+  const confCvs   = document.getElementById('confetti');
 
   function p3(n) { return Math.max(0,Math.min(999,n)).toString().padStart(3,'0'); }
-
   function cellSize() {
     const maxW = Math.min(innerWidth-40, 640);
-    return Math.min(34, Math.max(22, Math.floor((maxW - COLS*2) / COLS)));
+    return Math.min(34, Math.max(18, Math.floor((maxW - COLS*2) / COLS)));
   }
 
   function init(r,c,m,diff) {
@@ -507,7 +499,7 @@
     let placed=0;
     while(placed<MINES) {
       const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
-      if(board[r][c]!==-1&&!safe.has(r*COLS+c)) {board[r][c]=-1;placed++;}
+      if(board[r][c]!==-1&&!safe.has(r*COLS+c)){board[r][c]=-1;placed++;}
     }
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       if(board[r][c]===-1) continue;
@@ -529,7 +521,7 @@
       if(board[r][c]===0) {
         for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
           const nr=r+dr,nc=c+dc,k=nr*COLS+nc;
-          if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!vis.has(k)&&!revealed[nr][nc]) {vis.add(k);q.push([nr,nc]);}
+          if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!vis.has(k)&&!revealed[nr][nc]){vis.add(k);q.push([nr,nc]);}
         }
       }
     }
@@ -559,14 +551,12 @@
       timerID=setInterval(()=>{secs=Math.min(999,secs+1);ledT.textContent=p3(secs);},1000);
     }
     if(board[r][c]===-1) {
-      // 爆弾ヒット → チャンス制
       pendingBombR=r; pendingBombC=c;
       clearInterval(timerID);
       updateSmiley('oops');
       document.getElementById('bomb-char-face').textContent=face('oops');
       if(chancesLeft>0) {
-        document.getElementById('chance-count').textContent=chancesLeft;
-        document.getElementById('chance-msg').innerHTML=`あと <span class="big" id="chance-count">${chancesLeft}</span> 回チャレンジできます`;
+        document.getElementById('chance-msg').innerHTML=`あと <span class="big">${chancesLeft}</span> 回チャレンジできます`;
         document.getElementById('chance-challenge-btn').style.display='';
       } else {
         document.getElementById('chance-msg').innerHTML='チャンスが残っていません…';
@@ -576,7 +566,7 @@
       return;
     }
     bfsReveal(r,c);
-    if(checkWin()) { handleWin(); }
+    if(checkWin()) { handleWin(); return; }
     ledM.textContent=p3(MINES-flagCount);
     render();
   }
@@ -592,11 +582,10 @@
   function onClick(r,c) { if(flagMode) doFlag(r,c); else doReveal(r,c); }
   function onRight(e,r,c) { e.preventDefault(); if(flagMode) doReveal(r,c); else doFlag(r,c); }
 
-  // ===== 爆弾チャンスポップアップ =====
+  // 爆弾チャンス
   document.getElementById('chance-challenge-btn').addEventListener('click',()=>{
     chancesLeft--;
-    flagged[pendingBombR][pendingBombC]=true;
-    flagCount++;
+    flagged[pendingBombR][pendingBombC]=true; flagCount++;
     pendingBombR=-1; pendingBombC=-1;
     document.getElementById('bomb-popup').classList.remove('visible');
     state='playing';
@@ -623,8 +612,8 @@
   // ===== レンダリング =====
   function render() {
     const cs=cellSize();
-    const fs=Math.max(11,Math.floor(cs*0.44));
-    const es=Math.max(13,Math.floor(cs*0.55));
+    const fs=Math.max(9,Math.floor(cs*0.44));
+    const es=Math.max(11,Math.floor(cs*0.55));
     gridEl.style.gridTemplateColumns=`repeat(${COLS},${cs}px)`;
     gridEl.innerHTML='';
 
@@ -651,7 +640,6 @@
         el.textContent='💣'; el.style.fontSize=es+'px'; el.classList.add('replay-hl');
       }
 
-      // デスクトップ
       el.addEventListener('click',()=>onClick(r,c));
       el.addEventListener('contextmenu',e=>onRight(e,r,c));
       el.addEventListener('mousedown',e=>{
@@ -659,14 +647,13 @@
           updateSmiley('tense');
       });
 
-      // スマホ（passive:true でスクロール・ピンチを妨げない）
       el.addEventListener('touchstart',e=>{
         if(e.touches.length>1){clearTimeout(pressTimer);pressTimer=null;longPressed=true;el.classList.remove('pressing');return;}
         const t=e.touches[0]; touchStartX=t.clientX; touchStartY=t.clientY;
         longPressed=false; el.classList.add('pressing');
         pressTimer=setTimeout(()=>{
           longPressed=true; el.classList.remove('pressing');
-          if(!flagMode){ doFlag(r,c); if(navigator.vibrate) navigator.vibrate(40); }
+          if(!flagMode){doFlag(r,c);if(navigator.vibrate)navigator.vibrate(40);}
         },500);
       },{passive:true});
 
@@ -691,20 +678,55 @@
     }
   }
 
-  // ===== ハイスコア =====
+  // ===== ハイスコア（日付・今日・今週・今月） =====
+  function getDateKey() { return new Date().toISOString().slice(0,10); }
+  function getWeekKey() {
+    const d=new Date(), day=d.getDay()||7;
+    const mon=new Date(d); mon.setDate(d.getDate()-day+1); return mon.toISOString().slice(0,10);
+  }
+  function getMonthKey() { return new Date().toISOString().slice(0,7); }
+  function fmtDate(s) { const p=s.slice(5).split('-'); return `${parseInt(p[0])}/${parseInt(p[1])}`; }
+
+  const HS_DIFFS = [
+    { key:'beginner',     label:'初級 (9×9, 10個)' },
+    { key:'intermediate', label:'中級 (16×16, 40個)' },
+    { key:'expert',       label:'上級 (30×16, 99個)' },
+    { key:'ultra',        label:'⚡ULTRA (64×30, 300個)' },
+  ];
+
   function saveHS() {
-    if(!['beginner','intermediate','expert'].includes(currentDiff)) return;
-    const key='ms_hs_'+currentDiff;
-    const prev=parseInt(localStorage.getItem(key)||'9999');
-    if(secs<prev) localStorage.setItem(key,secs);
+    if(!HS_DIFFS.find(d=>d.key===currentDiff)) return;
+    const today=getDateKey(), weekKey=getWeekKey(), monthKey=getMonthKey();
+    const storKey='ms_hs3_'+currentDiff;
+    let data=JSON.parse(localStorage.getItem(storKey)||'{}');
+    if(!data.alltime||secs<data.alltime.secs) data.alltime={secs,date:today};
+    if(!data.today||data.today.date!==today||secs<data.today.secs) data.today={secs,date:today};
+    if(!data.week||data.week.key!==weekKey||secs<data.week.secs) data.week={secs,key:weekKey,date:today};
+    if(!data.month||data.month.key!==monthKey||secs<data.month.secs) data.month={secs,key:monthKey,date:today};
+    localStorage.setItem(storKey,JSON.stringify(data));
     refreshHSPanel();
   }
+
   function refreshHSPanel() {
-    ['beginner','intermediate','expert'].forEach(d=>{
-      const el=document.getElementById('hs-'+d);
-      const val=localStorage.getItem('ms_hs_'+d);
-      if(el) el.textContent=val?val+' 秒':'--';
-    });
+    const today=getDateKey(), weekKey=getWeekKey(), monthKey=getMonthKey();
+    const fmt=e=>e?`${e.secs}秒`:'--';
+    const fmtWithDate=e=>e?`<span class="hs-record">${e.secs}秒</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';
+    document.getElementById('hs-content').innerHTML = HS_DIFFS.map(d=>{
+      const data=JSON.parse(localStorage.getItem('ms_hs3_'+d.key)||'{}');
+      const todayVal=data.today?.date===today?fmt(data.today):'--';
+      const weekVal=data.week?.key===weekKey?fmt(data.week):'--';
+      const monthVal=data.month?.key===monthKey?fmt(data.month):'--';
+      return `
+        <div class="hs-item">
+          <div class="hs-diff-label">${d.label}</div>
+          <div class="hs-rows">
+            <div class="hs-row"><span class="hs-period">全期間</span>${fmtWithDate(data.alltime)}</div>
+            <div class="hs-row"><span class="hs-period">今日</span><span class="hs-val">${todayVal}</span></div>
+            <div class="hs-row"><span class="hs-period">今週</span><span class="hs-val">${weekVal}</span></div>
+            <div class="hs-row"><span class="hs-period">今月</span><span class="hs-val">${monthVal}</span></div>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   // ===== ヒント =====
@@ -725,8 +747,7 @@
     const ctx2=confCvs.getContext('2d');
     const cols=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#ff69b4'];
     const ps=Array.from({length:130},()=>({
-      x:Math.random()*confCvs.width,y:-10,
-      w:Math.random()*10+4,h:Math.random()*5+2,
+      x:Math.random()*confCvs.width,y:-10,w:Math.random()*10+4,h:Math.random()*5+2,
       color:cols[Math.floor(Math.random()*cols.length)],
       vx:(Math.random()-0.5)*6,vy:Math.random()*4+2,
       rot:Math.random()*Math.PI*2,vr:(Math.random()-0.5)*0.2
@@ -746,7 +767,6 @@
   }
 
   // ===== グローバルイベント =====
-  // マルチタッチ安全網
   document.addEventListener('touchstart',e=>{
     if(e.touches.length>1){
       clearTimeout(pressTimer);pressTimer=null;longPressed=true;
@@ -754,9 +774,8 @@
     }
   },{passive:true});
 
-  document.addEventListener('mouseup',()=>{if(state==='playing') updateSmiley('normal');});
+  document.addEventListener('mouseup',()=>{if(state==='playing')updateSmiley('normal');});
 
-  // スマイリーリセット
   function doReset(){
     if(currentDiff==='custom') init(ROWS,COLS,MINES,'custom');
     else{const d=DIFF[currentDiff];init(d.r,d.c,d.m,currentDiff);}
@@ -764,19 +783,16 @@
   smileyEl.addEventListener('click',doReset);
   smileyEl.addEventListener('touchend',e=>{e.preventDefault();doReset();},{passive:false});
 
-  // キャラクター選択
   document.querySelectorAll('.char-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.char-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      currentChar=btn.dataset.char;
+      btn.classList.add('active'); currentChar=btn.dataset.char;
       if(state==='won') updateSmiley('win');
       else if(state==='lost') updateSmiley('lose');
       else updateSmiley('normal');
     });
   });
 
-  // 難易度ボタン
   document.querySelectorAll('.diff-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
@@ -788,8 +804,8 @@
   });
 
   document.getElementById('c-apply').addEventListener('click',()=>{
-    const r=Math.min(30,Math.max(5,parseInt(document.getElementById('c-rows').value)||9));
-    const c=Math.min(50,Math.max(5,parseInt(document.getElementById('c-cols').value)||9));
+    const r=Math.min(64,Math.max(5,parseInt(document.getElementById('c-rows').value)||9));
+    const c=Math.min(64,Math.max(5,parseInt(document.getElementById('c-cols').value)||9));
     const m=Math.min(Math.max(1,r*c-9),Math.max(1,parseInt(document.getElementById('c-mines').value)||10));
     init(r,c,m,'custom');
   });
@@ -815,7 +831,7 @@
   });
 
   document.getElementById('clear-hs').addEventListener('click',()=>{
-    ['beginner','intermediate','expert'].forEach(d=>localStorage.removeItem('ms_hs_'+d));
+    HS_DIFFS.forEach(d=>localStorage.removeItem('ms_hs3_'+d.key));
     refreshHSPanel();
   });
 
@@ -826,7 +842,6 @@
 
   window.addEventListener('resize',render);
 
-  // ===== 起動 =====
   init(9,9,10,'beginner');
 </script>
 </body>
