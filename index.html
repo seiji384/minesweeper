@@ -164,7 +164,7 @@
     .n8{color:#ffee40;text-shadow:0 0 8px #ffee40,0 0 16px #ccaa00}
 
     .action-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
       display: flex; gap: 6px; padding: 8px 12px 10px;
       background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
       border-top: 1px solid #4030a0;
@@ -931,18 +931,34 @@
 
   window.addEventListener('resize',render);
 
-  // ===== Visual Viewport API：ズーム時もバーを画面下部に固定 =====
+  // ===== Visual Viewport API：ピンチズーム時のみバーを視覚ビューポート下部に固定 =====
   const actionBar = document.querySelector('.action-bar');
   function fixActionBar() {
     const vv = window.visualViewport;
     if (!vv) return;
-    // 視覚ビューポートの下端に合わせて縦位置を調整
-    const dy = Math.round(vv.offsetTop + vv.height - window.innerHeight);
-    // 視覚ビューポートの横位置・幅に合わせる
-    actionBar.style.left   = `${vv.offsetLeft}px`;
-    actionBar.style.width  = `${vv.width}px`;
-    actionBar.style.right  = 'auto';
-    actionBar.style.transform = `translateY(${dy}px)`;
+
+    // ズーム中かどうかを判定（scale または 幅の比率で判断）
+    const isZoomed = vv.scale > 1.05 || (window.innerWidth / vv.width) > 1.05;
+
+    if (!isZoomed) {
+      // 非ズーム時：CSSデフォルト（position:fixed; bottom:0）に戻す
+      actionBar.style.top       = '';
+      actionBar.style.bottom    = '';
+      actionBar.style.left      = '';
+      actionBar.style.right     = '';
+      actionBar.style.width     = '';
+      actionBar.style.transform = '';
+      return;
+    }
+
+    // ズーム時：視覚ビューポートの下端に追従（transform を使わず top で直接指定）
+    const barH = actionBar.offsetHeight || 52;
+    actionBar.style.top       = Math.round(vv.offsetTop + vv.height - barH) + 'px';
+    actionBar.style.bottom    = 'auto';
+    actionBar.style.left      = Math.round(vv.offsetLeft) + 'px';
+    actionBar.style.width     = Math.round(vv.width) + 'px';
+    actionBar.style.right     = 'auto';
+    actionBar.style.transform = '';
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', fixActionBar);
