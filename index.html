@@ -2,237 +2,278 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>マインスイーパー PLUS</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
     body {
-      background: #008080;
+      background:
+        radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      padding: 24px 12px;
+      padding: 16px 8px;
       font-family: Arial, sans-serif;
-    }
-    .window {
-      background: #c0c0c0;
-      border: 2px solid;
-      border-color: #ffffff #808080 #808080 #ffffff;
-      outline: 2px solid #000000;
-      max-width: 100%;
-    }
-    .titlebar {
-      background: linear-gradient(to right, #000080, #1084d0);
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: bold;
-      padding: 3px 6px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      overflow-x: hidden;
     }
 
-    /* Difficulty bar */
+    #stars {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ===== Window ===== */
+    .window {
+      position: relative; z-index: 1;
+      background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+      border: 2px solid #7060ff;
+      border-radius: 16px;
+      box-shadow:
+        0 0 30px rgba(112,90,255,0.55),
+        0 0 80px rgba(112,90,255,0.2),
+        0 24px 64px rgba(0,0,0,0.85);
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .titlebar {
+      background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+      color: #3a1a00;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 7px 14px;
+      text-align: center;
+      letter-spacing: 3px;
+      text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+      border-bottom: 2px solid #804000;
+    }
+
+    /* ===== Difficulty bar ===== */
     .diff-bar {
       display: flex;
-      padding: 4px 6px;
-      gap: 2px;
-      border-bottom: 1px solid #808080;
-      background: #c0c0c0;
+      padding: 6px 8px;
+      gap: 4px;
+      background: linear-gradient(160deg, #150d38 0%, #0d0820 100%);
+      border-bottom: 1px solid #4030a0;
+      justify-content: center;
     }
     .diff-btn {
-      padding: 2px 12px;
+      padding: 4px 14px;
       font-size: 11px;
+      border-radius: 14px;
+      background: linear-gradient(160deg, #2a1a6a 0%, #1a0a4a 100%);
+      color: #a080ff;
+      border: 1px solid #4030a0;
+      font-weight: bold;
       cursor: pointer;
-      background: #c0c0c0;
-      color: #000;
-      border: 2px solid;
-      border-color: #ffffff #808080 #808080 #ffffff;
     }
     .diff-btn.active {
-      border-color: #808080 #ffffff #ffffff #808080;
-      font-weight: bold;
+      background: linear-gradient(160deg, #6040cc 0%, #4020aa 100%);
+      color: #e8d0ff;
+      border-color: #9070ee;
+      box-shadow: 0 0 10px rgba(144,112,238,0.6);
     }
 
-    /* Custom row */
+    /* ===== Custom row ===== */
     .custom-row {
       display: none;
-      padding: 4px 6px;
-      gap: 8px;
-      align-items: center;
-      font-size: 11px;
-      border-bottom: 1px solid #808080;
-      background: #c0c0c0;
-      flex-wrap: wrap;
+      padding: 6px 8px; gap: 8px;
+      align-items: center; font-size: 11px;
+      border-bottom: 1px solid #4030a0;
+      background: linear-gradient(160deg, #100a28 0%, #080518 100%);
+      flex-wrap: wrap; justify-content: center; color: #a090d0;
     }
     .custom-row.visible { display: flex; }
-    .custom-row label { display: flex; align-items: center; gap: 3px; }
-    .custom-row input { width: 42px; font-size: 11px; border: 2px inset #808080; padding: 1px 3px; }
-    .custom-row button {
-      font-size: 11px; padding: 2px 10px; cursor: pointer;
-      background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff;
+    .custom-row label { display: flex; align-items: center; gap: 4px; }
+    .custom-row input {
+      width: 46px; font-size: 11px;
+      background: #0d0820; color: #c0a8ff;
+      border: 1px solid #5040a0; border-radius: 4px; padding: 2px 4px;
     }
-    .custom-row button:active { border-color: #808080 #fff #fff #808080; }
+    .custom-row button {
+      font-size: 11px; padding: 3px 12px; cursor: pointer;
+      background: linear-gradient(160deg, #4a28a0 0%, #2a1070 100%);
+      color: #d0b8ff; border: 1px solid #6040c0; border-radius: 10px;
+    }
 
-    /* Content */
-    .content { padding: 6px; }
+    /* ===== Content ===== */
+    .content { padding: 8px; }
 
-    /* Status panel */
     .status-panel {
-      border: 2px solid;
-      border-color: #808080 #ffffff #ffffff #808080;
-      padding: 5px 10px;
-      margin-bottom: 6px;
+      background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+      border: 1px solid #4030a0;
+      border-radius: 10px;
+      padding: 6px 12px;
+      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
     }
     .led {
-      background: #000000;
-      color: #ff0000;
+      background: linear-gradient(160deg, #080518 0%, #040210 100%);
+      color: #ff44aa;
       font-family: 'Courier New', monospace;
-      font-size: 22px;
-      font-weight: bold;
-      padding: 2px 6px;
-      min-width: 52px;
-      text-align: right;
-      border: 2px solid;
-      border-color: #808080 #c0c0c0 #c0c0c0 #808080;
+      font-size: 22px; font-weight: bold;
+      padding: 3px 10px; min-width: 54px; text-align: right;
+      border-radius: 6px; border: 1px solid #4020a0;
+      text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
     }
     .smiley-btn {
-      font-size: 20px;
-      width: 34px; height: 34px;
+      font-size: 22px; width: 46px; height: 46px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      background: #c0c0c0;
-      border: 2px solid;
-      border-color: #ffffff #808080 #808080 #ffffff;
-    }
-    .smiley-btn:active { border-color: #808080 #ffffff #ffffff #808080; }
-
-    /* Grid */
-    .grid-wrap {
-      border: 2px solid;
-      border-color: #808080 #ffffff #ffffff #808080;
-      display: block;
-      overflow: auto;
-      max-width: calc(100vw - 32px);
-    }
-    .grid { display: grid; }
-    .cell {
-      width: 22px; height: 22px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: bold;
-      cursor: pointer;
-      border: 2px solid;
-      border-color: #ffffff #808080 #808080 #ffffff;
-      background: #c0c0c0;
-      line-height: 1;
-    }
-    .cell.open { border: 1px solid #808080; cursor: default; }
-    .cell.mine-hit { background: #ff0000; animation: explode 0.5s ease-out; }
-    .cell.hint-hl { background: #ffff44 !important; }
-    .cell.replay-hl { background: #ffe066; }
-    .cell.pressing {
-      background: #a8a8a8;
-      transform: scale(0.88);
+      background: radial-gradient(circle at 38% 32%, #ffe060 0%, #c88010 60%, #804000 100%);
+      border-radius: 50%;
+      border: 2px solid #ffe080;
+      box-shadow: 0 0 16px rgba(245,200,66,0.7), 0 4px 10px rgba(0,0,0,0.6);
       transition: transform 0.1s;
     }
-    .cell { touch-action: none; }
+    .smiley-btn:active { transform: scale(0.88); }
+
+    /* ===== Grid ===== */
+    .grid-wrap {
+      border: 2px solid #4030a0;
+      border-radius: 10px;
+      background: #04020e;
+      padding: 5px;
+      box-shadow: inset 0 4px 16px rgba(0,0,0,0.9), 0 0 20px rgba(64,48,160,0.3);
+      overflow: auto;
+      max-width: calc(100vw - 30px);
+    }
+    .grid { display: grid; gap: 2px; }
+
+    .cell {
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; cursor: pointer;
+      border-radius: 7px;
+      background: linear-gradient(145deg, #5a3aaa 10%, #3a1a8a 60%, #28106a 100%);
+      box-shadow:
+        inset 0 2px 3px rgba(255,255,255,0.22),
+        inset 0 -2px 4px rgba(0,0,0,0.6),
+        0 3px 6px rgba(0,0,0,0.7);
+      border: 1px solid #6048b0;
+      line-height: 1;
+      touch-action: none;
+      transition: transform 0.08s;
+    }
+    .cell.open {
+      background: linear-gradient(145deg, #0e0a22 0%, #08051a 100%);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.9);
+      border: 1px solid #1a1040;
+      cursor: default;
+    }
+    .cell.mine-hit {
+      background: radial-gradient(circle at 38% 32%, #ff8840 0%, #cc2200 60%, #880000 100%);
+      box-shadow: 0 0 20px #ff4400, 0 0 40px #ff2200, inset 0 2px 4px rgba(255,200,100,0.4);
+      border-color: #ff6620;
+      animation: explode 0.5s ease-out;
+    }
+    .cell.hint-hl {
+      background: radial-gradient(circle at 38% 32%, #ffff80 0%, #ddaa00 60%, #aa7700 100%) !important;
+      box-shadow: 0 0 16px #ffff00, 0 0 32px #ffcc00 !important;
+      border-color: #ffee40 !important;
+    }
+    .cell.replay-hl {
+      background: linear-gradient(145deg, #8a6000 0%, #604000 100%);
+      border-color: #c09020;
+    }
+    .cell.pressing {
+      background: linear-gradient(145deg, #8060cc 0%, #5840aa 100%);
+      transform: scale(0.84);
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 22px rgba(160,128,255,0.7);
+    }
 
     @keyframes explode {
-      0%   { background: #ff0000; transform: scale(1); }
-      40%  { background: #ff8800; transform: scale(1.4); }
-      100% { background: #ff0000; transform: scale(1); }
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.38); }
+      100% { transform: scale(1); }
     }
 
-    .n1 { color: #0000ff; }
-    .n2 { color: #007b00; }
-    .n3 { color: #ff0000; }
-    .n4 { color: #00007b; }
-    .n5 { color: #7b0000; }
-    .n6 { color: #007b7b; }
-    .n7 { color: #000000; }
-    .n8 { color: #808080; }
+    .n1 { color: #60b8ff; text-shadow: 0 0 8px #60b8ff, 0 0 16px #2088ff; }
+    .n2 { color: #60ff90; text-shadow: 0 0 8px #60ff90, 0 0 16px #20cc60; }
+    .n3 { color: #ff6060; text-shadow: 0 0 8px #ff6060, 0 0 16px #ff2020; }
+    .n4 { color: #c060ff; text-shadow: 0 0 8px #c060ff, 0 0 16px #9020ff; }
+    .n5 { color: #ffa040; text-shadow: 0 0 8px #ffa040, 0 0 16px #ff6010; }
+    .n6 { color: #40ffee; text-shadow: 0 0 8px #40ffee, 0 0 16px #00cccc; }
+    .n7 { color: #ffffff; text-shadow: 0 0 8px #ffffff, 0 0 16px #ccccff; }
+    .n8 { color: #ffee40; text-shadow: 0 0 8px #ffee40, 0 0 16px #ccaa00; }
 
-    /* Action bar */
+    /* ===== Action bar ===== */
     .action-bar {
-      display: flex;
-      gap: 4px;
-      margin-top: 6px;
-      flex-wrap: wrap;
+      display: flex; gap: 5px;
+      margin-top: 8px; flex-wrap: wrap; justify-content: center;
     }
     .act-btn {
-      padding: 3px 10px;
-      font-size: 11px;
-      cursor: pointer;
-      background: #c0c0c0;
-      border: 2px solid;
-      border-color: #ffffff #808080 #808080 #ffffff;
+      padding: 5px 12px; font-size: 11px; border-radius: 14px;
+      background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+      color: #b898ff; border: 1px solid #5a3aaa;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      cursor: pointer; font-weight: bold; transition: all 0.15s;
     }
-    .act-btn:active { border-color: #808080 #ffffff #ffffff #808080; }
+    .act-btn:active { transform: scale(0.93); }
     .act-btn.on {
-      border-color: #808080 #ffffff #ffffff #808080;
-      background: #e06000;
-      color: #ffffff;
-      font-weight: bold;
+      background: linear-gradient(160deg, #c05000 0%, #802800 100%);
+      color: #ffd080; border-color: #ff8030;
+      box-shadow: 0 0 14px rgba(255,128,48,0.65);
     }
 
-    /* Flag mode indicator banner */
+    /* ===== Flag indicator ===== */
     .flag-indicator {
-      display: none;
-      margin-top: 5px;
-      padding: 4px 8px;
-      font-size: 12px;
-      font-weight: bold;
-      background: #e06000;
-      color: #ffffff;
-      text-align: center;
-      border: 2px solid;
-      border-color: #ff9940 #803000 #803000 #ff9940;
-      letter-spacing: 0.5px;
+      display: none; margin-top: 6px; padding: 5px 10px;
+      font-size: 12px; font-weight: bold;
+      background: linear-gradient(160deg, #803000 0%, #401800 100%);
+      color: #ffc080; text-align: center;
+      border-radius: 8px; border: 1px solid #ff6020;
+      box-shadow: 0 0 12px rgba(255,96,32,0.5);
     }
     .flag-indicator.visible { display: block; }
 
-    /* High score panel */
+    /* ===== High score panel ===== */
     .hs-panel {
-      display: none;
-      margin-top: 6px;
-      border: 2px solid;
-      border-color: #808080 #ffffff #ffffff #808080;
-      padding: 5px 6px;
-      font-size: 11px;
+      display: none; margin-top: 8px;
+      border: 1px solid #4030a0; border-radius: 10px;
+      padding: 6px 8px; font-size: 11px;
+      background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
     }
     .hs-panel.visible { display: block; }
-    .hs-table { width: 100%; border-collapse: collapse; }
-    .hs-table th { text-align: left; padding: 2px 6px; border-bottom: 1px solid #808080; color: #00007b; }
-    .hs-table td { padding: 2px 8px; }
-    .hs-record { font-weight: bold; color: #007b00; }
-    .hs-footer { text-align: right; margin-top: 4px; }
+    .hs-table { width: 100%; border-collapse: collapse; color: #a090d0; }
+    .hs-table th {
+      text-align: left; padding: 3px 6px;
+      border-bottom: 1px solid #3020a0; color: #c0a8ff; font-size: 11px;
+    }
+    .hs-table td { padding: 3px 8px; }
+    .hs-record { font-weight: bold; color: #60ff90; text-shadow: 0 0 6px #60ff90; }
+    .hs-footer { text-align: right; margin-top: 5px; }
 
-    /* Confetti canvas */
+    /* ===== Confetti ===== */
     #confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
 
-    /* Win message */
+    /* ===== Win message ===== */
     .win-msg {
-      display: none;
-      margin-top: 5px;
-      text-align: center;
-      font-size: 12px;
-      font-weight: bold;
-      color: #00007b;
-      border: 1px solid #808080;
-      padding: 3px;
-      background: #ffffcc;
+      display: none; margin-top: 7px; text-align: center;
+      font-size: 14px; font-weight: 900; color: #f5c842;
+      border-radius: 10px; border: 1px solid #c08010;
+      padding: 7px;
+      background: linear-gradient(160deg, #3a2400 0%, #1a1000 100%);
+      text-shadow: 0 0 12px #f5c842, 0 0 25px #c09010;
+      letter-spacing: 1px;
     }
     .win-msg.visible { display: block; }
   </style>
 </head>
 <body>
+<canvas id="stars"></canvas>
 <canvas id="confetti"></canvas>
 
 <div class="window">
-  <div class="titlebar">💣 マインスイーパー PLUS</div>
+  <div class="titlebar">💣 MINE SWEEPER PLUS 💣</div>
 
   <div class="diff-bar">
     <button class="diff-btn active" data-diff="beginner">初級</button>
@@ -259,13 +300,12 @@
       <div class="grid" id="grid"></div>
     </div>
 
-    <div class="flag-indicator" id="flag-indicator">🚩 旗モード ON — クリックで旗を立てます / 右クリックで開きます</div>
+    <div class="flag-indicator" id="flag-indicator">🚩 旗モード ON — タップで旗 / 長押しで開く</div>
     <div class="win-msg" id="win-msg"></div>
 
     <div class="action-bar">
       <button class="act-btn" id="hint-btn">💡 ヒント</button>
       <button class="act-btn" id="flag-btn">🚩 旗モード</button>
-
       <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
       <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
     </div>
@@ -278,17 +318,45 @@
         <tr><td>上級 (16×30, 99個)</td><td class="hs-record" id="hs-expert">--</td></tr>
       </table>
       <div class="hs-footer">
-        <button class="act-btn" id="clear-hs" style="font-size:10px;padding:2px 6px;">記録をリセット</button>
+        <button class="act-btn" id="clear-hs" style="font-size:10px;padding:3px 8px;">記録をリセット</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
+  // ===== 星空背景 =====
+  (function () {
+    const cvs = document.getElementById('stars');
+    const ctx = cvs.getContext('2d');
+    function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+    const stars = Array.from({length: 140}, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.6 + 0.3,
+      a: Math.random(), da: (Math.random() - 0.5) * 0.009
+    }));
+    function draw() {
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      stars.forEach(s => {
+        s.a = Math.max(0.1, Math.min(1, s.a + s.da));
+        if (s.a <= 0.1 || s.a >= 1) s.da = -s.da;
+        ctx.beginPath();
+        ctx.arc(s.x * cvs.width, s.y * cvs.height, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,180,255,${s.a})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  // ===== ゲームロジック =====
   const DIFF = {
-    beginner:     { r: 9,  c: 9,  m: 10  },
-    intermediate: { r: 16, c: 16, m: 40  },
-    expert:       { r: 16, c: 30, m: 99  },
+    beginner:     { r: 9,  c: 9,  m: 10 },
+    intermediate: { r: 16, c: 16, m: 40 },
+    expert:       { r: 16, c: 30, m: 99 },
   };
 
   let ROWS = 9, COLS = 9, MINES = 10, currentDiff = 'beginner';
@@ -296,16 +364,23 @@
   let flagMode = false;
   let replayMode = false;
   let pressTimer = null, longPressed = false;
+  let touchStartX = 0, touchStartY = 0;
 
-  const gridEl   = document.getElementById('grid');
-  const smileyEl = document.getElementById('smiley');
-  const ledM     = document.getElementById('led-mines');
-  const ledT     = document.getElementById('led-timer');
+  const gridEl    = document.getElementById('grid');
+  const smileyEl  = document.getElementById('smiley');
+  const ledM      = document.getElementById('led-mines');
+  const ledT      = document.getElementById('led-timer');
   const replayBtn = document.getElementById('replay-btn');
-  const winMsgEl = document.getElementById('win-msg');
-  const confCvs  = document.getElementById('confetti');
+  const winMsgEl  = document.getElementById('win-msg');
+  const confCvs   = document.getElementById('confetti');
 
   function p3(n) { return Math.max(0, Math.min(999, n)).toString().padStart(3, '0'); }
+
+  // 画面幅に合わせてセルサイズを計算
+  function cellSize() {
+    const maxW = Math.min(window.innerWidth - 40, 640);
+    return Math.min(34, Math.max(22, Math.floor((maxW - COLS * 2) / COLS)));
+  }
 
   function init(r, c, m, diff) {
     ROWS = r; COLS = c; MINES = m;
@@ -391,10 +466,9 @@
         for (let rr = 0; rr < ROWS; rr++) for (let cc = 0; cc < COLS; cc++)
           if (board[rr][cc] === -1) flagged[rr][cc] = true;
         flagCount = MINES;
-        saveHS();
-        startConfetti();
+        saveHS(); startConfetti();
         replayBtn.style.display = 'inline-flex';
-        winMsgEl.textContent = `🎉 クリア！ タイム: ${secs}秒`;
+        winMsgEl.textContent = `✨ クリア！ タイム: ${secs}秒 ✨`;
         winMsgEl.classList.add('visible');
       }
     }
@@ -410,27 +484,26 @@
     render();
   }
 
-  function onClick(r, c) {
-    if (flagMode) doFlag(r, c); else doReveal(r, c);
-  }
-
-  function onRight(e, r, c) {
-    e.preventDefault();
-    if (flagMode) doReveal(r, c); else doFlag(r, c);
-  }
+  function onClick(r, c) { if (flagMode) doFlag(r, c); else doReveal(r, c); }
+  function onRight(e, r, c) { e.preventDefault(); if (flagMode) doReveal(r, c); else doFlag(r, c); }
 
   function render() {
-    gridEl.style.gridTemplateColumns = `repeat(${COLS}, 22px)`;
+    const cs = cellSize();
+    const fs = Math.max(11, Math.floor(cs * 0.44));
+    const es = Math.max(13, Math.floor(cs * 0.55)); // emoji size
+    gridEl.style.gridTemplateColumns = `repeat(${COLS}, ${cs}px)`;
     gridEl.innerHTML = '';
+
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const el = document.createElement('div');
       el.className = 'cell';
+      el.style.cssText = `width:${cs}px;height:${cs}px;font-size:${fs}px`;
       el.dataset.r = r; el.dataset.c = c;
 
       if (revealed[r][c]) {
         el.classList.add('open');
         if (board[r][c] === -1) {
-          el.textContent = '💣';
+          el.textContent = '💣'; el.style.fontSize = es + 'px';
           if (r === hitR && c === hitC) el.classList.add('mine-hit');
           else if (replayMode) el.classList.add('replay-hl');
         } else if (board[r][c] > 0) {
@@ -439,9 +512,10 @@
         }
       } else if (flagged[r][c]) {
         el.textContent = (state === 'lost' && board[r][c] !== -1) ? '❌' : '🚩';
+        el.style.fontSize = es + 'px';
         if (replayMode && board[r][c] === -1) el.classList.add('replay-hl');
       } else if (replayMode && board[r][c] === -1) {
-        el.textContent = '💣';
+        el.textContent = '💣'; el.style.fontSize = es + 'px';
         el.classList.add('replay-hl');
       }
 
@@ -453,9 +527,15 @@
           smileyEl.textContent = '😮';
       });
 
-      // スマホ操作：タップ→開く、長押し（0.5秒）→旗
+      // スマホ操作：タップ→開く / 長押し(0.5秒)→旗
       el.addEventListener('touchstart', e => {
+        if (e.touches.length > 1) {           // ピンチ操作は無視
+          clearTimeout(pressTimer); pressTimer = null;
+          el.classList.remove('pressing'); return;
+        }
         e.preventDefault();
+        const t = e.touches[0];
+        touchStartX = t.clientX; touchStartY = t.clientY;
         longPressed = false;
         el.classList.add('pressing');
         pressTimer = setTimeout(() => {
@@ -469,23 +549,29 @@
       el.addEventListener('touchend', e => {
         e.preventDefault();
         el.classList.remove('pressing');
-        clearTimeout(pressTimer);
-        pressTimer = null;
+        clearTimeout(pressTimer); pressTimer = null;
         if (!longPressed) onClick(r, c);
         longPressed = false;
       }, { passive: false });
 
-      el.addEventListener('touchmove', () => {
-        el.classList.remove('pressing');
-        clearTimeout(pressTimer);
-        pressTimer = null;
+      el.addEventListener('touchmove', e => {
+        if (e.touches.length > 1 || !pressTimer) {  // マルチタッチ or タイマーなし → キャンセル
+          el.classList.remove('pressing');
+          clearTimeout(pressTimer); pressTimer = null; return;
+        }
+        const t = e.touches[0];
+        const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {   // 10px以上移動したらキャンセル
+          el.classList.remove('pressing');
+          clearTimeout(pressTimer); pressTimer = null;
+        }
       }, { passive: true });
 
       gridEl.appendChild(el);
     }
   }
 
-  // ---- High scores ----
+  // ===== ハイスコア =====
   function saveHS() {
     if (!['beginner','intermediate','expert'].includes(currentDiff)) return;
     const key = 'ms_hs_' + currentDiff;
@@ -493,7 +579,6 @@
     if (secs < prev) localStorage.setItem(key, secs);
     refreshHSPanel();
   }
-
   function refreshHSPanel() {
     ['beginner','intermediate','expert'].forEach(d => {
       const el = document.getElementById('hs-' + d);
@@ -502,48 +587,47 @@
     });
   }
 
-  // ---- Hint ----
+  // ===== ヒント =====
   function showHint() {
     if (state !== 'playing') return;
-    const candidates = [];
+    const cands = [];
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      if (!revealed[r][c] && !flagged[r][c] && board[r][c] !== -1) candidates.push([r, c]);
-    if (!candidates.length) return;
-    const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+      if (!revealed[r][c] && !flagged[r][c] && board[r][c] !== -1) cands.push([r, c]);
+    if (!cands.length) return;
+    const [r, c] = cands[Math.floor(Math.random() * cands.length)];
     const el = gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
     if (el) { el.classList.add('hint-hl'); setTimeout(() => el.classList.remove('hint-hl'), 1800); }
   }
 
-  // ---- Confetti ----
+  // ===== 紙吹雪 =====
   function startConfetti() {
     confCvs.style.display = 'block';
     confCvs.width = window.innerWidth; confCvs.height = window.innerHeight;
     const ctx2 = confCvs.getContext('2d');
-    const colors = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c'];
-    const particles = Array.from({length: 120}, () => ({
+    const cols = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#ff69b4'];
+    const ps = Array.from({length: 130}, () => ({
       x: Math.random() * confCvs.width, y: -10,
-      w: Math.random() * 9 + 4, h: Math.random() * 5 + 2,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      vx: (Math.random() - 0.5) * 5, vy: Math.random() * 4 + 2,
-      rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.18,
+      w: Math.random() * 10 + 4, h: Math.random() * 5 + 2,
+      color: cols[Math.floor(Math.random() * cols.length)],
+      vx: (Math.random() - 0.5) * 6, vy: Math.random() * 4 + 2,
+      rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.2,
     }));
     let frame = 0;
     function anim() {
       ctx2.clearRect(0, 0, confCvs.width, confCvs.height);
-      particles.forEach(p => {
+      ps.forEach(p => {
         p.x += p.vx; p.y += p.vy; p.rot += p.vr;
         if (p.y > confCvs.height) { p.y = -10; p.x = Math.random() * confCvs.width; }
         ctx2.save(); ctx2.translate(p.x, p.y); ctx2.rotate(p.rot);
         ctx2.fillStyle = p.color; ctx2.fillRect(-p.w/2, -p.h/2, p.w, p.h);
         ctx2.restore();
       });
-      frame++;
-      if (frame < 220) requestAnimationFrame(anim); else confCvs.style.display = 'none';
+      if (++frame < 240) requestAnimationFrame(anim); else confCvs.style.display = 'none';
     }
     requestAnimationFrame(anim);
   }
 
-  // ---- Events ----
+  // ===== イベント =====
   document.addEventListener('mouseup', () => { if (state === 'playing') smileyEl.textContent = '🙂'; });
 
   smileyEl.addEventListener('click', () => {
@@ -564,8 +648,7 @@
   document.getElementById('c-apply').addEventListener('click', () => {
     const r = Math.min(30, Math.max(5, parseInt(document.getElementById('c-rows').value) || 9));
     const c = Math.min(50, Math.max(5, parseInt(document.getElementById('c-cols').value) || 9));
-    const maxM = Math.max(1, r * c - 9);
-    const m = Math.min(maxM, Math.max(1, parseInt(document.getElementById('c-mines').value) || 10));
+    const m = Math.min(Math.max(1, r * c - 9), Math.max(1, parseInt(document.getElementById('c-mines').value) || 10));
     init(r, c, m, 'custom');
   });
 
@@ -595,7 +678,9 @@
     refreshHSPanel();
   });
 
-  // Start
+  window.addEventListener('resize', render);
+
+  // ===== 起動 =====
   init(9, 9, 10, 'beginner');
 </script>
 </body>
