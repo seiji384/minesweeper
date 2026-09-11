@@ -850,13 +850,59 @@
     render();
   });
 
+  // ===== モーダルを視覚ビューポートに追従させる =====
+  // ===== モーダルを視覚ビューポートに追従させる =====
+  function openModal(modal) {
+    const vv = window.visualViewport;
+    const box = modal.querySelector('.modal-box');
+    function snap() {
+      if (!vv) return;
+      // オーバーレイを視覚ビューポートにぴったり合わせる
+      modal.style.left   = vv.offsetLeft + 'px';
+      modal.style.top    = vv.offsetTop  + 'px';
+      modal.style.width  = vv.width  + 'px';
+      modal.style.height = vv.height + 'px';
+      modal.style.right  = 'auto';
+      modal.style.bottom = 'auto';
+      // コンテンツBoxにズームの逆数スケールを適用して等倍サイズに見せる
+      if (box && vv.scale > 1.05) {
+        const inv = 1 / vv.scale;
+        box.style.transform = `scale(${inv})`;
+        box.style.transformOrigin = 'center center';
+        // スケール縮小した分だけ幅を拡大して実際の画面幅を活かす
+        box.style.width  = Math.min(360 * vv.scale, vv.width  * vv.scale * 0.95) + 'px';
+        box.style.maxHeight = (vv.height * vv.scale * 0.9) + 'px';
+      } else if (box) {
+        box.style.transform = '';
+        box.style.width = '';
+        box.style.maxHeight = '';
+      }
+    }
+    snap();
+    modal.classList.add('visible');
+    if (vv) { vv.addEventListener('scroll', snap); vv.addEventListener('resize', snap); }
+    modal._snapFn = snap;
+  }
+  function closeModal(modal) {
+    modal.classList.remove('visible');
+    modal.style.left = modal.style.top = modal.style.width = modal.style.height = '';
+    modal.style.right = modal.style.bottom = '';
+    const box = modal.querySelector('.modal-box');
+    if (box) { box.style.transform = ''; box.style.width = ''; box.style.maxHeight = ''; }
+    if (window.visualViewport && modal._snapFn) {
+      window.visualViewport.removeEventListener('scroll', modal._snapFn);
+      window.visualViewport.removeEventListener('resize', modal._snapFn);
+      modal._snapFn = null;
+    }
+  }
+
   const hsModal=document.getElementById('hs-modal');
   document.getElementById('hs-btn').addEventListener('click',()=>{
     refreshHSPanel();
-    hsModal.classList.add('visible');
+    openModal(hsModal);
   });
-  document.getElementById('hs-close').addEventListener('click',()=>hsModal.classList.remove('visible'));
-  hsModal.addEventListener('click',e=>{if(e.target===hsModal)hsModal.classList.remove('visible');});
+  document.getElementById('hs-close').addEventListener('click',()=>closeModal(hsModal));
+  hsModal.addEventListener('click',e=>{if(e.target===hsModal)closeModal(hsModal);});
 
   document.getElementById('clear-hs').addEventListener('click',()=>{
     HS_DIFFS.forEach(d=>localStorage.removeItem('ms_hs3_'+d.key));
@@ -864,9 +910,9 @@
   });
 
   const rulesModal=document.getElementById('rules-modal');
-  document.getElementById('rules-btn').addEventListener('click',()=>rulesModal.classList.add('visible'));
-  document.getElementById('rules-close').addEventListener('click',()=>rulesModal.classList.remove('visible'));
-  rulesModal.addEventListener('click',e=>{if(e.target===rulesModal)rulesModal.classList.remove('visible');});
+  document.getElementById('rules-btn').addEventListener('click',()=>openModal(rulesModal));
+  document.getElementById('rules-close').addEventListener('click',()=>closeModal(rulesModal));
+  rulesModal.addEventListener('click',e=>{if(e.target===rulesModal)closeModal(rulesModal);});
 
   window.addEventListener('resize',render);
 
