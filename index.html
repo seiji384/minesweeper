@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>マインスイーパー PLUS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #008080;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 12px;
+      font-family: Arial, sans-serif;
+    }
+    .window {
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+      outline: 2px solid #000000;
+      max-width: 100%;
+    }
+    .titlebar {
+      background: linear-gradient(to right, #000080, #1084d0);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Difficulty bar */
+    .diff-bar {
+      display: flex;
+      padding: 4px 6px;
+      gap: 2px;
+      border-bottom: 1px solid #808080;
+      background: #c0c0c0;
+    }
+    .diff-btn {
+      padding: 2px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      background: #c0c0c0;
+      color: #000;
+      border: 2px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+    }
+    .diff-btn.active {
+      border-color: #808080 #ffffff #ffffff #808080;
+      font-weight: bold;
+    }
+
+    /* Custom row */
+    .custom-row {
+      display: none;
+      padding: 4px 6px;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      border-bottom: 1px solid #808080;
+      background: #c0c0c0;
+      flex-wrap: wrap;
+    }
+    .custom-row.visible { display: flex; }
+    .custom-row label { display: flex; align-items: center; gap: 3px; }
+    .custom-row input { width: 42px; font-size: 11px; border: 2px inset #808080; padding: 1px 3px; }
+    .custom-row button {
+      font-size: 11px; padding: 2px 10px; cursor: pointer;
+      background: #c0c0c0; border: 2px solid; border-color: #fff #808080 #808080 #fff;
+    }
+    .custom-row button:active { border-color: #808080 #fff #fff #808080; }
+
+    /* Content */
+    .content { padding: 6px; }
+
+    /* Status panel */
+    .status-panel {
+      border: 2px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+      padding: 5px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .led {
+      background: #000000;
+      color: #ff0000;
+      font-family: 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 2px 6px;
+      min-width: 52px;
+      text-align: right;
+      border: 2px solid;
+      border-color: #808080 #c0c0c0 #c0c0c0 #808080;
+    }
+    .smiley-btn {
+      font-size: 20px;
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+    }
+    .smiley-btn:active { border-color: #808080 #ffffff #ffffff #808080; }
+
+    /* Grid */
+    .grid-wrap {
+      border: 2px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+      display: block;
+      overflow: auto;
+      max-width: calc(100vw - 32px);
+    }
+    .grid { display: grid; }
+    .cell {
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: bold;
+      cursor: pointer;
+      border: 2px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+      background: #c0c0c0;
+      line-height: 1;
+    }
+    .cell.open { border: 1px solid #808080; cursor: default; }
+    .cell.mine-hit { background: #ff0000; animation: explode 0.5s ease-out; }
+    .cell.hint-hl { background: #ffff44 !important; }
+    .cell.replay-hl { background: #ffe066; }
+    .cell.pressing {
+      background: #a8a8a8;
+      transform: scale(0.88);
+      transition: transform 0.1s;
+    }
+    .cell { touch-action: none; }
+
+    @keyframes explode {
+      0%   { background: #ff0000; transform: scale(1); }
+      40%  { background: #ff8800; transform: scale(1.4); }
+      100% { background: #ff0000; transform: scale(1); }
+    }
+
+    .n1 { color: #0000ff; }
+    .n2 { color: #007b00; }
+    .n3 { color: #ff0000; }
+    .n4 { color: #00007b; }
+    .n5 { color: #7b0000; }
+    .n6 { color: #007b7b; }
+    .n7 { color: #000000; }
+    .n8 { color: #808080; }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .act-btn {
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+    }
+    .act-btn:active { border-color: #808080 #ffffff #ffffff #808080; }
+    .act-btn.on {
+      border-color: #808080 #ffffff #ffffff #808080;
+      background: #e06000;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    /* Flag mode indicator banner */
+    .flag-indicator {
+      display: none;
+      margin-top: 5px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e06000;
+      color: #ffffff;
+      text-align: center;
+      border: 2px solid;
+      border-color: #ff9940 #803000 #803000 #ff9940;
+      letter-spacing: 0.5px;
+    }
+    .flag-indicator.visible { display: block; }
+
+    /* High score panel */
+    .hs-panel {
+      display: none;
+      margin-top: 6px;
+      border: 2px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+      padding: 5px 6px;
+      font-size: 11px;
+    }
+    .hs-panel.visible { display: block; }
+    .hs-table { width: 100%; border-collapse: collapse; }
+    .hs-table th { text-align: left; padding: 2px 6px; border-bottom: 1px solid #808080; color: #00007b; }
+    .hs-table td { padding: 2px 8px; }
+    .hs-record { font-weight: bold; color: #007b00; }
+    .hs-footer { text-align: right; margin-top: 4px; }
+
+    /* Confetti canvas */
+    #confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+    /* Win message */
+    .win-msg {
+      display: none;
+      margin-top: 5px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #00007b;
+      border: 1px solid #808080;
+      padding: 3px;
+      background: #ffffcc;
+    }
+    .win-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">💣 マインスイーパー PLUS</div>
+
+  <div class="diff-bar">
+    <button class="diff-btn active" data-diff="beginner">初級</button>
+    <button class="diff-btn" data-diff="intermediate">中級</button>
+    <button class="diff-btn" data-diff="expert">上級</button>
+    <button class="diff-btn" data-diff="custom">カスタム</button>
+  </div>
+
+  <div class="custom-row" id="custom-row">
+    <label>縦 <input type="number" id="c-rows" value="9" min="5" max="30"></label>
+    <label>横 <input type="number" id="c-cols" value="9" min="5" max="50"></label>
+    <label>地雷 <input type="number" id="c-mines" value="10" min="1"></label>
+    <button id="c-apply">適用</button>
+  </div>
+
+  <div class="content">
+    <div class="status-panel">
+      <div class="led" id="led-mines">010</div>
+      <div class="smiley-btn" id="smiley" title="リセット">🙂</div>
+      <div class="led" id="led-timer">000</div>
+    </div>
+
+    <div class="grid-wrap">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="flag-indicator" id="flag-indicator">🚩 旗モード ON — クリックで旗を立てます / 右クリックで開きます</div>
+    <div class="win-msg" id="win-msg"></div>
+
+    <div class="action-bar">
+      <button class="act-btn" id="hint-btn">💡 ヒント</button>
+      <button class="act-btn" id="flag-btn">🚩 旗モード</button>
+
+      <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
+      <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
+    </div>
+
+    <div class="hs-panel" id="hs-panel">
+      <table class="hs-table">
+        <tr><th>難易度</th><th>ベストタイム</th></tr>
+        <tr><td>初級 (9×9, 10個)</td>  <td class="hs-record" id="hs-beginner">--</td></tr>
+        <tr><td>中級 (16×16, 40個)</td><td class="hs-record" id="hs-intermediate">--</td></tr>
+        <tr><td>上級 (16×30, 99個)</td><td class="hs-record" id="hs-expert">--</td></tr>
+      </table>
+      <div class="hs-footer">
+        <button class="act-btn" id="clear-hs" style="font-size:10px;padding:2px 6px;">記録をリセット</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DIFF = {
+    beginner:     { r: 9,  c: 9,  m: 10  },
+    intermediate: { r: 16, c: 16, m: 40  },
+    expert:       { r: 16, c: 30, m: 99  },
+  };
+
+  let ROWS = 9, COLS = 9, MINES = 10, currentDiff = 'beginner';
+  let board, revealed, flagged, state, firstClick, timerID, secs, flagCount, hitR, hitC;
+  let flagMode = false;
+  let replayMode = false;
+  let pressTimer = null, longPressed = false;
+
+  const gridEl   = document.getElementById('grid');
+  const smileyEl = document.getElementById('smiley');
+  const ledM     = document.getElementById('led-mines');
+  const ledT     = document.getElementById('led-timer');
+  const replayBtn = document.getElementById('replay-btn');
+  const winMsgEl = document.getElementById('win-msg');
+  const confCvs  = document.getElementById('confetti');
+
+  function p3(n) { return Math.max(0, Math.min(999, n)).toString().padStart(3, '0'); }
+
+  function init(r, c, m, diff) {
+    ROWS = r; COLS = c; MINES = m;
+    if (diff !== undefined) currentDiff = diff;
+    board    = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+    revealed = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+    flagged  = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+    state = 'ready'; firstClick = true; secs = 0; flagCount = 0; hitR = -1; hitC = -1;
+    replayMode = false;
+    clearInterval(timerID); timerID = null;
+    smileyEl.textContent = '🙂';
+    ledT.textContent = '000';
+    ledM.textContent = p3(MINES);
+    replayBtn.style.display = 'none';
+    replayBtn.textContent = '🔍 地雷配置';
+    confCvs.style.display = 'none';
+    winMsgEl.classList.remove('visible');
+    render();
+  }
+
+  function placeMines(sr, sc) {
+    const safe = new Set();
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const nr = sr + dr, nc = sc + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) safe.add(nr * COLS + nc);
+    }
+    let placed = 0;
+    while (placed < MINES) {
+      const r = Math.floor(Math.random() * ROWS), c = Math.floor(Math.random() * COLS);
+      if (board[r][c] !== -1 && !safe.has(r * COLS + c)) { board[r][c] = -1; placed++; }
+    }
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      if (board[r][c] === -1) continue;
+      let cnt = 0;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] === -1) cnt++;
+      }
+      board[r][c] = cnt;
+    }
+  }
+
+  function bfsReveal(sr, sc) {
+    const q = [[sr, sc]], vis = new Set([sr * COLS + sc]);
+    while (q.length) {
+      const [r, c] = q.shift();
+      if (flagged[r][c]) continue;
+      revealed[r][c] = true;
+      if (board[r][c] === 0) {
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr, nc = c + dc, k = nr * COLS + nc;
+          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !vis.has(k) && !revealed[nr][nc]) {
+            vis.add(k); q.push([nr, nc]);
+          }
+        }
+      }
+    }
+  }
+
+  function checkWin() {
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (board[r][c] !== -1 && !revealed[r][c]) return false;
+    return true;
+  }
+
+  function doReveal(r, c) {
+    if (state === 'lost' || state === 'won') return;
+    if (flagged[r][c] || revealed[r][c]) return;
+    if (firstClick) {
+      firstClick = false; placeMines(r, c); state = 'playing';
+      timerID = setInterval(() => { secs = Math.min(999, secs + 1); ledT.textContent = p3(secs); }, 1000);
+    }
+    if (board[r][c] === -1) {
+      revealed[r][c] = true; hitR = r; hitC = c; state = 'lost';
+      clearInterval(timerID); smileyEl.textContent = '😵';
+      for (let rr = 0; rr < ROWS; rr++) for (let cc = 0; cc < COLS; cc++)
+        if (board[rr][cc] === -1 && !flagged[rr][cc]) revealed[rr][cc] = true;
+      replayBtn.style.display = 'inline-flex';
+    } else {
+      bfsReveal(r, c);
+      if (checkWin()) {
+        state = 'won'; clearInterval(timerID); smileyEl.textContent = '😎';
+        for (let rr = 0; rr < ROWS; rr++) for (let cc = 0; cc < COLS; cc++)
+          if (board[rr][cc] === -1) flagged[rr][cc] = true;
+        flagCount = MINES;
+        saveHS();
+        startConfetti();
+        replayBtn.style.display = 'inline-flex';
+        winMsgEl.textContent = `🎉 クリア！ タイム: ${secs}秒`;
+        winMsgEl.classList.add('visible');
+      }
+    }
+    ledM.textContent = p3(MINES - flagCount);
+    render();
+  }
+
+  function doFlag(r, c) {
+    if (state === 'lost' || state === 'won' || revealed[r][c]) return;
+    flagged[r][c] = !flagged[r][c];
+    flagCount += flagged[r][c] ? 1 : -1;
+    ledM.textContent = p3(MINES - flagCount);
+    render();
+  }
+
+  function onClick(r, c) {
+    if (flagMode) doFlag(r, c); else doReveal(r, c);
+  }
+
+  function onRight(e, r, c) {
+    e.preventDefault();
+    if (flagMode) doReveal(r, c); else doFlag(r, c);
+  }
+
+  function render() {
+    gridEl.style.gridTemplateColumns = `repeat(${COLS}, 22px)`;
+    gridEl.innerHTML = '';
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const el = document.createElement('div');
+      el.className = 'cell';
+      el.dataset.r = r; el.dataset.c = c;
+
+      if (revealed[r][c]) {
+        el.classList.add('open');
+        if (board[r][c] === -1) {
+          el.textContent = '💣';
+          if (r === hitR && c === hitC) el.classList.add('mine-hit');
+          else if (replayMode) el.classList.add('replay-hl');
+        } else if (board[r][c] > 0) {
+          el.textContent = board[r][c];
+          el.classList.add('n' + board[r][c]);
+        }
+      } else if (flagged[r][c]) {
+        el.textContent = (state === 'lost' && board[r][c] !== -1) ? '❌' : '🚩';
+        if (replayMode && board[r][c] === -1) el.classList.add('replay-hl');
+      } else if (replayMode && board[r][c] === -1) {
+        el.textContent = '💣';
+        el.classList.add('replay-hl');
+      }
+
+      // デスクトップ操作
+      el.addEventListener('click', () => onClick(r, c));
+      el.addEventListener('contextmenu', e => onRight(e, r, c));
+      el.addEventListener('mousedown', e => {
+        if (e.button === 0 && state === 'playing' && !flagMode && !revealed[r][c] && !flagged[r][c])
+          smileyEl.textContent = '😮';
+      });
+
+      // スマホ操作：タップ→開く、長押し（0.5秒）→旗
+      el.addEventListener('touchstart', e => {
+        e.preventDefault();
+        longPressed = false;
+        el.classList.add('pressing');
+        pressTimer = setTimeout(() => {
+          longPressed = true;
+          el.classList.remove('pressing');
+          doFlag(r, c);
+          if (navigator.vibrate) navigator.vibrate(40);
+        }, 500);
+      }, { passive: false });
+
+      el.addEventListener('touchend', e => {
+        e.preventDefault();
+        el.classList.remove('pressing');
+        clearTimeout(pressTimer);
+        pressTimer = null;
+        if (!longPressed) onClick(r, c);
+        longPressed = false;
+      }, { passive: false });
+
+      el.addEventListener('touchmove', () => {
+        el.classList.remove('pressing');
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }, { passive: true });
+
+      gridEl.appendChild(el);
+    }
+  }
+
+  // ---- High scores ----
+  function saveHS() {
+    if (!['beginner','intermediate','expert'].includes(currentDiff)) return;
+    const key = 'ms_hs_' + currentDiff;
+    const prev = parseInt(localStorage.getItem(key) || '9999');
+    if (secs < prev) localStorage.setItem(key, secs);
+    refreshHSPanel();
+  }
+
+  function refreshHSPanel() {
+    ['beginner','intermediate','expert'].forEach(d => {
+      const el = document.getElementById('hs-' + d);
+      const val = localStorage.getItem('ms_hs_' + d);
+      if (el) el.textContent = val ? val + ' 秒' : '--';
+    });
+  }
+
+  // ---- Hint ----
+  function showHint() {
+    if (state !== 'playing') return;
+    const candidates = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (!revealed[r][c] && !flagged[r][c] && board[r][c] !== -1) candidates.push([r, c]);
+    if (!candidates.length) return;
+    const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+    const el = gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if (el) { el.classList.add('hint-hl'); setTimeout(() => el.classList.remove('hint-hl'), 1800); }
+  }
+
+  // ---- Confetti ----
+  function startConfetti() {
+    confCvs.style.display = 'block';
+    confCvs.width = window.innerWidth; confCvs.height = window.innerHeight;
+    const ctx2 = confCvs.getContext('2d');
+    const colors = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c'];
+    const particles = Array.from({length: 120}, () => ({
+      x: Math.random() * confCvs.width, y: -10,
+      w: Math.random() * 9 + 4, h: Math.random() * 5 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5, vy: Math.random() * 4 + 2,
+      rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.18,
+    }));
+    let frame = 0;
+    function anim() {
+      ctx2.clearRect(0, 0, confCvs.width, confCvs.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        if (p.y > confCvs.height) { p.y = -10; p.x = Math.random() * confCvs.width; }
+        ctx2.save(); ctx2.translate(p.x, p.y); ctx2.rotate(p.rot);
+        ctx2.fillStyle = p.color; ctx2.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx2.restore();
+      });
+      frame++;
+      if (frame < 220) requestAnimationFrame(anim); else confCvs.style.display = 'none';
+    }
+    requestAnimationFrame(anim);
+  }
+
+  // ---- Events ----
+  document.addEventListener('mouseup', () => { if (state === 'playing') smileyEl.textContent = '🙂'; });
+
+  smileyEl.addEventListener('click', () => {
+    if (currentDiff === 'custom') init(ROWS, COLS, MINES, 'custom');
+    else { const d = DIFF[currentDiff]; init(d.r, d.c, d.m, currentDiff); }
+  });
+
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const d = btn.dataset.diff;
+      document.getElementById('custom-row').classList.toggle('visible', d === 'custom');
+      if (d !== 'custom') { const cfg = DIFF[d]; init(cfg.r, cfg.c, cfg.m, d); }
+    });
+  });
+
+  document.getElementById('c-apply').addEventListener('click', () => {
+    const r = Math.min(30, Math.max(5, parseInt(document.getElementById('c-rows').value) || 9));
+    const c = Math.min(50, Math.max(5, parseInt(document.getElementById('c-cols').value) || 9));
+    const maxM = Math.max(1, r * c - 9);
+    const m = Math.min(maxM, Math.max(1, parseInt(document.getElementById('c-mines').value) || 10));
+    init(r, c, m, 'custom');
+  });
+
+  document.getElementById('hint-btn').addEventListener('click', showHint);
+
+  document.getElementById('flag-btn').addEventListener('click', function () {
+    flagMode = !flagMode;
+    this.classList.toggle('on', flagMode);
+    this.textContent = flagMode ? '🚩 旗モード ON' : '🚩 旗モード';
+    document.getElementById('flag-indicator').classList.toggle('visible', flagMode);
+  });
+
+  replayBtn.addEventListener('click', function () {
+    replayMode = !replayMode;
+    this.textContent = replayMode ? '🔍 配置を隠す' : '🔍 地雷配置';
+    render();
+  });
+
+  document.getElementById('hs-btn').addEventListener('click', function () {
+    const panel = document.getElementById('hs-panel');
+    panel.classList.toggle('visible');
+    if (panel.classList.contains('visible')) refreshHSPanel();
+  });
+
+  document.getElementById('clear-hs').addEventListener('click', () => {
+    ['beginner','intermediate','expert'].forEach(d => localStorage.removeItem('ms_hs_' + d));
+    refreshHSPanel();
+  });
+
+  // Start
+  init(9, 9, 10, 'beginner');
+</script>
+</body>
+</html>
