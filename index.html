@@ -224,16 +224,54 @@
       box-shadow: 0 0 14px rgba(255,128,48,0.65);
     }
 
-    /* ===== Flag indicator ===== */
-    .flag-indicator {
-      display: none; margin-top: 6px; padding: 5px 10px;
-      font-size: 12px; font-weight: bold;
-      background: linear-gradient(160deg, #803000 0%, #401800 100%);
-      color: #ffc080; text-align: center;
-      border-radius: 8px; border: 1px solid #ff6020;
-      box-shadow: 0 0 12px rgba(255,96,32,0.5);
+    /* ===== Rules modal ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.78); z-index: 10000;
+      justify-content: center; align-items: center;
+      padding: 16px;
     }
-    .flag-indicator.visible { display: block; }
+    .modal-overlay.visible { display: flex; }
+    .modal-box {
+      background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+      border: 2px solid #7060ff;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+      max-width: 360px; width: 100%;
+      max-height: 88vh; overflow-y: auto;
+      padding: 0;
+    }
+    .modal-title {
+      background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+      color: #3a1a00; font-size: 14px; font-weight: 900;
+      padding: 8px 14px; text-align: center; letter-spacing: 2px;
+      border-radius: 14px 14px 0 0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-close {
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      color: #3a1a00; line-height: 1; padding: 0 4px;
+    }
+    .modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+    .modal-section { margin-bottom: 14px; }
+    .modal-section h3 {
+      color: #f5c842; font-size: 12px; font-weight: 900;
+      margin-bottom: 6px; letter-spacing: 1px;
+      text-shadow: 0 0 8px #f5c842;
+      border-bottom: 1px solid #4030a0; padding-bottom: 4px;
+    }
+    .rule-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 5px; }
+    .rule-icon { font-size: 16px; min-width: 22px; text-align: center; }
+    .num-grid {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-top: 6px;
+    }
+    .num-cell {
+      display: flex; flex-direction: column; align-items: center;
+      background: #0d0820; border: 1px solid #3020a0; border-radius: 6px; padding: 4px 2px;
+      font-size: 11px;
+    }
+    .num-cell .n { font-size: 15px; font-weight: 900; }
+    .num-cell .desc { color: #8878b8; font-size: 10px; margin-top: 1px; }
 
     /* ===== High score panel ===== */
     .hs-panel {
@@ -272,6 +310,55 @@
 <canvas id="stars"></canvas>
 <canvas id="confetti"></canvas>
 
+<!-- ルール説明モーダル -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール説明</span>
+      <button class="modal-close" id="rules-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <h3>🎯 目的</h3>
+        <div class="rule-row"><span class="rule-icon">💣</span><span>盤面に隠れた<strong style="color:#f5c842">地雷をすべて避けながら</strong>、安全なマスを全部開けたらクリア！</span></div>
+      </div>
+
+      <div class="modal-section">
+        <h3>👆 操作方法</h3>
+        <div class="rule-row"><span class="rule-icon">☝️</span><span><strong style="color:#60b8ff">タップ</strong>でマスを開く</span></div>
+        <div class="rule-row"><span class="rule-icon">✋</span><span><strong style="color:#ffa040">長押し（0.5秒）</strong>で旗🚩を立てる／外す</span></div>
+        <div class="rule-row"><span class="rule-icon">🚩</span><span><strong style="color:#ff8030">旗モードON</strong>のとき：タップで旗、長押しで開く（逆になる）</span></div>
+        <div class="rule-row"><span class="rule-icon">😵</span><span>地雷を開けると<strong style="color:#ff6060">ゲームオーバー</strong></span></div>
+      </div>
+
+      <div class="modal-section">
+        <h3>🔢 数字の意味</h3>
+        <p style="margin-bottom:8px;color:#9080c0">開いたマスに表示される数字は、<strong style="color:#f5c842">そのマスのまわり8マス</strong>にある地雷の数！</p>
+        <div class="num-grid">
+          <div class="num-cell"><span class="n n1">1</span><span class="desc">近くに<br>地雷1個</span></div>
+          <div class="num-cell"><span class="n n2">2</span><span class="desc">近くに<br>地雷2個</span></div>
+          <div class="num-cell"><span class="n n3">3</span><span class="desc">近くに<br>地雷3個</span></div>
+          <div class="num-cell"><span class="n" style="color:#888">空白</span><span class="desc">周囲に<br>地雷なし</span></div>
+        </div>
+        <p style="margin-top:8px;color:#9080c0">空白のマスは自動的に周囲も広がって開きます。</p>
+      </div>
+
+      <div class="modal-section">
+        <h3>🗺️ 例：こんな時は安全！</h3>
+        <div class="rule-row"><span class="rule-icon">1️⃣</span><span>「1」のまわりに未開封のマスが1つだけ → そこが地雷！<br><span style="color:#60ff90">→ 旗を立てよう</span></span></div>
+        <div class="rule-row"><span class="rule-icon">✅</span><span>「1」の周囲に旗が1つついている → 残りの閉じたマスは安全！<br><span style="color:#60ff90">→ 安心してタップ</span></span></div>
+      </div>
+
+      <div class="modal-section">
+        <h3>💡 コツ</h3>
+        <div class="rule-row"><span class="rule-icon">🛡️</span><span>最初のタップは絶対に安全（3×3の範囲に地雷なし）</span></div>
+        <div class="rule-row"><span class="rule-icon">💡</span><span>迷ったら「ヒント」ボタンで安全なマスを黄色ハイライト</span></div>
+        <div class="rule-row"><span class="rule-icon">🔍</span><span>ゲーム終了後「地雷配置」で全地雷の位置を確認できる</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="window">
   <div class="titlebar">💣 MINE SWEEPER PLUS 💣</div>
 
@@ -300,7 +387,6 @@
       <div class="grid" id="grid"></div>
     </div>
 
-    <div class="flag-indicator" id="flag-indicator">🚩 旗モード ON — タップで旗 / 長押しで開く</div>
     <div class="win-msg" id="win-msg"></div>
 
     <div class="action-bar">
@@ -308,6 +394,7 @@
       <button class="act-btn" id="flag-btn">🚩 旗モード</button>
       <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
       <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
+      <button class="act-btn" id="rules-btn">📖 ルール</button>
     </div>
 
     <div class="hs-panel" id="hs-panel">
@@ -529,8 +616,9 @@
 
       // スマホ操作：タップ→開く / 長押し(0.5秒)→旗
       el.addEventListener('touchstart', e => {
-        if (e.touches.length > 1) {           // ピンチ操作は無視
+        if (e.touches.length > 1) {           // ピンチ操作は無視・キャンセル
           clearTimeout(pressTimer); pressTimer = null;
+          longPressed = true;                 // ← touchend でのclick呼び出しを防ぐ
           el.classList.remove('pressing'); return;
         }
         e.preventDefault();
@@ -549,16 +637,20 @@
       el.addEventListener('touchend', e => {
         e.preventDefault();
         el.classList.remove('pressing');
+        // pressTimer が null（スクロール/ピンチでキャンセル済み）ならクリックしない
+        const wasTap = pressTimer !== null && !longPressed;
         clearTimeout(pressTimer); pressTimer = null;
-        if (!longPressed) onClick(r, c);
+        if (wasTap) onClick(r, c);
         longPressed = false;
       }, { passive: false });
 
       el.addEventListener('touchmove', e => {
-        if (e.touches.length > 1 || !pressTimer) {  // マルチタッチ or タイマーなし → キャンセル
+        if (e.touches.length > 1) {          // ピンチ検出 → キャンセル
           el.classList.remove('pressing');
-          clearTimeout(pressTimer); pressTimer = null; return;
+          clearTimeout(pressTimer); pressTimer = null;
+          longPressed = true; return;
         }
+        if (!pressTimer) return;
         const t = e.touches[0];
         const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
         if (Math.sqrt(dx * dx + dy * dy) > 10) {   // 10px以上移動したらキャンセル
@@ -628,12 +720,23 @@
   }
 
   // ===== イベント =====
+  // グリッド外で2本目の指が触れた場合もピンチキャンセル（最終安全網）
+  document.addEventListener('touchstart', e => {
+    if (e.touches.length > 1) {
+      clearTimeout(pressTimer); pressTimer = null;
+      longPressed = true;
+      document.querySelectorAll('.cell.pressing').forEach(c => c.classList.remove('pressing'));
+    }
+  }, { passive: true });
+
   document.addEventListener('mouseup', () => { if (state === 'playing') smileyEl.textContent = '🙂'; });
 
-  smileyEl.addEventListener('click', () => {
+  function doReset() {
     if (currentDiff === 'custom') init(ROWS, COLS, MINES, 'custom');
     else { const d = DIFF[currentDiff]; init(d.r, d.c, d.m, currentDiff); }
-  });
+  }
+  smileyEl.addEventListener('click', doReset);
+  smileyEl.addEventListener('touchend', e => { e.preventDefault(); doReset(); }, { passive: false });
 
   document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -658,7 +761,6 @@
     flagMode = !flagMode;
     this.classList.toggle('on', flagMode);
     this.textContent = flagMode ? '🚩 旗モード ON' : '🚩 旗モード';
-    document.getElementById('flag-indicator').classList.toggle('visible', flagMode);
   });
 
   replayBtn.addEventListener('click', function () {
@@ -677,6 +779,11 @@
     ['beginner','intermediate','expert'].forEach(d => localStorage.removeItem('ms_hs_' + d));
     refreshHSPanel();
   });
+
+  const rulesModal = document.getElementById('rules-modal');
+  document.getElementById('rules-btn').addEventListener('click', () => rulesModal.classList.add('visible'));
+  document.getElementById('rules-close').addEventListener('click', () => rulesModal.classList.remove('visible'));
+  rulesModal.addEventListener('click', e => { if (e.target === rulesModal) rulesModal.classList.remove('visible'); });
 
   window.addEventListener('resize', render);
 
