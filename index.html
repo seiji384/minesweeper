@@ -937,8 +937,10 @@
     const vv = window.visualViewport;
     if (!vv) return;
 
-    const scaleRatio = window.innerWidth / vv.width;
-    const isZoomed   = vv.scale > 1.05 || scaleRatio > 1.05;
+    // clientWidth はズームに関係なくレイアウトビューポート幅を返す（iOS 互換）
+    const layoutWidth = document.documentElement.clientWidth || window.innerWidth;
+    const scaleRatio  = layoutWidth / vv.width;
+    const isZoomed    = vv.scale > 1.05 || scaleRatio > 1.05;
 
     if (!isZoomed) {
       // 非ズーム時：CSSデフォルト（position:fixed; bottom:0）に完全リセット
@@ -960,10 +962,14 @@
     const inv   = 1 / scale;
     const barH  = actionBar.offsetHeight || 52; // transformはoffsetHeightに影響しない
 
+    // iOS では window.innerWidth がズーム後の視覚幅を返す場合があるため
+    // clientWidth（レイアウトビューポート幅、ズーム不問）を使う
+    const layoutW = document.documentElement.clientWidth || Math.round(vv.width * scale);
+
     actionBar.style.top             = Math.round(vv.offsetTop + vv.height - barH) + 'px';
     actionBar.style.bottom          = 'auto';
     actionBar.style.left            = Math.round(vv.offsetLeft) + 'px';
-    actionBar.style.width           = window.innerWidth + 'px'; // レイアウト幅に広げてからスケール
+    actionBar.style.width           = layoutW + 'px'; // ページ本来の幅でボタンを横並び配置
     actionBar.style.right           = 'auto';
     actionBar.style.transform       = `scale(${inv})`;
     actionBar.style.transformOrigin = 'bottom left'; // 左下基点でスケール → 幅・位置がズレない
