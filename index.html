@@ -542,14 +542,31 @@
     return true;
   }
 
+  // ズームをリセットしてからコールバックを実行する
+  function resetZoomThen(cb) {
+    const vv = window.visualViewport;
+    if (!vv || vv.scale <= 1.05) { cb(); return; }
+    // viewport の maximum-scale=1 を一時的に設定するとiOSがズームをリセットする
+    const meta = document.querySelector('meta[name="viewport"]');
+    const orig = meta.content;
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+    setTimeout(() => {
+      meta.content = orig;  // ピンチズームを再び許可
+      cb();
+    }, 350);
+  }
+
   function handleWin() {
     state='won'; clearInterval(timerID); updateSmiley('win');
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]===-1) flagged[r][c]=true;
     flagCount=MINES; ledM.textContent=p3(0);
-    saveHS(); startConfetti();
+    saveHS();
     replayBtn.style.display='inline-flex';
-    winMsgEl.textContent=`✨ クリア！ タイム: ${secs}秒 ✨`;
-    winMsgEl.classList.add('visible');
+    resetZoomThen(() => {
+      startConfetti();
+      winMsgEl.textContent=`✨ クリア！ タイム: ${secs}秒 ✨`;
+      winMsgEl.classList.add('visible');
+    });
   }
 
   function doReveal(r,c) {
@@ -852,6 +869,25 @@
   rulesModal.addEventListener('click',e=>{if(e.target===rulesModal)rulesModal.classList.remove('visible');});
 
   window.addEventListener('resize',render);
+
+  // ===== Visual Viewport API：ズーム時もバーを画面下部に固定 =====
+  const actionBar = document.querySelector('.action-bar');
+  function fixActionBar() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    // 視覚ビューポートの下端に合わせて縦位置を調整
+    const dy = Math.round(vv.offsetTop + vv.height - window.innerHeight);
+    // 視覚ビューポートの横位置・幅に合わせる
+    actionBar.style.left   = `${vv.offsetLeft}px`;
+    actionBar.style.width  = `${vv.width}px`;
+    actionBar.style.right  = 'auto';
+    actionBar.style.transform = `translateY(${dy}px)`;
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fixActionBar);
+    window.visualViewport.addEventListener('scroll', fixActionBar);
+    fixActionBar();
+  }
 
   init(9,9,10,'beginner');
 </script>
