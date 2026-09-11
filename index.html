@@ -396,9 +396,24 @@
       <button class="act-btn" id="flag-btn">🚩 旗モード</button>
       <button class="act-btn" id="hint-btn">💡 ヒント</button>
       <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
+      <button class="act-btn" id="save-btn">💾 保存</button>
       <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
     </div>
 
+  </div>
+</div>
+
+<!-- セーブデータ復元モーダル -->
+<div class="modal-overlay" id="restore-modal" style="z-index:20000">
+  <div class="modal-box" style="max-width:320px">
+    <div class="modal-title">💾 セーブデータがあります</div>
+    <div class="modal-body" style="text-align:center">
+      <div id="restore-info" style="font-size:13px;margin-bottom:14px;color:#c0b0e8;line-height:1.7"></div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="restore-yes" style="padding:8px 18px;border-radius:10px;background:linear-gradient(160deg,#6040cc,#4020aa);color:#e8d0ff;border:1px solid #9070ee;font-size:13px;font-weight:900;cursor:pointer">▶ 再開する</button>
+        <button id="restore-no"  style="padding:8px 18px;border-radius:10px;background:linear-gradient(160deg,#3a1010,#200808);color:#ff8080;border:1px solid #803030;font-size:13px;font-weight:900;cursor:pointer">✕ 新規スタート</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -935,7 +950,130 @@
     fixActionBar();
   }
 
-  init(9,9,10,'beginner');
+  // ===== セーブ / 復元 =====
+  const SAVE_KEY = 'ms_save_v1';
+
+  function saveGame() {
+    if (state === 'ready') {
+      // まだ1手も打っていない場合は保存しない
+      const btn = document.getElementById('save-btn');
+      const orig = btn.textContent;
+      btn.textContent = '⚠️ ゲーム開始後に保存';
+      setTimeout(() => { btn.textContent = orig; }, 1800);
+      return;
+    }
+    const data = {
+      ROWS, COLS, MINES, currentDiff,
+      board:    board.map(row => row.slice()),
+      revealed: revealed.map(row => row.slice()),
+      flagged:  flagged.map(row => row.slice()),
+      state, firstClick, secs, flagCount,
+      chancesLeft, flagMode, currentChar,
+      hitR: hitR ?? -1, hitC: hitC ?? -1,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    const btn = document.getElementById('save-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✅ 保存済み!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  }
+
+  function restoreGame(data) {
+    ROWS = data.ROWS; COLS = data.COLS; MINES = data.MINES;
+    currentDiff = data.currentDiff;
+    board     = data.board.map(row => row.slice());
+    revealed  = data.revealed.map(row => row.slice());
+    flagged   = data.flagged.map(row => row.slice());
+    state     = data.state;
+    firstClick= data.firstClick;
+    secs      = data.secs;
+    flagCount = data.flagCount;
+    chancesLeft = data.chancesLeft ?? BOMB_CHANCES;
+    hitR      = data.hitR ?? -1;
+    hitC      = data.hitC ?? -1;
+    currentChar = data.currentChar || 'default';
+
+    // タイマーリセット
+    clearInterval(timerID); timerID = null;
+    ledT.textContent = p3(secs);
+    ledM.textContent = p3(Math.max(0, MINES - flagCount));
+    confCvs.style.display = 'none';
+    winMsgEl.classList.remove('visible');
+    replayBtn.style.display = 'none';
+    replayMode = false;
+
+    // 難易度ボタン
+    document.querySelectorAll('.diff-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.diff === currentDiff));
+
+    // キャラクターボタン
+    document.querySelectorAll('.char-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.char === currentChar));
+
+    // 旗モードボタン
+    flagMode = data.flagMode;
+    const flagBtnEl = document.getElementById('flag-btn');
+    flagBtnEl.classList.toggle('active', flagMode);
+    flagBtnEl.textContent = flagMode ? '🚩 旗モード ON' : '🚩 旗モード';
+
+    // 表情
+    if (state === 'won')       updateSmiley('win');
+    else if (state === 'lost') updateSmiley('lose');
+    else                       updateSmiley('normal');
+
+    // ゲーム中ならタイマー再開
+    if (state === 'playing') {
+      timerID = setInterval(() => { secs++; ledT.textContent = p3(secs); }, 1000);
+    }
+
+    // 終了状態の表示
+    if (state === 'won') {
+      replayBtn.style.display = 'inline-flex';
+      winMsgEl.textContent = `✨ クリア！ タイム: ${secs}秒 ✨`;
+      winMsgEl.classList.add('visible');
+    } else if (state === 'lost') {
+      replayBtn.style.display = 'inline-flex';
+    }
+
+    render();
+  }
+
+  // 保存ボタン
+  document.getElementById('save-btn').addEventListener('click', saveGame);
+
+  // 復元モーダル
+  const restoreModal = document.getElementById('restore-modal');
+  const savedRaw = localStorage.getItem(SAVE_KEY);
+
+  if (savedRaw) {
+    try {
+      const savedData = JSON.parse(savedRaw);
+      const diffNames = { beginner:'初級', intermediate:'中級', expert:'上級', ultra:'ULTRA', custom:'カスタム' };
+      const dt = new Date(savedData.savedAt);
+      const dateStr = `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('restore-info').innerHTML =
+        `<strong style="color:#f5c842">${diffNames[savedData.currentDiff]||savedData.currentDiff}</strong> &nbsp;|&nbsp; ` +
+        `経過 <strong style="color:#f5c842">${savedData.secs}秒</strong><br>` +
+        `<span style="font-size:11px;color:#7060a0">保存日時: ${dateStr}</span>`;
+      openModal(restoreModal);
+
+      document.getElementById('restore-yes').addEventListener('click', () => {
+        closeModal(restoreModal);
+        restoreGame(savedData);
+      });
+      document.getElementById('restore-no').addEventListener('click', () => {
+        localStorage.removeItem(SAVE_KEY);
+        closeModal(restoreModal);
+        init(9, 9, 10, 'beginner');
+      });
+    } catch(e) {
+      localStorage.removeItem(SAVE_KEY);
+      init(9, 9, 10, 'beginner');
+    }
+  } else {
+    init(9, 9, 10, 'beginner');
+  }
 </script>
 </body>
 </html>
