@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神経衰弱 - ミニゲーム</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 22px; font-weight: bold; padding: 3px 10px;
+  min-width: 64px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+/* Difficulty bar */
+.diff-bar {
+  display: flex; gap: 4px; margin: 8px 8px 4px; justify-content: center;
+}
+.diff-btn {
+  flex: 1; padding: 6px 4px; font-size: 11px; border-radius: 10px; cursor: pointer;
+  background: linear-gradient(160deg, #2a1860 0%, #180a40 100%);
+  color: #8878c0; border: 1px solid #4030a0;
+  font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+  text-align: center;
+}
+.diff-btn.active {
+  background: linear-gradient(160deg, #5a3aaa 0%, #3a1a80 100%);
+  color: #e8d8ff; border-color: #8060d0;
+  box-shadow: 0 0 10px rgba(120,90,255,0.5);
+}
+.diff-btn:active { transform: scale(0.95); }
+
+/* Card grid */
+.card-grid {
+  display: grid; gap: 6px; padding: 4px;
+}
+.card { perspective: 600px; cursor: pointer; touch-action: manipulation; }
+.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.4s; }
+.card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
+.card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.card-front {
+  background: linear-gradient(145deg, #5a3aaa 10%, #3a1a8a 60%, #28106a 100%);
+  border: 1px solid #6048b0; font-size: 20px; color: #6050a0;
+}
+.card-back {
+  background: linear-gradient(145deg, #2a1870 0%, #1a0a50 100%);
+  border: 1px solid #7060c0; transform: rotateY(180deg); font-size: 28px;
+}
+.card.matched .card-back {
+  background: radial-gradient(circle, #3a2a00 0%, #1a1000 100%);
+  border-color: #f5c842;
+  box-shadow: 0 0 12px rgba(245,200,66,0.6);
+}
+
+/* Win message */
+.win-msg {
+  text-align: center; color: #f5c842; font-size: 20px; font-weight: 900;
+  padding: 12px; display: none;
+  text-shadow: 0 0 16px rgba(245,200,66,0.8);
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">🏠</a>
+    <span>🃏 神経衰弱</span>
+    <span style="width:24px"></span>
+  </div>
+
+  <div class="diff-bar">
+    <button class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">かんたん<br>4×4</button>
+    <button class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">ふつう<br>4×6</button>
+    <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">むずかしい<br>6×6</button>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="led-pairs">0</span>
+      <span class="led-label">ペア</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-attempts">0</span>
+      <span class="led-label">挑戦回数</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-time">0:00</span>
+      <span class="led-label">タイム</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="win-msg" id="win-msg">🎉 クリア！</div>
+    <div class="card-grid" id="card-grid"></div>
+  </div>
+</div>
+
+<!-- Action bar -->
+<div class="action-bar">
+  <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
+  <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
+</div>
+
+<!-- Rules modal -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" onclick="closeModal('rules-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>🃏 <strong>神経衰弱</strong>の遊び方</p><br>
+      <p>① カードを2枚めくります</p>
+      <p>② 同じ絵柄なら<span style="color:#f5c842">ペア成立！</span>カードが残ります</p>
+      <p>③ 違う場合はカードが裏返ります</p>
+      <p>④ 全てのペアを見つけたらクリア！</p><br>
+      <p>少ない挑戦回数でクリアするのが目標です。</p>
+    </div>
+  </div>
+</div>
+
+<!-- High score modal -->
+<div class="modal-overlay" id="hs-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" onclick="closeModal('hs-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="hs-body"></div>
+  </div>
+</div>
+
+<!-- Win modal -->
+<div class="modal-overlay" id="win-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🎉 クリア！</span>
+      <button class="modal-close" onclick="closeModal('win-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="win-body"></div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// Confetti
+function startConfetti(){
+  const cv=document.getElementById('confetti');cv.style.display='block';
+  const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));
+  let frame=0;
+  function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}
+  anim();
+}
+
+// Visual Viewport
+const actionBar = document.querySelector('.action-bar');
+function fixActionBar() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const layoutWidth = document.documentElement.clientWidth || window.innerWidth;
+  const scaleRatio = layoutWidth / vv.width;
+  const isZoomed = vv.scale > 1.05 || scaleRatio > 1.05;
+  if (!isZoomed) {
+    actionBar.style.top = actionBar.style.bottom = '';
+    actionBar.style.left = actionBar.style.right = '';
+    actionBar.style.width = actionBar.style.transform = '';
+    actionBar.style.transformOrigin = '';
+    return;
+  }
+  const scale = Math.max(vv.scale, scaleRatio);
+  const inv = 1 / scale;
+  const barH = actionBar.offsetHeight || 52;
+  const layoutW = document.documentElement.clientWidth || Math.round(vv.width * scale);
+  actionBar.style.top = Math.round(vv.offsetTop + vv.height - barH) + 'px';
+  actionBar.style.bottom = 'auto';
+  actionBar.style.left = Math.round(vv.offsetLeft) + 'px';
+  actionBar.style.width = layoutW + 'px';
+  actionBar.style.right = 'auto';
+  actionBar.style.transform = `scale(${inv})`;
+  actionBar.style.transformOrigin = 'bottom left';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixActionBar);
+  window.visualViewport.addEventListener('scroll', fixActionBar);
+  fixActionBar();
+}
+
+// Game state
+const EMOJIS = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦆'];
+const DIFF = {
+  easy:   { cols: 4, rows: 4, pairs: 8 },
+  medium: { cols: 4, rows: 6, pairs: 12 },
+  hard:   { cols: 6, rows: 6, pairs: 18 }
+};
+
+let currentDiff = 'easy';
+let cards = [];
+let flipped = [];
+let matched = 0;
+let attempts = 0;
+let locked = false;
+let timerInterval = null;
+let startTime = null;
+let elapsed = 0;
+
+function setDifficulty(d) {
+  currentDiff = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
+  newGame();
+}
+
+function newGame() {
+  clearInterval(timerInterval);
+  elapsed = 0; matched = 0; attempts = 0; flipped = []; locked = false;
+  updateLEDs();
+  document.getElementById('win-msg').style.display = 'none';
+  buildGrid();
+  startTimer();
+}
+
+function buildGrid() {
+  const cfg = DIFF[currentDiff];
+  const emojiSet = EMOJIS.slice(0, cfg.pairs);
+  const deck = [...emojiSet, ...emojiSet];
+  // Fisher-Yates shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  cards = deck.map((emoji, idx) => ({ emoji, id: idx, matched: false }));
+
+  const grid = document.getElementById('card-grid');
+  grid.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
+
+  // Compute card size
+  const maxW = 444; // window max-width minus padding
+  const cellW = Math.floor((maxW - cfg.cols * 6) / cfg.cols);
+  const cardSize = Math.max(50, cellW);
+  const fontSize = Math.max(20, Math.floor(cardSize * 0.45));
+
+  grid.innerHTML = '';
+  cards.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.style.width = cardSize + 'px';
+    el.style.height = cardSize + 'px';
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-front" style="font-size:${Math.floor(cardSize*0.35)}px">？</div>
+        <div class="card-back" style="font-size:${fontSize}px">${card.emoji}</div>
+      </div>`;
+    el.addEventListener('click', () => onCardClick(i, el));
+    el.addEventListener('touchend', (e) => { e.preventDefault(); onCardClick(i, el); });
+    grid.appendChild(el);
+  });
+}
+
+function onCardClick(idx, el) {
+  if (locked || cards[idx].matched || flipped.includes(idx) || el.classList.contains('flipped')) return;
+  el.classList.add('flipped');
+  flipped.push(idx);
+
+  if (flipped.length === 2) {
+    locked = true;
+    attempts++;
+    document.getElementById('led-attempts').textContent = attempts;
+    const [a, b] = flipped;
+    const els = document.getElementById('card-grid').children;
+    if (cards[a].emoji === cards[b].emoji) {
+      // Match
+      setTimeout(() => {
+        els[a].classList.add('matched');
+        els[b].classList.add('matched');
+        cards[a].matched = true;
+        cards[b].matched = true;
+        matched++;
+        document.getElementById('led-pairs').textContent = matched;
+        flipped = []; locked = false;
+        if (matched === DIFF[currentDiff].pairs) onWin();
+      }, 400);
+    } else {
+      // No match
+      setTimeout(() => {
+        els[a].classList.remove('flipped');
+        els[b].classList.remove('flipped');
+        flipped = []; locked = false;
+      }, 1000);
+    }
+  }
+}
+
+function startTimer() {
+  startTime = Date.now() - elapsed * 1000;
+  timerInterval = setInterval(() => {
+    elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    document.getElementById('led-time').textContent = m + ':' + String(s).padStart(2, '0');
+  }, 500);
+}
+
+function updateLEDs() {
+  document.getElementById('led-pairs').textContent = matched;
+  document.getElementById('led-attempts').textContent = attempts;
+  document.getElementById('led-time').textContent = '0:00';
+}
+
+function onWin() {
+  clearInterval(timerInterval);
+  startConfetti();
+  // Save high score
+  const key = 'memory_hs_' + currentDiff;
+  let scores = JSON.parse(localStorage.getItem(key) || '[]');
+  scores.push({ attempts, time: elapsed });
+  scores.sort((a, b) => a.attempts - b.attempts || a.time - b.time);
+  scores = scores.slice(0, 5);
+  localStorage.setItem(key, JSON.stringify(scores));
+
+  const min = Math.floor(elapsed / 60), sec = elapsed % 60;
+  document.getElementById('win-body').innerHTML = `
+    <p style="font-size:16px;color:#f5c842;text-align:center;margin-bottom:12px">🎉 クリア！</p>
+    <p>挑戦回数: <strong style="color:#ff44aa">${attempts}</strong></p>
+    <p>タイム: <strong style="color:#ff44aa">${min}:${String(sec).padStart(2,'0')}</strong></p>
+    <p>ペア数: <strong style="color:#ff44aa">${matched}</strong></p>
+    <br><button class="act-btn" style="width:100%;padding:10px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
+  `;
+  showModal('win-modal');
+}
+
+function showHighScore() {
+  const diffs = ['easy','medium','hard'];
+  const names = { easy:'かんたん', medium:'ふつう', hard:'むずかしい' };
+  let html = '';
+  diffs.forEach(d => {
+    const scores = JSON.parse(localStorage.getItem('memory_hs_' + d) || '[]');
+    html += `<p style="color:#f5c842;font-weight:bold;margin:8px 0 4px">${names[d]}</p>`;
+    if (scores.length === 0) {
+      html += `<p style="color:#6050a0">記録なし</p>`;
+    } else {
+      scores.forEach((s, i) => {
+        const min = Math.floor(s.time/60), sec = s.time%60;
+        html += `<p>${i+1}位: <span style="color:#ff44aa">${s.attempts}回</span> ${min}:${String(sec).padStart(2,'0')}</p>`;
+      });
+    }
+  });
+  document.getElementById('hs-body').innerHTML = html;
+  showModal('hs-modal');
+}
+
+function showModal(id) { document.getElementById(id).classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('visible'); });
+});
+
+// Init
+newGame();
+</script>
+</body>
+</html>

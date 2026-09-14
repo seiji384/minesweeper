@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>モグラ叩き</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 22px; font-weight: bold; padding: 3px 10px;
+  min-width: 64px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+
+/* Whack-a-mole specific */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 10px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+.hole-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.hole {
+  background: radial-gradient(ellipse, #1a0a28 0%, #0a0418 100%);
+  border: 2px solid #3020a0;
+  border-radius: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 4px 16px rgba(0,0,0,0.8), 0 0 10px rgba(48,32,160,0.3);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.hole::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 10%; right: 10%;
+  height: 40%;
+  background: radial-gradient(ellipse, rgba(48,32,100,0.6) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.mole {
+  font-size: 40px;
+  transform: scale(0) translateY(10px);
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  cursor: pointer;
+  z-index: 2;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(180,100,255,0.5));
+}
+.mole.up { transform: scale(1) translateY(0); }
+.mole.hit { transform: scale(1.4) translateY(-4px); filter: brightness(2) drop-shadow(0 0 12px #ffe870); }
+
+.float-text {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffe870;
+  font-size: 16px;
+  font-weight: 900;
+  text-shadow: 0 0 10px #f5c842;
+  pointer-events: none;
+  z-index: 100;
+  animation: floatUp 0.8s ease-out forwards;
+}
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-40px); }
+}
+
+#start-overlay {
+  text-align: center;
+  padding: 20px 10px 10px;
+  color: #b898ff;
+}
+#start-overlay .big-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffe870;
+  text-shadow: 0 0 20px rgba(255,232,112,0.7);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+#start-overlay .sub {
+  font-size: 13px;
+  color: #8070c0;
+  margin-bottom: 12px;
+}
+#start-overlay button {
+  padding: 10px 30px;
+  font-size: 15px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #5a30a0 0%, #3a2080 100%);
+  color: #ffe870;
+  border: 2px solid #f5c842;
+  box-shadow: 0 0 20px rgba(245,200,66,0.3), 0 4px 12px rgba(0,0,0,0.6);
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 2px;
+  touch-action: manipulation;
+}
+
+.miss-row {
+  text-align: center;
+  margin: 4px 0;
+  font-size: 18px;
+  letter-spacing: 4px;
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <span>🔨</span>
+    <span>モグラ叩き</span>
+    <span>🔨</span>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="score-led">0</span>
+      <span class="led-label">スコア</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="time-led">30</span>
+      <span class="led-label">残り時間</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="level-led">1</span>
+      <span class="led-label">レベル</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="miss-row" id="miss-row">❤️❤️❤️</div>
+
+    <div id="start-overlay">
+      <div class="big-title">モグラ叩き</div>
+      <div class="sub">モグラをタップして叩こう！</div>
+      <button onclick="startGame()">🔨 スタート</button>
+    </div>
+
+    <div class="grid" id="grid" style="display:none;">
+      <!-- Holes generated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Game Over Modal -->
+<div class="modal-overlay" id="gameover-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🎮 ゲームオーバー</span>
+      <button class="modal-close" onclick="closeModal('gameover-modal');showStart()">✕</button>
+    </div>
+    <div class="modal-body" id="gameover-body"></div>
+  </div>
+</div>
+
+<!-- Rules Modal -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" onclick="closeModal('rules-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>🦔 <strong>モグラ叩き</strong></p><br>
+      <p>・モグラをタップして叩こう</p>
+      <p>・叩くと <strong>+10</strong> ポイント</p>
+      <p>・30秒間でどれだけ叩けるか？</p>
+      <p>・モグラを見逃すとミス（❤️を失う）</p>
+      <p>・❤️が0になるとゲームオーバー</p>
+      <p>・10ヒットでレベルアップ！</p>
+      <p>・レベルが上がると速くなります</p>
+    </div>
+  </div>
+</div>
+
+<!-- Hi Score Modal -->
+<div class="modal-overlay" id="hiscore-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" onclick="closeModal('hiscore-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="hiscore-body"></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="openModal('rules-modal')">📖 ルール</button>
+  <button class="act-btn" onclick="restartGame()">🔄 スタート</button>
+  <button class="act-btn" onclick="showHiScore()">🏆 ハイスコア</button>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// Visual Viewport fix
+const actionBar = document.querySelector('.action-bar');
+function fixActionBar() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const layoutWidth = document.documentElement.clientWidth || window.innerWidth;
+  const scaleRatio = layoutWidth / vv.width;
+  const isZoomed = vv.scale > 1.05 || scaleRatio > 1.05;
+  if (!isZoomed) {
+    actionBar.style.top = actionBar.style.bottom = '';
+    actionBar.style.left = actionBar.style.right = '';
+    actionBar.style.width = actionBar.style.transform = '';
+    actionBar.style.transformOrigin = '';
+    return;
+  }
+  const scale = Math.max(vv.scale, scaleRatio);
+  const inv = 1 / scale;
+  const barH = actionBar.offsetHeight || 52;
+  const layoutW = document.documentElement.clientWidth || Math.round(vv.width * scale);
+  actionBar.style.top = Math.round(vv.offsetTop + vv.height - barH) + 'px';
+  actionBar.style.bottom = 'auto';
+  actionBar.style.left = Math.round(vv.offsetLeft) + 'px';
+  actionBar.style.width = layoutW + 'px';
+  actionBar.style.right = 'auto';
+  actionBar.style.transform = `scale(${inv})`;
+  actionBar.style.transformOrigin = 'bottom left';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixActionBar);
+  window.visualViewport.addEventListener('scroll', fixActionBar);
+  fixActionBar();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+// Game state
+const NUM_HOLES = 9;
+const MOLES = ['🦔','🐭','🦫','🐹'];
+let score = 0, level = 1, hits = 0, misses = 0, timeLeft = 30;
+let gameRunning = false;
+let holeTimers = [];
+let countdownTimer = null;
+let moleTimers = [];
+
+const grid = document.getElementById('grid');
+let holes = [];
+
+function buildGrid() {
+  grid.innerHTML = '';
+  holes = [];
+  for (let i = 0; i < NUM_HOLES; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'hole-wrap';
+
+    const hole = document.createElement('div');
+    hole.className = 'hole';
+
+    const mole = document.createElement('div');
+    mole.className = 'mole';
+    mole.textContent = MOLES[0];
+
+    hole.appendChild(mole);
+    wrap.appendChild(hole);
+    grid.appendChild(wrap);
+
+    const holeData = { el: hole, mole: mole, up: false, timer: null, emoji: MOLES[0] };
+    holes.push(holeData);
+
+    hole.addEventListener('click', () => whack(i));
+    hole.addEventListener('touchend', (e) => { e.preventDefault(); whack(i); }, {passive:false});
+  }
+}
+
+function getMoleVisibleTime() {
+  return Math.max(700, 1500 - (level - 1) * 120);
+}
+
+function getSpawnInterval() {
+  return Math.max(400, 900 - (level - 1) * 80);
+}
+
+function getMaxMolesUp() {
+  return Math.min(4, 1 + Math.floor((level - 1) / 2));
+}
+
+function countMolesUp() {
+  return holes.filter(h => h.up).length;
+}
+
+function popMole() {
+  if (!gameRunning) return;
+  if (countMolesUp() >= getMaxMolesUp()) return;
+
+  const downHoles = holes.map((h,i)=>({h,i})).filter(({h})=>!h.up);
+  if (downHoles.length === 0) return;
+
+  const {h, i} = downHoles[Math.floor(Math.random() * downHoles.length)];
+  const emojiIdx = Math.floor(Math.random() * MOLES.length);
+  h.emoji = MOLES[emojiIdx];
+  h.mole.textContent = h.emoji;
+  h.up = true;
+  h.mole.classList.add('up');
+
+  h.timer = setTimeout(() => {
+    if (h.up) {
+      // Missed
+      hideMole(i, true);
+    }
+  }, getMoleVisibleTime());
+}
+
+function hideMole(i, missed) {
+  const h = holes[i];
+  if (!h.up) return;
+  h.up = false;
+  clearTimeout(h.timer);
+  h.mole.classList.remove('up', 'hit');
+
+  if (missed && gameRunning) {
+    misses++;
+    updateMissRow();
+    if (misses >= 3) {
+      endGame();
+    }
+  }
+}
+
+function whack(i) {
+  if (!gameRunning) return;
+  const h = holes[i];
+  if (!h.up) return;
+
+  h.up = false;
+  clearTimeout(h.timer);
+  h.mole.classList.add('hit');
+
+  // Float text
+  const wrap = h.el.parentElement;
+  const ft = document.createElement('div');
+  ft.className = 'float-text';
+  ft.textContent = '+10';
+  wrap.appendChild(ft);
+  ft.addEventListener('animationend', () => ft.remove());
+
+  setTimeout(() => {
+    h.mole.classList.remove('up', 'hit');
+  }, 200);
+
+  score += 10;
+  hits++;
+
+  const newLevel = Math.floor(hits / 10) + 1;
+  if (newLevel > level) level = newLevel;
+
+  updateLEDs();
+}
+
+function updateMissRow() {
+  const hearts = 3 - misses;
+  document.getElementById('miss-row').textContent =
+    '❤️'.repeat(Math.max(0, hearts)) + '🖤'.repeat(Math.max(0, misses));
+}
+
+function updateLEDs() {
+  document.getElementById('score-led').textContent = score;
+  document.getElementById('time-led').textContent = timeLeft;
+  document.getElementById('level-led').textContent = level;
+}
+
+function showStart() {
+  document.getElementById('start-overlay').style.display = 'block';
+  grid.style.display = 'none';
+}
+
+function startGame() {
+  score = 0; level = 1; hits = 0; misses = 0; timeLeft = 30;
+  gameRunning = true;
+
+  document.getElementById('start-overlay').style.display = 'none';
+  grid.style.display = 'grid';
+  buildGrid();
+  updateLEDs();
+  updateMissRow();
+
+  // Mole spawning loop
+  function spawnLoop() {
+    if (!gameRunning) return;
+    popMole();
+    const nextSpawn = getSpawnInterval() + Math.random() * 300;
+    moleTimers.push(setTimeout(spawnLoop, nextSpawn));
+  }
+  spawnLoop();
+
+  // Countdown
+  countdownTimer = setInterval(() => {
+    if (!gameRunning) { clearInterval(countdownTimer); return; }
+    timeLeft--;
+    updateLEDs();
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }, 1000);
+}
+
+function restartGame() {
+  closeModal('gameover-modal');
+  clearAll();
+  startGame();
+}
+
+function clearAll() {
+  gameRunning = false;
+  clearInterval(countdownTimer);
+  moleTimers.forEach(t => clearTimeout(t));
+  moleTimers = [];
+  holes.forEach((h,i) => hideMole(i, false));
+}
+
+function endGame() {
+  clearAll();
+  const best = Math.max(parseInt(localStorage.getItem('wam_best')||'0'), score);
+  localStorage.setItem('wam_best', best);
+  document.getElementById('gameover-body').innerHTML = `
+    <p style="text-align:center;margin-bottom:12px;font-size:16px;color:#ffe870;">🎉 タイムアップ！</p>
+    <p style="text-align:center;font-size:13px;color:#8070c0;">スコア</p>
+    <p style="text-align:center;font-size:36px;color:#ff44aa;text-shadow:0 0 15px #ff44aa;font-family:'Courier New';">${score}</p>
+    <p style="text-align:center;font-size:11px;color:#6050a0;margin-top:4px;">ベスト: ${best}</p>
+    <div style="text-align:center;margin-top:16px;">
+      <button onclick="closeModal('gameover-modal');restartGame();" style="padding:8px 24px;border-radius:16px;background:linear-gradient(160deg,#5a30a0,#3a2080);color:#ffe870;border:2px solid #f5c842;font-weight:900;font-size:14px;cursor:pointer;touch-action:manipulation;">🔄 もう一度</button>
+    </div>
+  `;
+  openModal('gameover-modal');
+}
+
+function showHiScore() {
+  const b = parseInt(localStorage.getItem('wam_best')||'0');
+  document.getElementById('hiscore-body').innerHTML = `
+    <p style="text-align:center;margin-bottom:10px;">🏆 最高スコア</p>
+    <p style="text-align:center;font-size:32px;color:#ff44aa;text-shadow:0 0 15px #ff44aa;font-family:'Courier New';">${b}</p>
+    <p style="text-align:center;margin-top:8px;color:#6050a0;font-size:11px;">モグラ叩き (30秒)</p>
+  `;
+  openModal('hiscore-modal');
+}
+
+// Init
+updateLEDs();
+</script>
+</body>
+</html>

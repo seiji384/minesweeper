@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>⚡ 反応速度テスト</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 22px; font-weight: bold; padding: 3px 10px;
+  min-width: 64px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+/* Game-specific */
+#tap-zone {
+  margin: 8px;
+  border-radius: 16px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s, box-shadow 0.1s;
+  border: 3px solid #3020a0;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+}
+#tap-zone.waiting {
+  background: linear-gradient(160deg, #0a0830 0%, #050515 100%);
+  border-color: #2010a0;
+}
+#tap-zone.ready {
+  background: linear-gradient(160deg, #003300 0%, #001a00 100%);
+  border-color: #00ff44;
+  box-shadow: 0 0 40px rgba(0,255,68,0.4), 0 0 80px rgba(0,255,68,0.2);
+  animation: readyPulse 0.3s ease;
+}
+#tap-zone.result {
+  background: linear-gradient(160deg, #1a0a30 0%, #0d0520 100%);
+  border-color: #8060ff;
+  box-shadow: 0 0 20px rgba(112,90,255,0.4);
+}
+#tap-zone.foul {
+  background: linear-gradient(160deg, #300000 0%, #150000 100%);
+  border-color: #ff2020;
+  box-shadow: 0 0 40px rgba(255,32,32,0.4);
+  animation: foulShake 0.3s ease;
+}
+#tap-zone.idle {
+  background: linear-gradient(160deg, #0d0828 0%, #060414 100%);
+  border-color: #3020a0;
+}
+@keyframes readyPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+@keyframes foulShake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+#tap-label {
+  font-size: 26px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.3;
+  pointer-events: none;
+}
+#tap-sub {
+  font-size: 12px;
+  margin-top: 8px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.dots-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 6px;
+}
+.dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #2a1a50;
+  border: 2px solid #4030a0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: bold; color: #6050a0;
+  transition: all 0.2s;
+}
+.dot.done { background: linear-gradient(160deg, #604020 0%, #402810 100%); border-color: #f5c842; color: #ffe870; box-shadow: 0 0 8px rgba(245,200,66,0.5); }
+.dot.best { background: linear-gradient(160deg, #003300 0%, #001a00 100%); border-color: #00ff44; color: #00ff44; box-shadow: 0 0 8px rgba(0,255,68,0.5); }
+.history-list {
+  margin: 4px 8px;
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #3020a0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.history-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-bottom: 1px solid #2010a0;
+  font-size: 12px;
+  color: #a090d0;
+}
+.history-row:last-child { border-bottom: none; }
+.history-row .attempt-num { color: #6050a0; width: 24px; font-size: 10px; }
+.history-row .attempt-ms { color: #ff44aa; font-family: 'Courier New', monospace; font-weight: bold; min-width: 60px; text-shadow: 0 0 6px #ff44aa; }
+.history-row .attempt-rank { color: #ffe870; font-size: 11px; }
+.avg-display {
+  text-align: center;
+  padding: 6px;
+  font-size: 12px;
+  color: #8070b0;
+}
+.avg-display strong { color: #d0c0ff; font-size: 14px; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">🏠</a>
+    <span>⚡ 反応速度テスト</span>
+    <span style="width:24px"></span>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="led-best">---</span>
+      <span class="led-label">ベスト (ms)</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-round" style="color:#44ddff;text-shadow:0 0 10px #44ddff,0 0 20px #44ddff">0/5</span>
+      <span class="led-label">ラウンド</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-last">---</span>
+      <span class="led-label">最後 (ms)</span>
+    </div>
+  </div>
+
+  <div class="dots-row" id="dots-row">
+    <div class="dot" id="dot-1">1</div>
+    <div class="dot" id="dot-2">2</div>
+    <div class="dot" id="dot-3">3</div>
+    <div class="dot" id="dot-4">4</div>
+    <div class="dot" id="dot-5">5</div>
+  </div>
+
+  <div id="tap-zone" class="idle" onclick="handleTap()">
+    <div id="tap-label" style="color:#6050a0">タップしてスタート</div>
+    <div id="tap-sub" style="color:#4030a0">反応速度を測定します</div>
+  </div>
+
+  <div class="avg-display" id="avg-display"></div>
+
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="showModal('rulesModal')">📖 ルール</button>
+  <button class="act-btn" onclick="resetGame()">🔄 リセット</button>
+  <button class="act-btn" onclick="showHSModal()">🏆 ハイスコア</button>
+</div>
+
+<!-- Rules Modal -->
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" onclick="hideModal('rulesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong style="color:#ffe870">⚡ 反応速度テスト</strong></p><br>
+      <p><strong style="color:#d0c0ff">遊び方：</strong></p>
+      <ul style="margin-left:16px; margin-top:6px;">
+        <li>画面をタップしてスタート</li>
+        <li>パネルが暗い間は<strong>待て</strong>！</li>
+        <li>パネルが<span style="color:#00ff44">緑に光った</span>らすぐタップ！</li>
+        <li>反応時間がミリ秒で表示される</li>
+        <li>5回プレイして平均を出そう</li>
+      </ul><br>
+      <p><strong style="color:#d0c0ff">ランキング：</strong></p>
+      <ul style="margin-left:16px; margin-top:6px;">
+        <li>〜200ms: <strong style="color:#ffe870">神業！</strong></li>
+        <li>201〜300ms: <strong style="color:#00ff44">超速！</strong></li>
+        <li>301〜400ms: <strong style="color:#44ddff">速い！</strong></li>
+        <li>401〜500ms: <strong style="color:#b898ff">普通</strong></li>
+        <li>500ms〜: もっと練習</li>
+      </ul><br>
+      <p style="color:#ff4444">⚠️ 早すぎると「フライング！」になります</p>
+    </div>
+  </div>
+</div>
+
+<!-- High Score Modal -->
+<div class="modal-overlay" id="hsModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" onclick="hideModal('hsModal')">✕</button>
+    </div>
+    <div class="modal-body" id="hs-body">
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+function startConfetti(){
+  const cv=document.getElementById('confetti');cv.style.display='block';
+  const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));
+  let frame=0;
+  function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}
+  anim();
+}
+
+const HS_KEY = 'reaction_hs_v1';
+function loadHS() { try { return JSON.parse(localStorage.getItem(HS_KEY))||[]; } catch(e) { return []; } }
+function saveHS(score) {
+  const hs = loadHS();
+  hs.push({score, date: new Date().toLocaleDateString('ja-JP')});
+  hs.sort((a,b) => a.score - b.score);
+  hs.splice(5);
+  localStorage.setItem(HS_KEY, JSON.stringify(hs));
+}
+
+function showModal(id) { document.getElementById(id).classList.add('visible'); }
+function hideModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('visible'); });
+});
+
+function showHSModal() {
+  const hs = loadHS();
+  const body = document.getElementById('hs-body');
+  if (!hs.length) {
+    body.innerHTML = '<p style="text-align:center;color:#6050a0">まだ記録がありません</p>';
+  } else {
+    body.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <tr style="color:#6050a0;font-size:11px"><th style="padding:4px">順位</th><th>タイム</th><th>評価</th><th>日付</th></tr>
+      ${hs.map((h,i)=>`<tr style="border-top:1px solid #2010a0;color:#c0b0e8">
+        <td style="text-align:center;padding:5px;color:${i===0?'#ffe870':'#6050a0'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</td>
+        <td style="font-family:'Courier New';color:#ff44aa;text-shadow:0 0 6px #ff44aa;font-weight:bold">${h.score}ms</td>
+        <td style="color:#ffe870;font-size:11px">${getRank(h.score)}</td>
+        <td style="color:#6050a0;font-size:11px">${h.date}</td>
+      </tr>`).join('')}
+    </table>`;
+  }
+  showModal('hsModal');
+}
+
+function getRank(ms) {
+  if (ms <= 200) return '神業！';
+  if (ms <= 300) return '超速！';
+  if (ms <= 400) return '速い！';
+  if (ms <= 500) return '普通';
+  return 'もっと練習';
+}
+
+// Game state
+let phase = 'idle'; // idle, waiting, ready, result, done
+let waitTimer = null;
+let startTime = null;
+let attempts = [];
+let currentRound = 0;
+const TOTAL_ROUNDS = 5;
+
+function resetGame() {
+  if (waitTimer) clearTimeout(waitTimer);
+  phase = 'idle';
+  startTime = null;
+  attempts = [];
+  currentRound = 0;
+  setZone('idle', 'タップしてスタート', '反応速度を測定します');
+  updateLEDs();
+  updateDots();
+  renderHistory();
+  document.getElementById('avg-display').innerHTML = '';
+}
+
+function setZone(cls, label, sub, labelColor, subColor) {
+  const z = document.getElementById('tap-zone');
+  z.className = cls;
+  document.getElementById('tap-label').textContent = label;
+  document.getElementById('tap-label').style.color = labelColor || '';
+  document.getElementById('tap-sub').textContent = sub || '';
+  document.getElementById('tap-sub').style.color = subColor || '';
+}
+
+function updateLEDs() {
+  const allMs = attempts.map(a=>a.ms).filter(m=>m>0);
+  const best = allMs.length ? Math.min(...allMs) : null;
+  const bestHs = loadHS();
+  const globalBest = bestHs.length ? bestHs[0].score : null;
+  document.getElementById('led-best').textContent = globalBest !== null ? globalBest : (best !== null ? best : '---');
+  document.getElementById('led-round').textContent = `${currentRound}/${TOTAL_ROUNDS}`;
+  const last = attempts.length ? attempts[attempts.length-1].ms : null;
+  document.getElementById('led-last').textContent = last !== null && last > 0 ? last : '---';
+}
+
+function updateDots() {
+  const bestMs = attempts.filter(a=>a.ms>0).reduce((b,a)=>a.ms<b?a.ms:b, Infinity);
+  for (let i = 1; i <= 5; i++) {
+    const d = document.getElementById(`dot-${i}`);
+    if (i > currentRound) {
+      d.className = 'dot';
+      d.textContent = i;
+    } else {
+      const a = attempts[i-1];
+      if (a && a.ms > 0 && a.ms === bestMs && attempts.filter(x=>x.ms>0).length > 0) {
+        d.className = 'dot best';
+        d.textContent = '★';
+      } else {
+        d.className = 'dot done';
+        d.textContent = a && a.foul ? '✕' : '✓';
+      }
+    }
+  }
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!attempts.length) { list.innerHTML = ''; return; }
+  list.innerHTML = attempts.map((a,i)=>`
+    <div class="history-row">
+      <span class="attempt-num">${i+1}</span>
+      <span class="attempt-ms">${a.foul ? 'フライング' : a.ms+'ms'}</span>
+      <span class="attempt-rank">${a.foul ? '❌' : getRank(a.ms)}</span>
+    </div>
+  `).join('');
+}
+
+function handleTap() {
+  if (phase === 'idle' || phase === 'done') {
+    if (phase === 'done') resetGame();
+    startRound();
+    return;
+  }
+  if (phase === 'waiting') {
+    // Foul
+    clearTimeout(waitTimer);
+    waitTimer = null;
+    attempts.push({ms: 0, foul: true});
+    currentRound++;
+    updateDots();
+    renderHistory();
+    setZone('foul', '⚠ フライング！', 'もう少し待って…', '#ff4444', '#aa2222');
+    phase = 'result';
+    setTimeout(()=>{
+      if (currentRound >= TOTAL_ROUNDS) {
+        showFinalResult();
+      } else {
+        setZone('idle', 'タップして続ける', `残り ${TOTAL_ROUNDS - currentRound} ラウンド`, '#8070d0', '#5040a0');
+        phase = 'idle';
+      }
+      updateLEDs();
+    }, 1200);
+    return;
+  }
+  if (phase === 'ready') {
+    const elapsed = Date.now() - startTime;
+    attempts.push({ms: elapsed, foul: false});
+    currentRound++;
+    saveHS(elapsed);
+    const rank = getRank(elapsed);
+    updateDots();
+    renderHistory();
+    updateLEDs();
+    setZone('result', `${elapsed} ms`, rank, '#ff44aa', '#ffe870');
+    phase = 'result';
+    setTimeout(()=>{
+      if (currentRound >= TOTAL_ROUNDS) {
+        showFinalResult();
+      } else {
+        setZone('idle', 'タップして続ける', `残り ${TOTAL_ROUNDS - currentRound} ラウンド`, '#8070d0', '#5040a0');
+        phase = 'idle';
+      }
+    }, 1500);
+    return;
+  }
+  if (phase === 'result') {
+    return;
+  }
+}
+
+function startRound() {
+  phase = 'waiting';
+  setZone('waiting', '準備中...', 'パネルが光ったら即タップ！', '#304080', '#202840');
+  const delay = 1000 + Math.random() * 3000;
+  waitTimer = setTimeout(()=>{
+    if (phase !== 'waiting') return;
+    phase = 'ready';
+    startTime = Date.now();
+    setZone('ready', 'タップ！！', 'GO! GO! GO!', '#00ff44', '#00aa22');
+    waitTimer = setTimeout(()=>{
+      if (phase === 'ready') {
+        // Too slow
+        attempts.push({ms: 999, foul: false});
+        currentRound++;
+        updateDots();
+        renderHistory();
+        setZone('result', '遅すぎ…', '999ms+ は記録なし', '#8060ff', '#5040a0');
+        phase = 'result';
+        setTimeout(()=>{
+          if (currentRound >= TOTAL_ROUNDS) {
+            showFinalResult();
+          } else {
+            setZone('idle','タップして続ける', `残り ${TOTAL_ROUNDS-currentRound} ラウンド`,'#8070d0','#5040a0');
+            phase='idle';
+          }
+          updateLEDs();
+        }, 1500);
+      }
+    }, 3000);
+  }, delay);
+}
+
+function showFinalResult() {
+  phase = 'done';
+  const valid = attempts.filter(a=>!a.foul && a.ms < 999);
+  let avgHtml = '';
+  if (valid.length) {
+    const avg = Math.round(valid.reduce((s,a)=>s+a.ms,0)/valid.length);
+    avgHtml = `<p>平均: <strong style="color:#ff44aa">${avg}ms</strong> (${getRank(avg)})</p>`;
+    document.getElementById('avg-display').innerHTML = `平均: <strong>${avg}ms</strong> — ${getRank(avg)}`;
+  } else {
+    document.getElementById('avg-display').innerHTML = '有効な記録なし';
+  }
+  if (valid.length >= 3) startConfetti();
+  setZone('idle', '終了！', 'タップして再挑戦', '#ffe870', '#a09040');
+}
+
+updateLEDs();
+updateDots();
+</script>
+</body>
+</html>

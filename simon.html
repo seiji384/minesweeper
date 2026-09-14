@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイモン - ミニゲーム</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 22px; font-weight: bold; padding: 3px 10px;
+  min-width: 64px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+/* Simon buttons */
+.simon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.simon-btn {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.4);
+  transition: all 0.1s;
+  touch-action: manipulation;
+  position: relative; overflow: hidden;
+}
+.simon-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.1s;
+}
+.simon-btn:disabled { cursor: default; }
+
+/* Color-specific styles */
+#btn-red {
+  background: radial-gradient(circle at 40% 35%, #ff8090, #aa0020);
+  border-color: #ff2040;
+  box-shadow: 0 4px 16px rgba(170,0,32,0.5), inset 0 1px 0 rgba(255,180,180,0.3);
+}
+#btn-red.lit {
+  background: radial-gradient(circle at 40% 35%, #ff4060, #ff0030);
+  border-color: #ff6080;
+  box-shadow: 0 0 30px rgba(255,60,80,0.9), 0 0 60px rgba(255,0,40,0.5), 0 4px 16px rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.9);
+}
+#btn-blue {
+  background: radial-gradient(circle at 40% 35%, #8090ff, #0020aa);
+  border-color: #2040ff;
+  box-shadow: 0 4px 16px rgba(0,32,170,0.5), inset 0 1px 0 rgba(180,180,255,0.3);
+}
+#btn-blue.lit {
+  background: radial-gradient(circle at 40% 35%, #4080ff, #0030ff);
+  border-color: #6080ff;
+  box-shadow: 0 0 30px rgba(60,80,255,0.9), 0 0 60px rgba(0,40,255,0.5), 0 4px 16px rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.9);
+}
+#btn-yellow {
+  background: radial-gradient(circle at 40% 35%, #ffee80, #aa8000);
+  border-color: #ffcc00;
+  box-shadow: 0 4px 16px rgba(170,128,0,0.5), inset 0 1px 0 rgba(255,240,180,0.3);
+}
+#btn-yellow.lit {
+  background: radial-gradient(circle at 40% 35%, #ffee40, #ffcc00);
+  border-color: #ffee60;
+  box-shadow: 0 0 30px rgba(255,238,60,0.9), 0 0 60px rgba(255,200,0,0.5), 0 4px 16px rgba(0,0,0,0.4);
+  color: rgba(0,0,0,0.8);
+}
+#btn-green {
+  background: radial-gradient(circle at 40% 35%, #80ff90, #008030);
+  border-color: #20cc50;
+  box-shadow: 0 4px 16px rgba(0,128,48,0.5), inset 0 1px 0 rgba(180,255,180,0.3);
+}
+#btn-green.lit {
+  background: radial-gradient(circle at 40% 35%, #40ff80, #00cc40);
+  border-color: #60ff90;
+  box-shadow: 0 0 30px rgba(60,255,100,0.9), 0 0 60px rgba(0,200,60,0.5), 0 4px 16px rgba(0,0,0,0.4);
+  color: rgba(0,0,0,0.8);
+}
+
+/* Message area */
+.msg-area {
+  text-align: center; padding: 6px 8px 4px;
+  font-size: 15px; font-weight: bold; color: #b898ff;
+  min-height: 32px;
+  text-shadow: 0 0 8px rgba(184,152,255,0.5);
+}
+.msg-area.danger { color: #ff4060; text-shadow: 0 0 10px rgba(255,60,80,0.7); }
+.msg-area.success { color: #40ff80; text-shadow: 0 0 10px rgba(60,255,100,0.7); }
+
+/* Start overlay */
+.start-overlay {
+  display: flex; position: absolute; inset: 0;
+  align-items: center; justify-content: center;
+  background: rgba(5,2,16,0.75);
+  z-index: 10; border-radius: 0;
+  flex-direction: column; gap: 12px;
+}
+.start-btn {
+  padding: 14px 40px; font-size: 18px; font-weight: 900;
+  background: linear-gradient(160deg, #6a3aaa 0%, #4a1a80 100%);
+  color: #e8d8ff; border: 2px solid #8060d0; border-radius: 16px;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 0 20px rgba(120,90,255,0.6), 0 4px 16px rgba(0,0,0,0.5);
+  transition: all 0.15s;
+}
+.start-btn:active { transform: scale(0.96); }
+.game-area { position: relative; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">🏠</a>
+    <span>🎵 サイモン</span>
+    <span style="width:24px"></span>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="led-round">0</span>
+      <span class="led-label">ラウンド</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-best">0</span>
+      <span class="led-label">ベスト</span>
+    </div>
+  </div>
+
+  <div class="msg-area" id="msg-area">スタートボタンを押してください</div>
+
+  <div class="content">
+    <div class="game-area" id="game-area">
+      <div class="simon-grid">
+        <div class="simon-btn" id="btn-red" data-id="red" onclick="onBtnClick('red')">赤</div>
+        <div class="simon-btn" id="btn-blue" data-id="blue" onclick="onBtnClick('blue')">青</div>
+        <div class="simon-btn" id="btn-yellow" data-id="yellow" onclick="onBtnClick('yellow')">黄</div>
+        <div class="simon-btn" id="btn-green" data-id="green" onclick="onBtnClick('green')">緑</div>
+      </div>
+      <div class="start-overlay" id="start-overlay">
+        <div style="color:#b898ff;font-size:14px;text-align:center">コンピューターの色の順番を<br>覚えて繰り返そう！</div>
+        <button class="start-btn" onclick="startGame()">▶ スタート</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action bar -->
+<div class="action-bar">
+  <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
+  <button class="act-btn" onclick="resetGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
+</div>
+
+<!-- Rules modal -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" onclick="closeModal('rules-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>🎵 <strong>サイモン</strong>の遊び方</p><br>
+      <p>① コンピューターが色を光らせます</p>
+      <p>② 同じ順番でボタンを押してください</p>
+      <p>③ 正解するとラウンドが増え、<br>　シーケンスが1つ長くなります</p>
+      <p>④ 間違えるとゲームオーバー！</p><br>
+      <p>ラウンドが増えるほど速くなります。</p>
+      <p>何ラウンドまで続けられるか挑戦！</p>
+    </div>
+  </div>
+</div>
+
+<!-- High score modal -->
+<div class="modal-overlay" id="hs-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" onclick="closeModal('hs-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="hs-body"></div>
+  </div>
+</div>
+
+<!-- Game over modal -->
+<div class="modal-overlay" id="gameover-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>💥 ゲームオーバー</span>
+      <button class="modal-close" onclick="closeModal('gameover-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="gameover-body"></div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// Confetti
+function startConfetti(){
+  const cv=document.getElementById('confetti');cv.style.display='block';
+  const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));
+  let frame=0;
+  function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}
+  anim();
+}
+
+// Visual Viewport
+const actionBar = document.querySelector('.action-bar');
+function fixActionBar() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const layoutWidth = document.documentElement.clientWidth || window.innerWidth;
+  const scaleRatio = layoutWidth / vv.width;
+  const isZoomed = vv.scale > 1.05 || scaleRatio > 1.05;
+  if (!isZoomed) {
+    actionBar.style.top = actionBar.style.bottom = '';
+    actionBar.style.left = actionBar.style.right = '';
+    actionBar.style.width = actionBar.style.transform = '';
+    actionBar.style.transformOrigin = '';
+    return;
+  }
+  const scale = Math.max(vv.scale, scaleRatio);
+  const inv = 1 / scale;
+  const barH = actionBar.offsetHeight || 52;
+  const layoutW = document.documentElement.clientWidth || Math.round(vv.width * scale);
+  actionBar.style.top = Math.round(vv.offsetTop + vv.height - barH) + 'px';
+  actionBar.style.bottom = 'auto';
+  actionBar.style.left = Math.round(vv.offsetLeft) + 'px';
+  actionBar.style.width = layoutW + 'px';
+  actionBar.style.right = 'auto';
+  actionBar.style.transform = `scale(${inv})`;
+  actionBar.style.transformOrigin = 'bottom left';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixActionBar);
+  window.visualViewport.addEventListener('scroll', fixActionBar);
+  fixActionBar();
+}
+
+// Game state
+const COLORS = ['red', 'blue', 'yellow', 'green'];
+let sequence = [];
+let playerPos = 0;
+let round = 0;
+let best = parseInt(localStorage.getItem('simon_best') || '0');
+let accepting = false;
+let playing = false;
+
+document.getElementById('led-best').textContent = best;
+
+function resetGame() {
+  sequence = []; playerPos = 0; round = 0; accepting = false; playing = false;
+  document.getElementById('led-round').textContent = '0';
+  setMsg('スタートボタンを押してください', '');
+  setBtnsDisabled(true);
+  document.getElementById('start-overlay').style.display = 'flex';
+}
+
+function startGame() {
+  document.getElementById('start-overlay').style.display = 'none';
+  sequence = []; playerPos = 0; round = 0;
+  nextRound();
+}
+
+function nextRound() {
+  playerPos = 0; accepting = false;
+  round++;
+  document.getElementById('led-round').textContent = round;
+  sequence.push(COLORS[Math.floor(Math.random() * 4)]);
+  setMsg('コンピューターの番...', '');
+  setBtnsDisabled(true);
+  setTimeout(() => playSequence(), 600);
+}
+
+function getSpeed() {
+  if (round <= 5) return 600;
+  if (round <= 10) return 450;
+  if (round <= 15) return 330;
+  return 250;
+}
+
+function playSequence() {
+  let i = 0;
+  const speed = getSpeed();
+  function next() {
+    if (i >= sequence.length) {
+      setTimeout(() => {
+        setMsg('あなたの番！', 'success');
+        setBtnsDisabled(false);
+        accepting = true;
+      }, 300);
+      return;
+    }
+    const color = sequence[i++];
+    lightBtn(color, speed * 0.65);
+    setTimeout(next, speed);
+  }
+  next();
+}
+
+function lightBtn(color, duration) {
+  const el = document.getElementById('btn-' + color);
+  el.classList.add('lit');
+  setTimeout(() => el.classList.remove('lit'), duration);
+}
+
+function onBtnClick(color) {
+  if (!accepting) return;
+  lightBtn(color, 200);
+
+  if (sequence[playerPos] !== color) {
+    // Wrong
+    onGameOver();
+    return;
+  }
+  playerPos++;
+  if (playerPos === sequence.length) {
+    // Correct full sequence
+    accepting = false;
+    setBtnsDisabled(true);
+    setMsg('正解！', 'success');
+    if (round > best) {
+      best = round;
+      localStorage.setItem('simon_best', best);
+      document.getElementById('led-best').textContent = best;
+      // Save to list
+      let scores = JSON.parse(localStorage.getItem('simon_scores') || '[]');
+      scores.push(best);
+      scores.sort((a,b) => b-a);
+      scores = scores.slice(0,5);
+      localStorage.setItem('simon_scores', JSON.stringify(scores));
+    }
+    if (round >= 20) {
+      // Extraordinary win
+      setTimeout(() => {
+        startConfetti();
+        setMsg('🎉 完全クリア！！', 'success');
+      }, 500);
+      return;
+    }
+    setTimeout(() => nextRound(), 1000);
+  }
+}
+
+function onGameOver() {
+  accepting = false; setBtnsDisabled(true);
+  setMsg('💥 ゲームオーバー！', 'danger');
+  // Flash all red
+  setTimeout(() => {
+    COLORS.forEach(c => lightBtn(c, 400));
+  }, 200);
+
+  const scores = JSON.parse(localStorage.getItem('simon_scores') || '[]');
+  const best5 = scores.slice(0,5);
+  document.getElementById('gameover-body').innerHTML = `
+    <p style="font-size:16px;color:#ff4060;text-align:center;margin-bottom:12px">💥 ゲームオーバー！</p>
+    <p>ラウンド: <strong style="color:#ff44aa">${round}</strong></p>
+    <p>ベスト: <strong style="color:#ff44aa">${best}</strong></p>
+    <br><button class="act-btn" style="width:100%;padding:10px" onclick="closeModal('gameover-modal');startGame()">🔄 もう一度</button>
+  `;
+  setTimeout(() => showModal('gameover-modal'), 800);
+}
+
+function setBtnsDisabled(disabled) {
+  COLORS.forEach(c => {
+    const el = document.getElementById('btn-' + c);
+    if (disabled) {
+      el.style.pointerEvents = 'none';
+      el.style.opacity = '0.7';
+    } else {
+      el.style.pointerEvents = 'auto';
+      el.style.opacity = '1';
+    }
+  });
+}
+
+function setMsg(text, cls) {
+  const el = document.getElementById('msg-area');
+  el.textContent = text;
+  el.className = 'msg-area' + (cls ? ' ' + cls : '');
+}
+
+function showHighScore() {
+  const scores = JSON.parse(localStorage.getItem('simon_scores') || '[]');
+  let html = '<p style="color:#f5c842;font-weight:bold;margin-bottom:8px">ベストラウンド TOP5</p>';
+  if (scores.length === 0) {
+    html += '<p style="color:#6050a0">記録なし</p>';
+  } else {
+    scores.forEach((s, i) => {
+      html += `<p>${i+1}位: <span style="color:#ff44aa">${s}ラウンド</span></p>`;
+    });
+  }
+  document.getElementById('hs-body').innerHTML = html;
+  showModal('hs-modal');
+}
+
+function showModal(id) { document.getElementById(id).classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('visible'); });
+});
+
+// Init: disable buttons until game starts
+setBtnsDisabled(true);
+</script>
+</body>
+</html>

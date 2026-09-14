@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>リバーシ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.modal-body p { margin-bottom: 6px; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 18px; font-weight: bold; padding: 3px 10px;
+  min-width: 54px; text-align: center; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; position: relative; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+canvas#board { display: block; margin: 0 auto; touch-action: manipulation; cursor: pointer; border-radius: 8px; }
+.turn-text { color: #c0b0e8; font-size: 13px; font-weight: bold; }
+.turn-sub { font-size: 9px; color: #6050a0; }
+select.act-btn { -webkit-appearance: none; appearance: none; text-align: center; }
+.pass-banner {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(16,8,40,0.96); border: 2px solid #7060ff;
+  color: #ffe870; font-size: 15px; font-weight: bold;
+  padding: 10px 24px; border-radius: 14px; z-index: 400;
+  pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  text-align: center; white-space: nowrap;
+}
+.pass-banner.show { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">←</a>
+    <span>⚫ リバーシ ⚪</span>
+    <span style="width:18px;"></span>
+  </div>
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="blackCount">2</span>
+      <span class="led-label">⚫ あなた</span>
+    </div>
+    <div class="led-group">
+      <span class="turn-text" id="turnDisplay">あなた ⚫</span>
+      <span class="turn-sub">ターン</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="whiteCount">2</span>
+      <span class="led-label">⚪ CPU</span>
+    </div>
+  </div>
+  <div class="content">
+    <canvas id="board"></canvas>
+    <div class="pass-banner" id="passBanner"></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="showRules()">📖 ルール</button>
+  <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <select class="act-btn" id="diffSelect" onchange="setDifficulty(this.value)">
+    <option value="easy">かんたん</option>
+    <option value="normal" selected>ふつう</option>
+    <option value="hard">つよい</option>
+  </select>
+</div>
+
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 リバーシのルール</span>
+      <button class="modal-close" onclick="closeModal('rulesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>・8×8のマスに交互にディスクを置きます。</p>
+      <p>・置いたディスクと自分の既存ディスクの間に挟まった相手のディスクを<strong style="color:#ffe870">全てひっくり返せます</strong>。</p>
+      <p>・あなたは <strong>⚫ 黒</strong>（先手）、CPUは <strong>⚪ 白</strong> です。</p>
+      <p>・有効な手がない場合は自動でパスになります。</p>
+      <p>・どちらも置けなくなったらゲーム終了。</p>
+      <p>・ディスクの枚数が多い方が勝ちです。</p>
+      <p>・<strong style="color:#ffe870">光るマス</strong>が置ける場所です。</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span id="resultTitle">ゲーム終了</span>
+      <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center; padding:20px 14px;">
+      <p id="resultMsg" style="font-size:22px; color:#ffe870; margin-bottom:8px;"></p>
+      <p id="resultSub" style="font-size:13px; color:#c0b0e8; margin-bottom:20px;"></p>
+      <button class="act-btn" onclick="newGame();closeModal('resultModal')" style="font-size:13px; padding:8px 28px;">🔄 もう一度</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STARS =====
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ===== CONFETTI =====
+function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
+
+// ===== VISUAL VIEWPORT FIX =====
+const actionBar=document.querySelector('.action-bar');
+function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fixAB);window.visualViewport.addEventListener('scroll',fixAB);fixAB();}
+
+// ===== CONSTANTS =====
+const N = 8;
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const PLAYER = BLACK, CPU = WHITE;
+const DIRS8 = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+
+const WEIGHTS = [
+  [100,-20, 10,  5,  5, 10,-20,100],
+  [-20,-50, -2, -2, -2, -2,-50,-20],
+  [ 10, -2,  1,  1,  1,  1, -2, 10],
+  [  5, -2,  1,  1,  1,  1, -2,  5],
+  [  5, -2,  1,  1,  1,  1, -2,  5],
+  [ 10, -2,  1,  1,  1,  1, -2, 10],
+  [-20,-50, -2, -2, -2, -2,-50,-20],
+  [100,-20, 10,  5,  5, 10,-20,100],
+];
+
+// ===== STATE =====
+let board, currentTurn, gameOver;
+let difficulty = 'normal';
+let cpuThinking = false;
+let animating = false;
+let flashCells = []; // cells being animated
+let flashProgress = 0;
+let flashColor = 0;
+let flashTimer = null;
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+function initCanvas() {
+  const maxW = Math.min(window.innerWidth - 32, 440);
+  const sz = Math.floor(maxW / N) * N;
+  canvas.width = sz;
+  canvas.height = sz;
+}
+
+function cellSize() { return canvas.width / N; }
+
+function boardToXY(r, c) {
+  const cs = cellSize();
+  return { x: c * cs, y: r * cs };
+}
+
+function XYToBoard(x, y) {
+  const cs = cellSize();
+  return { r: Math.floor(y / cs), c: Math.floor(x / cs) };
+}
+
+// ===== REVERSI LOGIC =====
+function getValidMoves(board, color) {
+  const opp = color === BLACK ? WHITE : BLACK;
+  const moves = [];
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c] !== EMPTY) continue;
+      let valid = false;
+      for (const [dr, dc] of DIRS8) {
+        let nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] !== opp) continue;
+        nr += dr; nc += dc;
+        while (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+          if (board[nr][nc] === color) { valid = true; break; }
+          if (board[nr][nc] === EMPTY) break;
+          nr += dr; nc += dc;
+        }
+        if (valid) break;
+      }
+      if (valid) moves.push({ r, c });
+    }
+  }
+  return moves;
+}
+
+function getFlipped(board, r, c, color) {
+  const opp = color === BLACK ? WHITE : BLACK;
+  const flipped = [];
+  for (const [dr, dc] of DIRS8) {
+    const line = [];
+    let nr = r + dr, nc = c + dc;
+    while (nr >= 0 && nr < N && nc >= 0 && nc < N && board[nr][nc] === opp) {
+      line.push([nr, nc]);
+      nr += dr; nc += dc;
+    }
+    if (nr >= 0 && nr < N && nc >= 0 && nc < N && board[nr][nc] === color && line.length > 0) {
+      flipped.push(...line);
+    }
+  }
+  return flipped;
+}
+
+function applyMove(board, r, c, color) {
+  const nb = board.map(row => [...row]);
+  nb[r][c] = color;
+  const flipped = getFlipped(nb, r, c, color);
+  flipped.forEach(([fr, fc]) => nb[fr][fc] = color);
+  return nb;
+}
+
+function countDiscs(board) {
+  let b = 0, w = 0;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (board[r][c] === BLACK) b++;
+    else if (board[r][c] === WHITE) w++;
+  }
+  return { black: b, white: w };
+}
+
+// ===== DRAW =====
+function drawBoard(validMoves) {
+  const w = canvas.width;
+  const cs = cellSize();
+
+  // Board background — dark green tinted
+  ctx.fillStyle = '#0a1e0a';
+  ctx.fillRect(0, 0, w, w);
+
+  // Subtle texture
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const x = c * cs, y = r * cs;
+      const alt = (r + c) % 2 === 0;
+      ctx.fillStyle = alt ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.05)';
+      ctx.fillRect(x, y, cs, cs);
+    }
+  }
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(30,90,30,0.8)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= N; i++) {
+    ctx.beginPath(); ctx.moveTo(i * cs, 0); ctx.lineTo(i * cs, w); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * cs); ctx.lineTo(w, i * cs); ctx.stroke();
+  }
+
+  // Corner star dots
+  [[2,2],[2,6],[6,2],[6,6]].forEach(([r,c]) => {
+    ctx.fillStyle = 'rgba(30,120,30,0.7)';
+    ctx.beginPath();
+    ctx.arc(c * cs, r * cs, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Valid move highlights
+  if (validMoves && !gameOver) {
+    validMoves.forEach(({ r, c }) => {
+      const x = c * cs, y = r * cs;
+      ctx.fillStyle = 'rgba(245,200,66,0.12)';
+      ctx.fillRect(x + 1, y + 1, cs - 2, cs - 2);
+      ctx.fillStyle = 'rgba(245,200,66,0.5)';
+      ctx.beginPath();
+      ctx.arc(x + cs/2, y + cs/2, cs * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Discs
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c] !== EMPTY) {
+        const isFlashing = flashCells.some(([fr,fc]) => fr===r && fc===c);
+        if (isFlashing) {
+          drawAnimDisc(c * cs + cs/2, r * cs + cs/2, cs * 0.42, flashColor === board[r][c] ? board[r][c] : (board[r][c] === BLACK ? WHITE : BLACK), flashProgress);
+        } else {
+          drawDisc(c * cs + cs/2, r * cs + cs/2, cs * 0.42, board[r][c]);
+        }
+      }
+    }
+  }
+}
+
+function drawDisc(cx, cy, radius, color) {
+  if (color === BLACK) {
+    const grad = ctx.createRadialGradient(cx - radius*0.25, cy - radius*0.25, radius*0.05, cx, cy, radius);
+    grad.addColorStop(0, '#505060');
+    grad.addColorStop(0.4, '#202030');
+    grad.addColorStop(1, '#05050e');
+    ctx.shadowColor = 'rgba(80,80,255,0.3)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.ellipse(cx - radius*0.2, cy - radius*0.24, radius*0.18, radius*0.1, -0.4, 0, Math.PI*2); ctx.fill();
+  } else {
+    const grad = ctx.createRadialGradient(cx - radius*0.25, cy - radius*0.25, radius*0.05, cx, cy, radius);
+    grad.addColorStop(0, '#fffaf0');
+    grad.addColorStop(0.5, '#ffe8b0');
+    grad.addColorStop(1, '#c09030');
+    ctx.shadowColor = 'rgba(255,220,100,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.ellipse(cx - radius*0.2, cy - radius*0.24, radius*0.18, radius*0.1, -0.4, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawAnimDisc(cx, cy, radius, color, progress) {
+  // progress 0→0.5: squeeze (old color), 0.5→1: unsqueeze (new color)
+  const scaleX = progress < 0.5 ? 1 - progress * 2 : (progress - 0.5) * 2;
+  const actualColor = progress < 0.5 ? (color === BLACK ? WHITE : BLACK) : color;
+  const sx = Math.max(0.01, scaleX);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(sx, 1);
+  drawDisc(0, 0, radius, actualColor);
+  ctx.restore();
+}
+
+// ===== AI =====
+function evaluate(board, color) {
+  const opp = color === BLACK ? WHITE : BLACK;
+  let score = 0;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (board[r][c] === color) score += WEIGHTS[r][c];
+    else if (board[r][c] === opp) score -= WEIGHTS[r][c];
+  }
+  const myMoves = getValidMoves(board, color).length;
+  const oppMoves = getValidMoves(board, opp).length;
+  score += (myMoves - oppMoves) * 5;
+  return score;
+}
+
+function minimax(board, depth, alpha, beta, maximizing, color) {
+  const opp = color === BLACK ? WHITE : BLACK;
+  const current = maximizing ? color : opp;
+  const moves = getValidMoves(board, current);
+
+  if (depth === 0) return evaluate(board, color);
+
+  if (moves.length === 0) {
+    const otherMoves = getValidMoves(board, current === BLACK ? WHITE : BLACK);
+    if (otherMoves.length === 0) {
+      // Game over
+      const { black, white } = countDiscs(board);
+      if (color === BLACK) return (black - white) * 1000;
+      else return (white - black) * 1000;
+    }
+    // Pass
+    return minimax(board, depth - 1, alpha, beta, !maximizing, color);
+  }
+
+  if (maximizing) {
+    let best = -Infinity;
+    for (const mv of moves) {
+      const nb = applyMove(board, mv.r, mv.c, current);
+      best = Math.max(best, minimax(nb, depth - 1, alpha, beta, false, color));
+      alpha = Math.max(alpha, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const mv of moves) {
+      const nb = applyMove(board, mv.r, mv.c, current);
+      best = Math.min(best, minimax(nb, depth - 1, alpha, beta, true, color));
+      beta = Math.min(beta, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function cpuBestMove(board) {
+  const moves = getValidMoves(board, CPU);
+  if (moves.length === 0) return null;
+
+  const depth = difficulty === 'easy' ? 2 : difficulty === 'normal' ? 4 : 6;
+
+  if (difficulty === 'easy' && Math.random() < 0.35) {
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  let bestScore = -Infinity, bestMove = null;
+  for (const mv of moves) {
+    const nb = applyMove(board, mv.r, mv.c, CPU);
+    const score = minimax(nb, depth - 1, -Infinity, Infinity, false, CPU);
+    if (score > bestScore) { bestScore = score; bestMove = mv; }
+  }
+  return bestMove;
+}
+
+// ===== GAME FLOW =====
+function initBoard() {
+  board = Array.from({length: N}, () => new Array(N).fill(EMPTY));
+  board[3][3] = WHITE; board[3][4] = BLACK;
+  board[4][3] = BLACK; board[4][4] = WHITE;
+  currentTurn = PLAYER;
+  gameOver = false;
+  cpuThinking = false;
+  animating = false;
+  flashCells = [];
+  updateStatus();
+  const validMoves = getValidMoves(board, currentTurn);
+  drawBoard(validMoves);
+}
+
+function updateStatus() {
+  const { black, white } = countDiscs(board);
+  document.getElementById('blackCount').textContent = black;
+  document.getElementById('whiteCount').textContent = white;
+  const td = document.getElementById('turnDisplay');
+  if (gameOver) td.textContent = '終了';
+  else if (cpuThinking) td.textContent = 'CPU思考中...';
+  else td.textContent = currentTurn === PLAYER ? 'あなた ⚫' : 'CPU ⚪';
+}
+
+function showPass(msg) {
+  return new Promise(resolve => {
+    const b = document.getElementById('passBanner');
+    b.textContent = msg;
+    b.classList.add('show');
+    setTimeout(() => { b.classList.remove('show'); setTimeout(resolve, 300); }, 1500);
+  });
+}
+
+async function doPlayerMove(r, c) {
+  if (gameOver || cpuThinking || animating || currentTurn !== PLAYER) return;
+
+  const validMoves = getValidMoves(board, PLAYER);
+  const isValid = validMoves.some(m => m.r === r && m.c === c);
+  if (!isValid) return;
+
+  const flipped = getFlipped(board, r, c, PLAYER);
+  board[r][c] = PLAYER;
+
+  // Animate flip
+  await animateFlip(flipped, WHITE, BLACK);
+  flipped.forEach(([fr, fc]) => board[fr][fc] = BLACK);
+
+  updateStatus();
+
+  // Check game over
+  const cpuMoves = getValidMoves(board, CPU);
+  const playerMoves2 = getValidMoves(board, PLAYER);
+
+  if (cpuMoves.length === 0 && playerMoves2.length === 0) {
+    endGame(); return;
+  }
+
+  if (cpuMoves.length === 0) {
+    currentTurn = PLAYER;
+    await showPass('CPUはパス！あなたの番です');
+    updateStatus();
+    drawBoard(getValidMoves(board, PLAYER));
+    return;
+  }
+
+  currentTurn = CPU;
+  updateStatus();
+  drawBoard([]);
+  cpuThinking = true;
+
+  const delay = difficulty === 'easy' ? 350 : difficulty === 'normal' ? 550 : 750;
+  setTimeout(async () => {
+    await doCpuMove();
+    cpuThinking = false;
+  }, delay + Math.random() * 200);
+}
+
+async function doCpuMove() {
+  const move = cpuBestMove(board);
+  if (!move) {
+    // CPU has no move
+    const playerMoves = getValidMoves(board, PLAYER);
+    if (playerMoves.length === 0) { endGame(); return; }
+    currentTurn = PLAYER;
+    await showPass('CPUはパス！あなたの番です');
+    updateStatus();
+    drawBoard(getValidMoves(board, PLAYER));
+    return;
+  }
+
+  const flipped = getFlipped(board, move.r, move.c, CPU);
+  board[move.r][move.c] = CPU;
+
+  await animateFlip(flipped, BLACK, WHITE);
+  flipped.forEach(([fr, fc]) => board[fr][fc] = WHITE);
+
+  updateStatus();
+
+  const playerMoves = getValidMoves(board, PLAYER);
+  const cpuMoves2 = getValidMoves(board, CPU);
+
+  if (playerMoves.length === 0 && cpuMoves2.length === 0) {
+    endGame(); return;
+  }
+
+  if (playerMoves.length === 0) {
+    currentTurn = CPU;
+    await showPass('あなたはパス！CPUの番です');
+    updateStatus();
+    cpuThinking = true;
+    setTimeout(async () => {
+      await doCpuMove();
+      cpuThinking = false;
+    }, 600);
+    return;
+  }
+
+  currentTurn = PLAYER;
+  updateStatus();
+  drawBoard(getValidMoves(board, PLAYER));
+}
+
+function animateFlip(cells, fromColor, toColor) {
+  return new Promise(resolve => {
+    if (cells.length === 0) { drawBoard([]); resolve(); return; }
+    animating = true;
+    flashCells = cells.map(([r,c]) => [r,c]);
+    flashColor = toColor;
+    let step = 0;
+    const totalSteps = 14;
+
+    function frame() {
+      step++;
+      flashProgress = step / totalSteps;
+      drawBoard([]);
+      if (step < totalSteps) {
+        requestAnimationFrame(frame);
+      } else {
+        flashCells = [];
+        flashProgress = 0;
+        animating = false;
+        drawBoard([]);
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function endGame() {
+  gameOver = true;
+  const { black, white } = countDiscs(board);
+  updateStatus();
+  drawBoard([]);
+
+  let title, msg, sub;
+  if (black > white) {
+    title = '🎉 あなたの勝ち！';
+    msg = '🎉 あなたの勝ち！';
+    sub = `⚫ ${black} vs ⚪ ${white}`;
+    startConfetti();
+  } else if (white > black) {
+    title = '💀 CPUの勝ち';
+    msg = '💀 CPUの勝ち';
+    sub = `⚫ ${black} vs ⚪ ${white}`;
+  } else {
+    title = '🤝 引き分け';
+    msg = '🤝 引き分け！';
+    sub = `⚫ ${black} vs ⚪ ${white}`;
+  }
+
+  setTimeout(() => {
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultMsg').textContent = msg;
+    document.getElementById('resultSub').textContent = sub;
+    document.getElementById('resultModal').classList.add('visible');
+  }, 400);
+}
+
+// ===== UI =====
+function showRules() { document.getElementById('rulesModal').classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+function newGame() { closeModal('resultModal'); initBoard(); }
+function setDifficulty(val) { difficulty = val; }
+
+// ===== INPUT =====
+function handleTap(x, y) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (x - rect.left) * scaleX;
+  const cy = (y - rect.top) * scaleY;
+  const { r, c } = XYToBoard(cx, cy);
+  if (r >= 0 && r < N && c >= 0 && c < N) doPlayerMove(r, c);
+}
+
+canvas.addEventListener('click', (e) => handleTap(e.clientX, e.clientY));
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  handleTap(t.clientX, t.clientY);
+}, { passive: false });
+
+window.addEventListener('resize', () => {
+  initCanvas();
+  drawBoard(gameOver ? [] : getValidMoves(board, currentTurn));
+});
+
+// ===== INIT =====
+initCanvas();
+initBoard();
+</script>
+</body>
+</html>

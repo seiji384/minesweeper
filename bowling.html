@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>ボウリング</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:10000; justify-content:center; align-items:center; padding:16px; }
+.modal-overlay.visible { display:flex; }
+.modal-box { background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%); border:2px solid #7060ff; border-radius:16px; box-shadow:0 0 40px rgba(112,90,255,0.6),0 24px 64px rgba(0,0,0,0.9); max-width:360px; width:100%; max-height:88vh; overflow-y:auto; }
+.modal-title { background:linear-gradient(90deg,#a06008 0%,#f5c842 28%,#ffe870 50%,#f5c842 72%,#a06008 100%); color:#3a1a00; font-size:14px; font-weight:900; padding:8px 14px; text-align:center; letter-spacing:2px; border-radius:14px 14px 0 0; display:flex; justify-content:space-between; align-items:center; }
+.modal-close { background:none; border:none; font-size:18px; cursor:pointer; color:#3a1a00; }
+.modal-body { padding:14px; color:#c0b0e8; font-size:13px; line-height:1.6; }
+.led { background:linear-gradient(160deg,#080518 0%,#040210 100%); color:#ff44aa; font-family:'Courier New',monospace; font-size:18px; font-weight:bold; padding:3px 10px; min-width:54px; text-align:center; border-radius:6px; border:1px solid #4020a0; text-shadow:0 0 10px #ff44aa,0 0 20px #ff2288; box-shadow:inset 0 2px 4px rgba(0,0,0,0.8),0 0 10px rgba(255,68,170,0.3); display:inline-block; }
+.led-label { font-size:9px; color:#6050a0; display:block; text-align:center; margin-top:2px; }
+.status-panel { background:linear-gradient(160deg,#100a30 0%,#08051a 100%); border:1px solid #4030a0; border-radius:10px; padding:6px 12px; margin:8px; display:flex; justify-content:space-around; align-items:center; box-shadow:inset 0 2px 8px rgba(0,0,0,0.6); }
+.led-group { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.content { padding:8px; }
+#confetti { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+/* Score card */
+#scorecard { background:linear-gradient(160deg,#100a30,#080518); border:1px solid #4030a0; border-radius:10px; padding:6px; margin:0 0 8px; overflow-x:auto; }
+#scorecard table { border-collapse:collapse; width:100%; min-width:380px; }
+#scorecard th { font-size:9px; color:#6050a0; padding:2px 3px; text-align:center; border-bottom:1px solid #3020a0; }
+#scorecard td { font-size:10px; color:#c0b0e8; padding:2px 3px; text-align:center; border:1px solid #2010a0; min-width:28px; position:relative; }
+#scorecard td.active { background:rgba(112,90,255,0.2); }
+#scorecard .frame-roll { font-size:9px; color:#ffe870; display:block; }
+#scorecard .frame-score { font-size:11px; color:#c0b0e8; font-weight:bold; display:block; border-top:1px solid #3020a0; margin-top:1px; padding-top:1px; }
+.special { color:#ff44aa !important; text-shadow:0 0 8px #ff44aa; }
+
+/* Lane */
+#lane-wrap { position:relative; }
+#lane { display:block; touch-action:none; cursor:grab; }
+
+/* Aim bar */
+#aim-zone { padding:4px 8px 8px; }
+#aim-track { position:relative; height:36px; background:linear-gradient(160deg,#100a30,#080518); border:1px solid #4030a0; border-radius:8px; overflow:hidden; cursor:pointer; }
+#aim-fill { height:100%; background:linear-gradient(90deg,#6020c0,#a060ff); width:50%; transition:none; border-radius:8px; }
+#aim-marker { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:4px; height:28px; background:#ffe870; border-radius:2px; box-shadow:0 0 8px #ffe060; pointer-events:none; }
+#aim-label { text-align:center; font-size:11px; color:#a898d8; margin-top:3px; }
+#throw-btn {
+  width:100%; padding:12px; font-size:15px; font-weight:900; border-radius:12px; margin-top:6px;
+  background: linear-gradient(160deg, #6020c0 0%, #3a0a80 100%);
+  color: #ffe870; border: 2px solid #a060ff;
+  box-shadow: 0 0 20px rgba(160,100,255,0.5), 0 4px 12px rgba(0,0,0,0.6);
+  cursor:pointer; letter-spacing:2px; touch-action:manipulation;
+}
+#throw-btn:active { transform:scale(0.96); }
+#throw-btn:disabled { opacity:0.4; }
+#msg-flash { height:28px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; color:#ffe870; text-shadow:0 0 12px #ffcc00; letter-spacing:3px; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <span>🎳</span>
+    <span>ボウリング</span>
+    <a href="../index.html">⌂</a>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="led-score">0</span>
+      <span class="led-label">合計スコア</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-frame">1</span>
+      <span class="led-label">フレーム</span>
+    </div>
+  </div>
+
+  <div id="msg-flash"></div>
+
+  <div class="content">
+    <div id="scorecard">
+      <table id="sc-table"></table>
+    </div>
+
+    <div id="lane-wrap">
+      <canvas id="lane" width="400" height="200"></canvas>
+    </div>
+
+    <div id="aim-zone">
+      <div id="aim-track">
+        <div id="aim-fill"></div>
+        <div id="aim-marker"></div>
+      </div>
+      <div id="aim-label">← スライドして狙いを定める →</div>
+      <button id="throw-btn" onclick="throwBall()">🎳 投球！</button>
+    </div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
+  <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
+</div>
+
+<div class="modal-overlay" id="modal-rules">
+  <div class="modal-box">
+    <div class="modal-title"><span>📖 ルール</span><button class="modal-close" onclick="hideModal('modal-rules')">✕</button></div>
+    <div class="modal-body">
+      <b>10 ピン ボウリング</b><br><br>
+      • 10 フレーム、各フレーム 2 投<br>
+      • ストライク(X): 10 本 + 次 2 球のボーナス<br>
+      • スペア(/): 10 本 + 次 1 球のボーナス<br>
+      • 第 10 フレームはストライク・スペア時に追加投球あり<br>
+      • パーフェクトゲーム = 300 点<br><br>
+      スライダーで左右の狙いを調整して投球ボタンを押そう！
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-hi">
+  <div class="modal-box">
+    <div class="modal-title"><span>🏆 ハイスコア</span><button class="modal-close" onclick="hideModal('modal-hi')">✕</button></div>
+    <div class="modal-body" id="hi-body">読込中…</div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}window.addEventListener('resize',resize);resize();draw();})();
+
+function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
+
+const actionBar=document.querySelector('.action-bar');
+function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fixAB);window.visualViewport.addEventListener('scroll',fixAB);fixAB();}
+
+function showModal(id){if(id==='modal-hi')updateHiModal();document.getElementById(id).classList.add('visible');}
+function hideModal(id){document.getElementById(id).classList.remove('visible');}
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');}));
+
+// ── Game state ──
+const PIN_POS = [ // (col, row) in pin triangle, row 0=front
+  [0,0],
+  [-1,1],[1,1],
+  [-2,2],[0,2],[2,2],
+  [-3,3],[-1,3],[1,3],[3,3]
+];
+
+let rolls=[], frames=[], pinsUp=[], standing=[];
+let currentFrame=1, rollInFrame=1;
+let aimPct=0.5; // 0=far left, 1=far right
+let animating=false;
+
+function makePins(){ return Array(10).fill(true); }
+
+function newGame(){
+  rolls=[]; frames=[];
+  pinsUp=makePins(); standing=makePins();
+  currentFrame=1; rollInFrame=1; aimPct=0.5;
+  animating=false;
+  document.getElementById('throw-btn').disabled=false;
+  document.getElementById('msg-flash').textContent='';
+  updateScorecard();
+  updateLEDs();
+  drawLane(standing, null, null);
+  updateAimUI();
+}
+
+// ── Aim slider ──
+const aimTrack=document.getElementById('aim-track');
+const aimFill=document.getElementById('aim-fill');
+const aimMarker=document.getElementById('aim-marker');
+let dragging=false, dragStartX=0, dragStartPct=0.5;
+
+function updateAimUI(){
+  aimFill.style.width=(aimPct*100)+'%';
+  aimMarker.style.left=(aimPct*100)+'%';
+}
+
+function getTrackX(e){
+  const rect=aimTrack.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  return Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
+}
+
+aimTrack.addEventListener('mousedown',e=>{dragging=true;aimPct=getTrackX(e);updateAimUI();});
+aimTrack.addEventListener('touchstart',e=>{e.preventDefault();dragging=true;aimPct=getTrackX(e);updateAimUI();},{passive:false});
+window.addEventListener('mousemove',e=>{if(dragging){aimPct=getTrackX(e);updateAimUI();}});
+window.addEventListener('touchmove',e=>{if(dragging){e.preventDefault();aimPct=getTrackX(e);updateAimUI();}},{passive:false});
+window.addEventListener('mouseup',()=>dragging=false);
+window.addEventListener('touchend',()=>dragging=false);
+
+// ── Pin knock calculation ──
+function calcKnocked(aim, pinsStanding, isFirstBall){
+  // aim: 0=left edge, 0.5=center, 1=right edge
+  // ball enters at lane x = aim * laneW. Pins centered.
+  const laneW=400;
+  const pinSpacing=24;
+  const ballX=aim*laneW;
+  const centerX=laneW/2;
+  // deviation from center (negative=left, positive=right)
+  const dev=ballX-centerX; // pixels
+  // convert dev to pin units (1 unit = pinSpacing)
+  const devUnits=dev/pinSpacing;
+  const scatter=(Math.random()-0.5)*0.6; // random scatter
+  const finalDev=devUnits+scatter;
+  // ball hits pin column based on finalDev (range -3 to +3)
+  // Determine which pins are knocked: based on proximity to ball path + spread
+  const spread=1.2+Math.random()*0.6;
+  const knocked=[];
+  PIN_POS.forEach((pos,i)=>{
+    if(!pinsStanding[i]) return;
+    const dist=Math.abs(pos[0]-finalDev*1.5);
+    // pins closer to ball path more likely to fall
+    // Also incorporate row: front pins spread to back
+    const rowBonus=pos[1]*0.1;
+    const threshold=spread-dist*0.7+rowBonus;
+    if(threshold>0.2+Math.random()*0.5) knocked.push(i);
+  });
+  // Gutter: if aim is very far off
+  if(aim<0.08||aim>0.92) return [];
+  return knocked;
+}
+
+// ── Bowling scoring ──
+function calcScore(){
+  // Parse rolls into frames
+  let ri=0;
+  let total=0;
+  const frameScores=[];
+  for(let f=0;f<10;f++){
+    if(ri>=rolls.length){ frameScores.push(null); continue; }
+    if(rolls[ri]===10){ // strike
+      const bonus=(rolls[ri+1]||0)+(rolls[ri+2]||0);
+      const fs=10+bonus;
+      frameScores.push(fs);
+      total+=fs;
+      ri++;
+    } else if((rolls[ri]||0)+(rolls[ri+1]||0)===10){ // spare
+      const bonus=(rolls[ri+2]||0);
+      const fs=10+bonus;
+      frameScores.push(fs);
+      total+=fs;
+      ri+=2;
+    } else {
+      const fs=(rolls[ri]||0)+(rolls[ri+1]||0);
+      frameScores.push(fs);
+      total+=fs;
+      ri+=2;
+    }
+  }
+  return {frameScores, total};
+}
+
+function getRollsForFrame(f){
+  // Returns array of roll counts for frame f (0-indexed)
+  let ri=0;
+  for(let i=0;i<f;i++){
+    if(i<9){
+      if(rolls[ri]===10) ri++;
+      else ri+=2;
+    }
+  }
+  if(f===9){
+    return rolls.slice(ri);
+  }
+  if(rolls[ri]===10) return [rolls[ri]];
+  return rolls.slice(ri,ri+2);
+}
+
+function rollLabel(val, prev, frame10, idx){
+  if(val===undefined||val===null) return '';
+  if(frame10){
+    if(idx===0) return val===10?'X':val;
+    if(idx===1){
+      if(prev===10) return val===10?'X':(prev+val===10?'/':val);
+      return (prev+val===10)?'/':val;
+    }
+    if(idx===2){
+      return val===10?'X':val;
+    }
+  }
+  if(val===10) return 'X';
+  if(prev!==undefined && prev+val===10) return '/';
+  return val===0?'-':val;
+}
+
+function updateScorecard(){
+  const {frameScores, total}=calcScore();
+  document.getElementById('led-score').textContent=total;
+  document.getElementById('led-frame').textContent=currentFrame;
+
+  const table=document.getElementById('sc-table');
+  let html='<tr>';
+  for(let f=1;f<=10;f++) html+=`<th>${f}</th>`;
+  html+='</tr><tr>';
+
+  for(let f=0;f<10;f++){
+    const fr=getRollsForFrame(f);
+    const isActive=f+1===currentFrame;
+    const is10=f===9;
+    let rolls_html='';
+    if(is10){
+      const r0=rollLabel(fr[0],undefined,true,0);
+      const r1=rollLabel(fr[1],fr[0],true,1);
+      const r2=rollLabel(fr[2],fr[1],true,2);
+      rolls_html=`<span class="frame-roll">${[r0,r1,r2].filter(x=>x!=='').join(' ')}</span>`;
+    } else {
+      const r0=rollLabel(fr[0],undefined,false,0);
+      const r1=rollLabel(fr[1],fr[0],false,1);
+      rolls_html=`<span class="frame-roll">${[r0,r1].filter(x=>x!=='').join(' ')}</span>`;
+    }
+    const sc=frameScores[f]!==null&&frameScores[f]!==undefined?`<span class="frame-score">${frameScores[f]}</span>`:'<span class="frame-score"> </span>';
+    const special=fr[0]===10||(fr[0]+fr[1]===10)?'special':'';
+    html+=`<td class="${isActive?'active':''} ${special}">${rolls_html}${sc}</td>`;
+  }
+  html+='</tr>';
+  table.innerHTML=html;
+}
+
+// ── Lane drawing ──
+const lane=document.getElementById('lane');
+const lctx=lane.getContext('2d');
+const LW=lane.width, LH=lane.height;
+const PIN_AREA_Y=40;
+const BALL_START_Y=LH-20;
+const LANE_LEFT=LW*0.18, LANE_RIGHT=LW*0.82;
+const LANE_W=LANE_RIGHT-LANE_LEFT;
+
+function pinScreenPos(i){
+  const [col,row]=PIN_POS[i];
+  const spacing=22;
+  const cx=LW/2;
+  const baseY=PIN_AREA_Y+20;
+  return {x:cx+col*spacing/2*1.4, y:baseY+row*spacing*0.8};
+}
+
+function drawLane(pins, ballX, ballY, knocked){
+  lctx.clearRect(0,0,LW,LH);
+
+  // Lane background
+  lctx.fillStyle='#100820';
+  lctx.fillRect(LANE_LEFT,0,LANE_W,LH);
+
+  // Wood grain lines
+  lctx.strokeStyle='rgba(60,40,100,0.3)'; lctx.lineWidth=1;
+  for(let x=LANE_LEFT;x<LANE_RIGHT;x+=8){
+    lctx.beginPath(); lctx.moveTo(x,0); lctx.lineTo(x,LH); lctx.stroke();
+  }
+
+  // Gutters
+  lctx.fillStyle='#0a0615';
+  lctx.fillRect(0,0,LANE_LEFT,LH);
+  lctx.fillRect(LANE_RIGHT,0,LW-LANE_RIGHT,LH);
+  lctx.strokeStyle='#3020a0'; lctx.lineWidth=2;
+  lctx.strokeRect(LANE_LEFT,0,LANE_W,LH);
+
+  // Arrow markers on lane
+  lctx.fillStyle='rgba(200,160,40,0.4)';
+  for(let i=0;i<5;i++){
+    const ax=LANE_LEFT+LANE_W*(0.2+i*0.15);
+    lctx.beginPath(); lctx.arc(ax,LH*0.65,3,0,Math.PI*2); lctx.fill();
+  }
+
+  // Pins
+  for(let i=0;i<10;i++){
+    const p=pinScreenPos(i);
+    const isKnocked=knocked&&knocked.includes(i);
+    const isDown=!pins[i];
+    if(isDown||isKnocked){
+      lctx.globalAlpha=0.25;
+      lctx.fillStyle='#666';
+    } else {
+      lctx.globalAlpha=1;
+      lctx.fillStyle='#fff';
+    }
+    lctx.beginPath(); lctx.arc(p.x,p.y,8,0,Math.PI*2);
+    lctx.fill();
+    if(!isDown&&!isKnocked){
+      lctx.strokeStyle='#c0c0e0'; lctx.lineWidth=1.5; lctx.stroke();
+    }
+    lctx.globalAlpha=1;
+  }
+
+  // Ball
+  if(ballX!==null&&ballY!==null){
+    const grad=lctx.createRadialGradient(ballX-4,ballY-4,2,ballX,ballY,14);
+    grad.addColorStop(0,'#d0a0ff');
+    grad.addColorStop(0.5,'#8030e0');
+    grad.addColorStop(1,'#3010a0');
+    lctx.beginPath(); lctx.arc(ballX,ballY,14,0,Math.PI*2);
+    lctx.fillStyle=grad; lctx.fill();
+    lctx.strokeStyle='#c080ff'; lctx.lineWidth=2; lctx.stroke();
+    // glow
+    lctx.shadowColor='#a060ff'; lctx.shadowBlur=20;
+    lctx.beginPath(); lctx.arc(ballX,ballY,14,0,Math.PI*2);
+    lctx.stroke(); lctx.shadowBlur=0;
+  }
+}
+
+// ── Animation ──
+function animateThrow(startX, targetX, pins, onDone){
+  animating=true;
+  document.getElementById('throw-btn').disabled=true;
+  const ballX=startX;
+  let ballY=BALL_START_Y;
+  const totalFrames=40;
+  let f=0;
+  let hitFrame=Math.floor(totalFrames*0.85);
+  let knocked=[];
+
+  function step(){
+    f++;
+    const t=f/totalFrames;
+    // slight curve toward target
+    const cx=ballX+(targetX-ballX)*t;
+    const cy=BALL_START_Y-(BALL_START_Y-PIN_AREA_Y)*t;
+    const curve=(targetX-ballX)*Math.sin(t*Math.PI)*0.15;
+
+    drawLane(pins, cx+curve, cy, f>=hitFrame?knocked:[]);
+
+    if(f===hitFrame){
+      // calculate knocked pins at this point
+      knocked=calcKnocked(aimPct, pins, rollInFrame===1);
+    }
+
+    if(f<totalFrames){
+      requestAnimationFrame(step);
+    } else {
+      onDone(knocked);
+    }
+  }
+  step();
+}
+
+// ── Throw logic ──
+function throwBall(){
+  if(animating) return;
+
+  const startX=LW/2+(aimPct-0.5)*LANE_W*0.8;
+  const targetX=startX;
+
+  animateThrow(startX, targetX, standing, (knocked)=>{
+    // Apply knocked pins
+    knocked.forEach(i=>standing[i]=false);
+    const kCount=knocked.length;
+    rolls.push(kCount);
+
+    // Check frame progression
+    let msg='';
+    if(currentFrame<10){
+      if(rollInFrame===1){
+        if(kCount===10){
+          msg='STRIKE！'; rollInFrame=1; standing=makePins();
+          currentFrame++;
+        } else {
+          rollInFrame=2;
+        }
+      } else {
+        if(kCount+rolls[rolls.length-2]===10) msg='SPARE！';
+        rollInFrame=1; standing=makePins();
+        currentFrame++;
+      }
+    } else {
+      // 10th frame logic
+      const fr10start=getRollsForFrame(9);
+      const cnt=fr10start.length;
+      if(cnt===1){
+        if(kCount===10){ msg='STRIKE！'; standing=makePins(); rollInFrame=2; }
+        else rollInFrame=2;
+      } else if(cnt===2){
+        const prev=fr10start[0];
+        if(prev===10){
+          if(kCount===10){ msg='STRIKE！'; standing=makePins(); }
+          else standing=makePins(); // or just continue
+          rollInFrame=3;
+        } else if(prev+kCount===10){
+          msg='SPARE！'; standing=makePins(); rollInFrame=3;
+        } else {
+          // done
+          currentFrame=11;
+        }
+      } else {
+        // 3rd ball done
+        currentFrame=11;
+      }
+    }
+
+    flash(msg);
+    updateScorecard();
+    drawLane(standing, null, null);
+    animating=false;
+
+    if(currentFrame>10){
+      gameOver();
+    } else {
+      document.getElementById('throw-btn').disabled=false;
+    }
+  });
+}
+
+function flash(msg){
+  const el=document.getElementById('msg-flash');
+  el.textContent=msg;
+  if(msg) setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; },2000);
+}
+
+function gameOver(){
+  const {total}=calcScore();
+  document.getElementById('throw-btn').disabled=true;
+  const isPerfect=total===300;
+  if(isPerfect){
+    flash('🏆 パーフェクト！300点！');
+    startConfetti();
+  } else {
+    flash(`🎳 ゲーム終了！ ${total}点`);
+    if(total>=200) startConfetti();
+  }
+  saveBest(total);
+}
+
+function saveBest(score){
+  const k='bowling_best';
+  const prev=parseInt(localStorage.getItem(k)||'0');
+  if(score>prev) localStorage.setItem(k,score);
+}
+
+function updateHiModal(){
+  const best=localStorage.getItem('bowling_best');
+  document.getElementById('hi-body').innerHTML=best?`<b>ベストスコア:</b> <span style="color:#ffe870;font-size:20px;">${best}</span> 点`:'まだ記録なし';
+}
+
+function updateLEDs(){
+  const {total}=calcScore();
+  document.getElementById('led-score').textContent=total;
+  document.getElementById('led-frame').textContent=Math.min(currentFrame,10);
+}
+
+newGame();
+</script>
+</body>
+</html>

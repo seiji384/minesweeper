@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15パズル - ミニゲーム</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 22px; font-weight: bold; padding: 3px 10px;
+  min-width: 64px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+/* Puzzle grid */
+.puzzle-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  padding: 8px;
+  aspect-ratio: 1;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* Tile */
+.tile {
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900;
+  background: linear-gradient(145deg, #2a1870 0%, #1a0a50 100%);
+  border: 2px solid #5040a0;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  cursor: pointer; touch-action: manipulation;
+  transition: transform 0.12s ease, box-shadow 0.12s;
+  aspect-ratio: 1;
+}
+.tile:active { transform: scale(0.94); }
+.tile.empty {
+  background: linear-gradient(145deg, #060310 0%, #030108 100%);
+  border-color: #1a1040; cursor: default; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+}
+.tile.can-move {
+  border-color: #6050c0;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 6px rgba(96,80,192,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Tile colors */
+.tile-1 { color: #60b8ff; text-shadow: 0 0 8px #60b8ff; }
+.tile-2 { color: #60ff90; text-shadow: 0 0 8px #60ff90; }
+.tile-3 { color: #ff6060; text-shadow: 0 0 8px #ff6060; }
+.tile-4 { color: #c060ff; text-shadow: 0 0 8px #c060ff; }
+.tile-5 { color: #ffa040; text-shadow: 0 0 8px #ffa040; }
+.tile-6 { color: #40ffee; text-shadow: 0 0 8px #40ffee; }
+.tile-7 { color: #ffffff; text-shadow: 0 0 8px #fff; }
+.tile-8 { color: #ffee40; text-shadow: 0 0 8px #ffee40; }
+.tile-9 { color: #ff88cc; text-shadow: 0 0 8px #ff88cc; }
+.tile-10 { color: #88ffcc; text-shadow: 0 0 8px #88ffcc; font-size: 22px; }
+.tile-11 { color: #ffaa88; text-shadow: 0 0 8px #ffaa88; font-size: 22px; }
+.tile-12 { color: #aaccff; text-shadow: 0 0 8px #aaccff; font-size: 22px; }
+.tile-13 { color: #ff60a0; text-shadow: 0 0 8px #ff60a0; font-size: 22px; }
+.tile-14 { color: #60a0ff; text-shadow: 0 0 8px #60a0ff; font-size: 22px; }
+.tile-15 { color: #a0ff60; text-shadow: 0 0 8px #a0ff60; font-size: 22px; }
+
+/* Solved tile highlight */
+.tile.solved {
+  border-color: #f5c842;
+  box-shadow: 0 0 10px rgba(245,200,66,0.4), 0 3px 10px rgba(0,0,0,0.5);
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">🏠</a>
+    <span>🔢 15パズル</span>
+    <span style="width:24px"></span>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="led-moves">0</span>
+      <span class="led-label">手数</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-time">0:00</span>
+      <span class="led-label">タイム</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-best">--</span>
+      <span class="led-label">ベスト手数</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="puzzle-board" id="puzzle-board"></div>
+  </div>
+</div>
+
+<!-- Action bar -->
+<div class="action-bar">
+  <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
+  <button class="act-btn" onclick="newGame()">🔄 シャッフル</button>
+  <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
+</div>
+
+<!-- Rules modal -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" onclick="closeModal('rules-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>🔢 <strong>15パズル</strong>の遊び方</p><br>
+      <p>① 空きマスに隣接したタイルを<br>　タップして動かします</p>
+      <p>② 1〜15を左上から順番に並べると<br>　クリア！</p>
+      <p>③ 少ない手数でクリアするのが目標</p>
+      <br>
+      <p>ゴール配置:</p>
+      <p style="font-family:monospace;color:#f5c842;font-size:12px">
+        1  2  3  4<br>
+        5  6  7  8<br>
+        9 10 11 12<br>
+       13 14 15 □
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- High score modal -->
+<div class="modal-overlay" id="hs-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" onclick="closeModal('hs-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="hs-body"></div>
+  </div>
+</div>
+
+<!-- Win modal -->
+<div class="modal-overlay" id="win-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🎉 クリア！</span>
+      <button class="modal-close" onclick="closeModal('win-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="win-body"></div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// Confetti
+function startConfetti(){
+  const cv=document.getElementById('confetti');cv.style.display='block';
+  const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));
+  let frame=0;
+  function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}
+  anim();
+}
+
+// Visual Viewport
+const actionBar = document.querySelector('.action-bar');
+function fixActionBar() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const layoutWidth = document.documentElement.clientWidth || window.innerWidth;
+  const scaleRatio = layoutWidth / vv.width;
+  const isZoomed = vv.scale > 1.05 || scaleRatio > 1.05;
+  if (!isZoomed) {
+    actionBar.style.top = actionBar.style.bottom = '';
+    actionBar.style.left = actionBar.style.right = '';
+    actionBar.style.width = actionBar.style.transform = '';
+    actionBar.style.transformOrigin = '';
+    return;
+  }
+  const scale = Math.max(vv.scale, scaleRatio);
+  const inv = 1 / scale;
+  const barH = actionBar.offsetHeight || 52;
+  const layoutW = document.documentElement.clientWidth || Math.round(vv.width * scale);
+  actionBar.style.top = Math.round(vv.offsetTop + vv.height - barH) + 'px';
+  actionBar.style.bottom = 'auto';
+  actionBar.style.left = Math.round(vv.offsetLeft) + 'px';
+  actionBar.style.width = layoutW + 'px';
+  actionBar.style.right = 'auto';
+  actionBar.style.transform = `scale(${inv})`;
+  actionBar.style.transformOrigin = 'bottom left';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixActionBar);
+  window.visualViewport.addEventListener('scroll', fixActionBar);
+  fixActionBar();
+}
+
+// Game logic
+let tiles = [];
+let moves = 0;
+let timerInterval = null;
+let startTime = null;
+let elapsed = 0;
+let gameActive = false;
+let best = parseInt(localStorage.getItem('puzzle15_best') || '0') || null;
+
+// Update best display
+function updateBestDisplay() {
+  const stored = localStorage.getItem('puzzle15_best');
+  document.getElementById('led-best').textContent = stored ? stored : '--';
+}
+updateBestDisplay();
+
+function isSolvable(tiles) {
+  const arr = tiles.filter(t => t !== 0);
+  let inv = 0;
+  for (let i = 0; i < arr.length; i++)
+    for (let j = i+1; j < arr.length; j++)
+      if (arr[i] > arr[j]) inv++;
+  const emptyRow = Math.floor(tiles.indexOf(0) / 4);
+  const rowFromBottom = 4 - emptyRow;
+  if (rowFromBottom % 2 === 0) return inv % 2 === 1;
+  return inv % 2 === 0;
+}
+
+function isGoal(tiles) {
+  for (let i = 0; i < 15; i++) if (tiles[i] !== i+1) return false;
+  return tiles[15] === 0;
+}
+
+function shuffleTiles() {
+  let t;
+  do {
+    t = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+    for (let i = t.length-1; i > 0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [t[i],t[j]] = [t[j],t[i]];
+    }
+  } while (!isSolvable(t) || isGoal(t));
+  return t;
+}
+
+function newGame() {
+  clearInterval(timerInterval);
+  tiles = shuffleTiles();
+  moves = 0; elapsed = 0; gameActive = true;
+  document.getElementById('led-moves').textContent = '0';
+  document.getElementById('led-time').textContent = '0:00';
+  render();
+  startTimer();
+}
+
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    document.getElementById('led-time').textContent = m + ':' + String(s).padStart(2,'0');
+  }, 500);
+}
+
+function getEmptyIdx() { return tiles.indexOf(0); }
+
+function canMove(idx) {
+  const empty = getEmptyIdx();
+  const row = Math.floor(idx / 4), col = idx % 4;
+  const erow = Math.floor(empty / 4), ecol = empty % 4;
+  return (row === erow && Math.abs(col - ecol) === 1) ||
+         (col === ecol && Math.abs(row - erow) === 1);
+}
+
+function moveTile(idx) {
+  if (!gameActive || !canMove(idx)) return;
+  const empty = getEmptyIdx();
+  [tiles[idx], tiles[empty]] = [tiles[empty], tiles[idx]];
+  moves++;
+  document.getElementById('led-moves').textContent = moves;
+  render();
+  if (isGoal(tiles)) onWin();
+}
+
+function render() {
+  const board = document.getElementById('puzzle-board');
+  board.innerHTML = '';
+  const empty = getEmptyIdx();
+  tiles.forEach((val, idx) => {
+    const el = document.createElement('div');
+    if (val === 0) {
+      el.className = 'tile empty';
+    } else {
+      el.className = `tile tile-${val}`;
+      if (canMove(idx)) el.classList.add('can-move');
+      // Check if in correct position
+      if (val === idx + 1) el.classList.add('solved');
+      el.textContent = val;
+      el.addEventListener('click', () => moveTile(idx));
+      el.addEventListener('touchend', (e) => { e.preventDefault(); moveTile(idx); });
+    }
+    board.appendChild(el);
+  });
+}
+
+function onWin() {
+  clearInterval(timerInterval);
+  gameActive = false;
+  startConfetti();
+
+  // Save best
+  const stored = parseInt(localStorage.getItem('puzzle15_best') || '0');
+  let isNew = false;
+  if (!stored || moves < stored) {
+    localStorage.setItem('puzzle15_best', moves);
+    isNew = true;
+    updateBestDisplay();
+  }
+
+  // Save to score list
+  let scores = JSON.parse(localStorage.getItem('puzzle15_scores') || '[]');
+  scores.push({ moves, time: elapsed });
+  scores.sort((a,b) => a.moves - b.moves || a.time - b.time);
+  scores = scores.slice(0, 5);
+  localStorage.setItem('puzzle15_scores', JSON.stringify(scores));
+
+  const min = Math.floor(elapsed / 60), sec = elapsed % 60;
+  document.getElementById('win-body').innerHTML = `
+    <p style="font-size:16px;color:#f5c842;text-align:center;margin-bottom:12px">🎉 クリア！</p>
+    <p>手数: <strong style="color:#ff44aa">${moves}</strong> ${isNew ? '<span style="color:#f5c842">★ 新記録！</span>' : ''}</p>
+    <p>タイム: <strong style="color:#ff44aa">${min}:${String(sec).padStart(2,'0')}</strong></p>
+    <br><button class="act-btn" style="width:100%;padding:10px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
+  `;
+  showModal('win-modal');
+}
+
+function showHighScore() {
+  const scores = JSON.parse(localStorage.getItem('puzzle15_scores') || '[]');
+  let html = '<p style="color:#f5c842;font-weight:bold;margin-bottom:8px">ベストスコア TOP5</p>';
+  if (scores.length === 0) {
+    html += '<p style="color:#6050a0">記録なし</p>';
+  } else {
+    scores.forEach((s, i) => {
+      const min = Math.floor(s.time/60), sec = s.time%60;
+      html += `<p>${i+1}位: <span style="color:#ff44aa">${s.moves}手</span> ${min}:${String(sec).padStart(2,'0')}</p>`;
+    });
+  }
+  document.getElementById('hs-body').innerHTML = html;
+  showModal('hs-modal');
+}
+
+function showModal(id) { document.getElementById(id).classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('visible'); });
+});
+
+// Swipe & keyboard control
+let swipeStartX = 0, swipeStartY = 0;
+document.addEventListener('touchstart', e => {
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+}, {passive: true});
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const dy = e.changedTouches[0].clientY - swipeStartY;
+  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+  handleSwipeDir(dx, dy);
+}, {passive: true});
+document.addEventListener('keydown', e => {
+  const map = { ArrowLeft: [-1,0], ArrowRight: [1,0], ArrowUp: [0,-1], ArrowDown: [0,1] };
+  if (map[e.key]) { e.preventDefault(); handleSwipeDir(...map[e.key].map(v=>v*50)); }
+});
+function handleSwipeDir(dx, dy) {
+  if (!gameActive) return;
+  const empty = getEmptyIdx();
+  const emptyRow = Math.floor(empty / 4), emptyCol = empty % 4;
+  let target = -1;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx < 0 && emptyCol < 3) target = empty + 1;
+    if (dx > 0 && emptyCol > 0) target = empty - 1;
+  } else {
+    if (dy < 0 && emptyRow < 3) target = empty + 4;
+    if (dy > 0 && emptyRow > 0) target = empty - 4;
+  }
+  if (target >= 0 && target < 16) moveTile(target);
+}
+
+// Init
+newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>倉庫番</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 18px; font-weight: bold; padding: 3px 10px;
+  min-width: 54px; text-align: center; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+.cell { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.cell-wall { background: linear-gradient(145deg, #3a2080, #1a0860); border: 1px solid #5040a0; }
+.cell-floor { background: #04020e; }
+.cell-player { background: #04020e; }
+.cell-box { background: linear-gradient(145deg, #804000, #502000); border: 1px solid #c08020; border-radius: 4px; }
+.cell-goal { background: #04020e; }
+.cell-box-on-goal { background: radial-gradient(circle, #3a2400, #1a1000); border: 2px solid #f5c842; border-radius: 4px; }
+
+#game-area {
+  display: flex; justify-content: center; align-items: center;
+  position: relative; margin: 0 auto;
+  touch-action: none;
+}
+#game-grid {
+  display: grid;
+  margin: 0 auto;
+}
+
+/* Level selector */
+.level-selector {
+  display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px;
+  justify-content: center;
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  margin: 0 8px 4px;
+}
+.lvl-btn {
+  width: 28px; height: 28px; border-radius: 6px; font-size: 10px; font-weight: bold;
+  background: linear-gradient(160deg, #2a1460, #180840);
+  color: #8070c0; border: 1px solid #4030a0;
+  cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.lvl-btn:active { transform: scale(0.88); }
+.lvl-btn.current {
+  background: linear-gradient(160deg, #5a30c0, #3a1880);
+  color: #e0d0ff; border-color: #9070ff;
+  box-shadow: 0 0 8px rgba(140,100,255,0.5);
+}
+.lvl-btn.cleared {
+  background: linear-gradient(160deg, #304020, #1a2010);
+  color: #80c040; border-color: #507030;
+}
+.lvl-btn.cleared.current {
+  background: linear-gradient(160deg, #5a7030, #3a4820);
+  color: #c0ff60; border-color: #90c050;
+  box-shadow: 0 0 8px rgba(100,200,50,0.5);
+}
+
+/* D-pad */
+.dpad-container {
+  display: flex; justify-content: center; align-items: center;
+  padding: 8px 0 4px;
+}
+.dpad {
+  display: grid;
+  grid-template-columns: 52px 52px 52px;
+  grid-template-rows: 52px 52px;
+  gap: 4px;
+}
+.dpad-btn {
+  width: 52px; height: 52px; border-radius: 10px;
+  background: linear-gradient(160deg, #3a2080, #22105a);
+  color: #c0a8ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 12px rgba(112,90,255,0.2);
+  cursor: pointer; font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation; transition: all 0.1s;
+}
+.dpad-btn:active {
+  transform: scale(0.88);
+  background: linear-gradient(160deg, #5a30c0, #3a1880);
+  box-shadow: 0 0 16px rgba(140,100,255,0.6);
+}
+.dpad-center { background: transparent !important; border: none !important; box-shadow: none !important; cursor: default; }
+
+/* Win overlay */
+#win-overlay {
+  display: none; position: absolute; inset: 0;
+  background: rgba(2,1,14,0.92);
+  justify-content: center; align-items: center;
+  z-index: 500; border-radius: 0;
+  flex-direction: column; gap: 12px;
+}
+#win-overlay.visible { display: flex; }
+.win-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #f5c842;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(245,200,66,0.4), 0 0 80px rgba(112,90,255,0.3);
+  padding: 20px 28px; text-align: center; min-width: 200px;
+}
+.win-title {
+  font-size: 28px; font-weight: 900; color: #f5c842;
+  text-shadow: 0 0 20px rgba(245,200,66,0.8), 0 0 40px rgba(245,200,66,0.4);
+  letter-spacing: 4px; margin-bottom: 8px;
+}
+.win-sub { font-size: 14px; color: #c0b0e8; margin-bottom: 4px; }
+.win-moves { font-size: 22px; color: #ff44aa; font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px #ff44aa; font-weight: bold; }
+.win-best { font-size: 12px; color: #80c040; margin-top: 4px; }
+.win-btn {
+  margin-top: 14px; padding: 8px 24px; border-radius: 16px; font-size: 14px; font-weight: bold;
+  background: linear-gradient(160deg, #f5c842, #a06008);
+  color: #3a1a00; border: none; cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 0 16px rgba(245,200,66,0.4); transition: all 0.15s;
+}
+.win-btn:active { transform: scale(0.93); }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <span>🎮</span>
+    <span>倉庫番 SOKOBAN</span>
+    <button class="titlebar" id="btn-rules" style="background:none;border:none;font-size:18px;cursor:pointer;color:#3a1a00;padding:0;">📖</button>
+  </div>
+
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="led-level">01</span>
+      <span class="led-label">レベル</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-moves">000</span>
+      <span class="led-label">手数</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-best">---</span>
+      <span class="led-label">ベスト</span>
+    </div>
+  </div>
+
+  <div class="level-selector" id="level-selector"></div>
+
+  <div class="content">
+    <div id="game-area">
+      <div id="game-grid"></div>
+      <div id="win-overlay">
+        <div class="win-box">
+          <div class="win-title">クリア！</div>
+          <div class="win-sub">クリア手数</div>
+          <div class="win-moves" id="win-moves-num">000</div>
+          <div class="win-best" id="win-best-txt"></div>
+          <button class="win-btn" id="btn-next-win">次のレベル ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dpad-container">
+    <div class="dpad">
+      <div></div>
+      <button class="dpad-btn" id="dp-up">↑</button>
+      <div></div>
+      <button class="dpad-btn" id="dp-left">←</button>
+      <button class="dpad-btn dpad-center" id="dp-down-placeholder"></button>
+      <button class="dpad-btn" id="dp-right">→</button>
+    </div>
+    <div style="width:4px;"></div>
+    <button class="dpad-btn" id="dp-down" style="align-self:flex-end;">↓</button>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" id="btn-rules-ab">📖 ルール</button>
+  <button class="act-btn" id="btn-undo">↩ アンドゥ</button>
+  <button class="act-btn" id="btn-reset">🔄 リセット</button>
+  <button class="act-btn" id="btn-next">⏭ 次レベル</button>
+</div>
+
+<!-- Rules modal -->
+<div class="modal-overlay" id="modal-rules">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" id="close-rules">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong style="color:#f5c842;">目的：</strong>すべての箱(📦)をゴール(⭐)に押して載せる。</p>
+      <br>
+      <p><strong style="color:#f5c842;">操作：</strong></p>
+      <ul style="margin-left:16px;margin-top:6px;line-height:2;">
+        <li>矢印キー / Dパッドで移動</li>
+        <li>ゲーム画面をスワイプ</li>
+      </ul>
+      <br>
+      <p><strong style="color:#f5c842;">ルール：</strong></p>
+      <ul style="margin-left:16px;margin-top:6px;line-height:2;">
+        <li>箱は前に押せる（引けない）</li>
+        <li>箱を壁や別の箱には押せない</li>
+        <li>箱がゴールに乗ると✅になる</li>
+      </ul>
+      <br>
+      <p><strong style="color:#f5c842;">記号：</strong></p>
+      <ul style="margin-left:16px;margin-top:6px;line-height:2;">
+        <li>🧑 プレイヤー</li>
+        <li>📦 箱</li>
+        <li>⭐ ゴール（薄く表示）</li>
+        <li>✅ 箱がゴールに乗った状態</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== LEVELS =====
+const LEVELS = [
+  // Level 1 - tutorial (1 box)
+  ["#####",
+   "#@$.#",
+   "#####"],
+  // Level 2 - 1 box, slightly more space
+  ["######",
+   "#@   #",
+   "# $  #",
+   "#  X #",
+   "######"],
+  // Level 3 - 2 boxes
+  ["#######",
+   "#@ $  #",
+   "#  $  #",
+   "## XX #",
+   "#######"],
+  // Level 4
+  ["######",
+   "#@   #",
+   "# $$ #",
+   "# XX #",
+   "######"],
+  // Level 5
+  ["#######",
+   "#@    #",
+   "# $ $ #",
+   "#     #",
+   "## XX #",
+   "#######"],
+  // Level 6 - corridor puzzle
+  ["########",
+   "#@#    #",
+   "# # $  #",
+   "#   X  #",
+   "########"],
+  // Level 7 - 3 boxes
+  ["########",
+   "#@     #",
+   "# $ $  #",
+   "#  $   #",
+   "## XXX #",
+   "########"],
+  // Level 8
+  ["########",
+   "#@ $   #",
+   "#  # $ #",
+   "#  X X #",
+   "########"],
+  // Level 9
+  ["#########",
+   "#@      #",
+   "# $$ $  #",
+   "#       #",
+   "## XXX  #",
+   "#########"],
+  // Level 10
+  ["########",
+   "#@     #",
+   "# $ $  #",
+   "# #X#  #",
+   "#   X  #",
+   "########"],
+  // Level 11 - 4 boxes
+  ["#########",
+   "#@      #",
+   "# $$    #",
+   "# $$    #",
+   "## XXXX #",
+   "#########"],
+  // Level 12
+  ["##########",
+   "#@       #",
+   "# $  $   #",
+   "#   ##   #",
+   "# $  $ X #",
+   "## XXX   #",
+   "##########"],
+  // Level 13 - tight spaces
+  ["########",
+   "#@  #  #",
+   "# $    #",
+   "# # $  #",
+   "#   XX #",
+   "########"],
+  // Level 14
+  ["##########",
+   "#@       #",
+   "# $ $ $  #",
+   "#   ###  #",
+   "# $ $ X  #",
+   "## XXXX  #",
+   "##########"],
+  // Level 15 - hardest
+  ["###########",
+   "#@        #",
+   "# $  $    #",
+   "#   $ $   #",
+   "# ##  ##  #",
+   "#  XXXX   #",
+   "###########"]
+];
+
+// ===== GAME STATE =====
+let currentLevel = 0;
+let grid = [];
+let playerPos = {x:0, y:0};
+let moveCount = 0;
+let history = [];
+let won = false;
+
+// Cell types
+const WALL = '#';
+const FLOOR = '.';
+const PLAYER = '@';
+const BOX = '$';
+const GOAL = 'X';
+const BOX_ON_GOAL = '*';
+const PLAYER_ON_GOAL = '+';
+
+function parseLevel(levelData) {
+  const rows = levelData.map(row => row.split(''));
+  let px = 0, py = 0;
+  for (let r = 0; r < rows.length; r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      const ch = rows[r][c];
+      if (ch === PLAYER || ch === PLAYER_ON_GOAL) {
+        px = c; py = r;
+      }
+      // normalize: spaces become floor
+      if (rows[r][c] === ' ') rows[r][c] = FLOOR;
+    }
+  }
+  return { grid: rows, px, py };
+}
+
+function loadLevel(idx) {
+  currentLevel = idx;
+  won = false;
+  history = [];
+  moveCount = 0;
+  const parsed = parseLevel(LEVELS[idx]);
+  grid = parsed.grid.map(row => [...row]);
+  playerPos = {x: parsed.px, y: parsed.py};
+  document.getElementById('win-overlay').classList.remove('visible');
+  updateLEDs();
+  renderGrid();
+  updateLevelSelector();
+}
+
+function cloneState() {
+  return {
+    grid: grid.map(row => [...row]),
+    playerPos: {...playerPos},
+    moveCount
+  };
+}
+
+function restoreState(state) {
+  grid = state.grid.map(row => [...row]);
+  playerPos = {...state.playerPos};
+  moveCount = state.moveCount;
+}
+
+function move(dir) {
+  if (won) return;
+  const dx = dir === 'right' ? 1 : dir === 'left' ? -1 : 0;
+  const dy = dir === 'down' ? 1 : dir === 'up' ? -1 : 0;
+  const nx = playerPos.x + dx;
+  const ny = playerPos.y + dy;
+  if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[ny].length) return;
+  const nCell = grid[ny][nx];
+  if (nCell === WALL) return;
+
+  const savedState = cloneState();
+
+  if (nCell === BOX || nCell === BOX_ON_GOAL) {
+    // Try to push box
+    const bx = nx + dx, by = ny + dy;
+    if (by < 0 || by >= grid.length || bx < 0 || bx >= grid[by].length) return;
+    const bCell = grid[by][bx];
+    if (bCell === WALL || bCell === BOX || bCell === BOX_ON_GOAL) return;
+    // Move box
+    grid[by][bx] = (bCell === GOAL) ? BOX_ON_GOAL : BOX;
+    grid[ny][nx] = (nCell === BOX_ON_GOAL) ? GOAL : FLOOR;
+  } else if (nCell !== FLOOR && nCell !== GOAL) {
+    return;
+  }
+
+  // Move player
+  const curCell = grid[playerPos.y][playerPos.x];
+  grid[playerPos.y][playerPos.x] = (curCell === PLAYER_ON_GOAL) ? GOAL : FLOOR;
+  grid[ny][nx] = (grid[ny][nx] === GOAL) ? PLAYER_ON_GOAL : PLAYER;
+  playerPos = {x: nx, y: ny};
+  moveCount++;
+
+  if (history.length >= 50) history.shift();
+  history.push(savedState);
+
+  updateLEDs();
+  renderGrid();
+  checkWin();
+}
+
+function undo() {
+  if (history.length === 0) return;
+  const state = history.pop();
+  restoreState(state);
+  won = false;
+  document.getElementById('win-overlay').classList.remove('visible');
+  updateLEDs();
+  renderGrid();
+}
+
+function checkWin() {
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      if (grid[r][c] === BOX) return; // un-placed box exists
+    }
+  }
+  // All boxes on goals
+  won = true;
+  startConfetti();
+  const bestKey = 'sk_best_L' + currentLevel;
+  const prevBest = localStorage.getItem(bestKey);
+  let isNew = false;
+  if (prevBest === null || moveCount < parseInt(prevBest)) {
+    localStorage.setItem(bestKey, moveCount);
+    isNew = true;
+  }
+  document.getElementById('win-moves-num').textContent = String(moveCount).padStart(3, '0');
+  const best = localStorage.getItem(bestKey);
+  document.getElementById('win-best-txt').textContent = isNew ? '🏆 新記録！' : 'ベスト: ' + best + ' 手';
+  document.getElementById('win-overlay').classList.add('visible');
+  updateLEDs();
+  // Mark cleared
+  const cleared = getClearedLevels();
+  if (!cleared.includes(currentLevel)) {
+    cleared.push(currentLevel);
+    localStorage.setItem('sk_cleared', JSON.stringify(cleared));
+  }
+  updateLevelSelector();
+}
+
+function getClearedLevels() {
+  try { return JSON.parse(localStorage.getItem('sk_cleared') || '[]'); } catch(e) { return []; }
+}
+
+function getBest(idx) {
+  const v = localStorage.getItem('sk_best_L' + idx);
+  return v !== null ? parseInt(v) : null;
+}
+
+function updateLEDs() {
+  document.getElementById('led-level').textContent = String(currentLevel + 1).padStart(2, '0');
+  document.getElementById('led-moves').textContent = String(moveCount).padStart(3, '0');
+  const best = getBest(currentLevel);
+  document.getElementById('led-best').textContent = best !== null ? String(best).padStart(3, '0') : '---';
+}
+
+function updateLevelSelector() {
+  const cleared = getClearedLevels();
+  const sel = document.getElementById('level-selector');
+  sel.innerHTML = '';
+  for (let i = 0; i < LEVELS.length; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'lvl-btn' +
+      (i === currentLevel ? ' current' : '') +
+      (cleared.includes(i) ? ' cleared' : '');
+    btn.textContent = cleared.includes(i) ? '✓' : (i + 1);
+    btn.title = 'レベル ' + (i + 1);
+    btn.dataset.idx = i;
+    btn.addEventListener('click', () => loadLevel(i));
+    sel.appendChild(btn);
+  }
+}
+
+// ===== RENDERING =====
+function renderGrid() {
+  const gameArea = document.getElementById('game-area');
+  const gameGrid = document.getElementById('game-grid');
+  const availW = Math.min(gameArea.parentElement.clientWidth - 16, 420);
+  const numCols = grid[0] ? grid[0].length : 8;
+  const numRows = grid.length;
+  const cellSize = Math.min(Math.floor(availW / numCols), 40);
+  gameGrid.style.gridTemplateColumns = `repeat(${numCols}, ${cellSize}px)`;
+  gameGrid.style.gridTemplateRows = `repeat(${numRows}, ${cellSize}px)`;
+  gameGrid.style.width = (cellSize * numCols) + 'px';
+  gameGrid.style.height = (cellSize * numRows) + 'px';
+  gameGrid.innerHTML = '';
+
+  const emojiSize = Math.max(12, Math.floor(cellSize * 0.7));
+
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    for (let c = 0; c < numCols; c++) {
+      const ch = row[c] !== undefined ? row[c] : FLOOR;
+      const cell = document.createElement('div');
+      cell.style.width = cellSize + 'px';
+      cell.style.height = cellSize + 'px';
+      cell.style.fontSize = emojiSize + 'px';
+      cell.style.display = 'flex';
+      cell.style.alignItems = 'center';
+      cell.style.justifyContent = 'center';
+      cell.style.overflow = 'hidden';
+
+      switch(ch) {
+        case WALL:
+          cell.className = 'cell-wall';
+          break;
+        case FLOOR:
+          cell.className = 'cell-floor';
+          break;
+        case PLAYER:
+          cell.className = 'cell-player';
+          cell.textContent = '🧑';
+          break;
+        case BOX:
+          cell.className = 'cell-box';
+          cell.textContent = '📦';
+          break;
+        case GOAL:
+          cell.className = 'cell-goal';
+          cell.innerHTML = `<span style="opacity:0.45;font-size:${emojiSize}px;">⭐</span>`;
+          break;
+        case BOX_ON_GOAL:
+          cell.className = 'cell-box-on-goal';
+          cell.textContent = '✅';
+          break;
+        case PLAYER_ON_GOAL:
+          cell.className = 'cell-player';
+          cell.textContent = '🧑';
+          break;
+        default:
+          cell.className = 'cell-floor';
+      }
+      gameGrid.appendChild(cell);
+    }
+  }
+}
+
+// ===== TOUCH SWIPE =====
+const gameArea = document.getElementById('game-area');
+let sx, sy;
+gameArea.addEventListener('touchstart', e => {
+  sx = e.touches[0].clientX;
+  sy = e.touches[0].clientY;
+}, {passive: true});
+gameArea.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - sx;
+  const dy = e.changedTouches[0].clientY - sy;
+  if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
+  if (Math.abs(dx) > Math.abs(dy)) { move(dx > 0 ? 'right' : 'left'); }
+  else { move(dy > 0 ? 'down' : 'up'); }
+}, {passive: true});
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', e => {
+  switch(e.key) {
+    case 'ArrowUp':    e.preventDefault(); move('up'); break;
+    case 'ArrowDown':  e.preventDefault(); move('down'); break;
+    case 'ArrowLeft':  e.preventDefault(); move('left'); break;
+    case 'ArrowRight': e.preventDefault(); move('right'); break;
+    case 'z': case 'Z': if (e.ctrlKey || e.metaKey) { e.preventDefault(); undo(); } break;
+  }
+});
+
+// ===== D-PAD =====
+function addDpadBtn(id, dir) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.addEventListener('click', () => move(dir));
+  // Also handle touchstart for responsiveness
+  btn.addEventListener('touchstart', e => { e.preventDefault(); move(dir); }, {passive: false});
+}
+addDpadBtn('dp-up', 'up');
+addDpadBtn('dp-down', 'down');
+addDpadBtn('dp-left', 'left');
+addDpadBtn('dp-right', 'right');
+
+// Rebuild dpad layout properly
+(function() {
+  const dpadContainer = document.querySelector('.dpad-container');
+  dpadContainer.innerHTML = `
+    <div class="dpad" style="display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px;gap:4px;">
+      <div></div>
+      <button class="dpad-btn" id="dp-up">↑</button>
+      <div></div>
+      <button class="dpad-btn" id="dp-left">←</button>
+      <button class="dpad-btn" id="dp-down" style="">↓</button>
+      <button class="dpad-btn" id="dp-right">→</button>
+    </div>
+  `;
+  addDpadBtn('dp-up', 'up');
+  addDpadBtn('dp-down', 'down');
+  addDpadBtn('dp-left', 'left');
+  addDpadBtn('dp-right', 'right');
+})();
+
+// ===== BUTTONS =====
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-reset').addEventListener('click', () => loadLevel(currentLevel));
+document.getElementById('btn-next').addEventListener('click', () => {
+  loadLevel((currentLevel + 1) % LEVELS.length);
+});
+document.getElementById('btn-next-win').addEventListener('click', () => {
+  document.getElementById('win-overlay').classList.remove('visible');
+  loadLevel((currentLevel + 1) % LEVELS.length);
+});
+document.getElementById('btn-rules').addEventListener('click', () => {
+  document.getElementById('modal-rules').classList.add('visible');
+});
+document.getElementById('btn-rules-ab').addEventListener('click', () => {
+  document.getElementById('modal-rules').classList.add('visible');
+});
+document.getElementById('close-rules').addEventListener('click', () => {
+  document.getElementById('modal-rules').classList.remove('visible');
+});
+document.getElementById('modal-rules').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-rules'))
+    document.getElementById('modal-rules').classList.remove('visible');
+});
+
+// ===== STARS =====
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ===== VISUAL VIEWPORT FIX + CONFETTI =====
+const actionBar=document.querySelector('.action-bar');
+function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fixAB);window.visualViewport.addEventListener('scroll',fixAB);fixAB();}
+
+function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
+
+// ===== RESIZE HANDLER =====
+window.addEventListener('resize', () => { renderGrid(); });
+
+// ===== INIT =====
+loadLevel(0);
+</script>
+</body>
+</html>

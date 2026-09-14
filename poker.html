@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🃏 ポーカー</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 90px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+#confettiCanvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:200; }
+
+/* ── Main window ── */
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 500px; width: 100%; overflow: hidden;
+}
+
+/* ── Titlebar ── */
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 20px; line-height:1; }
+.titlebar-center { flex:1; text-align:center; }
+
+/* ── LED ── */
+.led {
+  background: #0a0018;
+  color: #ff60c0;
+  border: 1px solid #ff40a0;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 20px;
+  padding: 4px 10px;
+  box-shadow: 0 0 10px rgba(255,80,160,0.5);
+  letter-spacing: 3px;
+  display: inline-block;
+}
+.led-sm {
+  background: #0a0018;
+  color: #ff60c0;
+  border: 1px solid #ff40a0;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 2px 8px;
+  box-shadow: 0 0 8px rgba(255,80,160,0.4);
+  letter-spacing: 2px;
+  display: inline-block;
+}
+
+/* ── Game area ── */
+.game-area { padding: 12px 14px 0; }
+
+/* ── Section labels ── */
+.section-label {
+  font-size: 11px; letter-spacing: 2px; color: #7060cc;
+  text-transform: uppercase; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label span { flex:1; height:1px; background: #2a1868; }
+
+/* ── Hand names ── */
+.hand-name {
+  text-align: center; min-height: 18px;
+  font-size: 13px; font-weight: bold; color: #ffe870;
+  letter-spacing: 1px; margin-top: 4px; margin-bottom: 2px;
+}
+
+/* ── Card hand row ── */
+.hand {
+  display: flex; gap: 6px; justify-content: center;
+  flex-wrap: nowrap;
+}
+
+/* ── Cards ── */
+.card {
+  width: 58px; height: 84px;
+  border-radius: 7px;
+  border: 2px solid rgba(200,200,200,0.8);
+  background: #fff;
+  display: flex; flex-direction: column;
+  align-items: stretch;
+  cursor: pointer;
+  position: relative;
+  font-family: Arial, sans-serif;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+.card.red { color: #cc0000; }
+.card.black { color: #111; }
+.card.selected {
+  border-color: #ff60c0;
+  transform: translateY(-14px);
+  box-shadow: 0 6px 18px rgba(255,96,192,0.7), 0 0 0 1px #ff60c0;
+}
+.card-corner-tl {
+  position: absolute; top: 3px; left: 4px;
+  font-size: 12px; font-weight: bold; line-height: 1.1;
+  text-align: center;
+}
+.card-corner-tl .suit-small { font-size: 10px; display: block; }
+.card-corner-br {
+  position: absolute; bottom: 3px; right: 4px;
+  font-size: 12px; font-weight: bold; line-height: 1.1;
+  text-align: center; transform: rotate(180deg);
+}
+.card-corner-br .suit-small { font-size: 10px; display: block; }
+.card-center {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 26px; line-height: 1;
+}
+/* Card back: purple diagonal stripe */
+.card.back {
+  background: repeating-linear-gradient(
+    45deg,
+    #1a0850 0px,
+    #1a0850 6px,
+    #2a1070 6px,
+    #2a1070 12px
+  );
+  border-color: #7060ff;
+  cursor: default;
+}
+.card.back::after {
+  content: '🃏';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; opacity: 0.5;
+}
+/* Discard label on selected card */
+.card.selected::before {
+  content: '捨'; position: absolute; bottom: -1px; left: 0; right: 0;
+  background: #ff60c0; color: #fff;
+  font-size: 9px; font-weight: bold; text-align: center;
+  border-radius: 0 0 5px 5px; padding: 1px 0;
+  letter-spacing: 0;
+}
+
+/* ── Status row ── */
+.status-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; gap: 8px;
+}
+.status-row .label { font-size: 11px; color: #7060cc; letter-spacing: 1px; }
+.status-row .val { font-size: 13px; color: #b898ff; font-weight: bold; }
+
+/* ── Message area ── */
+.message-area {
+  text-align: center; padding: 8px 6px;
+  min-height: 42px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #d0c0ff;
+  line-height: 1.4;
+}
+
+/* ── Result badges ── */
+.badge { display: inline-block; padding: 4px 18px; border-radius: 16px; font-weight: 900; font-size: 16px; letter-spacing: 1px; }
+.badge-win  { background: linear-gradient(90deg, #40a020, #80ff40); color: #003000; box-shadow: 0 0 20px rgba(80,255,60,0.5); }
+.badge-lose { background: linear-gradient(90deg, #a00040, #ff4088); color: #200010; box-shadow: 0 0 16px rgba(255,60,120,0.4); }
+.badge-push { background: linear-gradient(90deg, #707090, #b0b0d0); color: #101030; }
+
+/* ── Divider ── */
+hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
+
+/* ── Phase hint ── */
+.phase-hint {
+  text-align: center; font-size: 11px; color: #7060cc;
+  letter-spacing: 1px; min-height: 16px; margin: 4px 0 8px;
+}
+
+/* ── Action bar (fixed) ── */
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 7px 14px; font-size: 12px; border-radius: 10px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.12s;
+  touch-action: manipulation; white-space: nowrap;
+}
+.btn:hover { background: linear-gradient(160deg, #4a30a0 0%, #32206a 100%); color: #d0b8ff; }
+.btn:active { transform: scale(0.93); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.btn-primary {
+  background: linear-gradient(160deg, #5a38c0 0%, #3a2095 100%);
+  border-color: #9070ff; color: #e0d0ff;
+  box-shadow: 0 2px 12px rgba(112,90,255,0.4);
+}
+.btn-primary:hover { background: linear-gradient(160deg, #6a48d0 0%, #4a30a5 100%); }
+.btn.bet-selected {
+  border-color: #ff60c0; color: #ff80d0;
+  box-shadow: 0 0 10px rgba(255,80,160,0.45);
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 340px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 13px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; }
+.rankings-table { width: 100%; border-collapse: collapse; }
+.rankings-table tr:nth-child(odd) { background: rgba(112,96,255,0.06); }
+.rankings-table td {
+  padding: 7px 10px; font-size: 12px; color: #b898ff;
+  border-bottom: 1px solid rgba(80,60,180,0.2);
+}
+.rankings-table td:first-child { color: #ffe870; font-weight: bold; min-width: 130px; }
+.rankings-table td:last-child { color: #8070c0; }
+.rank-num { color: #ff60c0; font-weight: bold; margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="window">
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <a href="index.html">🏠</a>
+    <div class="titlebar-center">🃏 ポーカー（5カードドロー）</div>
+    <div class="led" id="chipsLed">1000</div>
+  </div>
+
+  <!-- Game area -->
+  <div class="game-area">
+
+    <!-- CPU section -->
+    <div class="section-label">CPU<span></span></div>
+    <div class="hand" id="cpuHand"></div>
+    <div class="hand-name" id="cpuHandName"></div>
+
+    <hr class="div">
+
+    <!-- Message -->
+    <div class="message-area" id="messageArea">ベット額を選んでゲームを開始してください</div>
+
+    <hr class="div">
+
+    <!-- Player section -->
+    <div class="section-label"><span></span>あなた</div>
+    <div class="hand" id="playerHand"></div>
+    <div class="hand-name" id="playerHandName"></div>
+    <div class="phase-hint" id="phaseHint"></div>
+
+    <!-- Status row -->
+    <div class="status-row">
+      <div><div class="label">チップ</div><div class="val" id="chipsVal">-</div></div>
+      <div style="text-align:center"><div class="label">ベット</div><div class="val" id="betVal">-</div></div>
+      <div style="text-align:right"><div class="label">フェーズ</div><div class="val" id="phaseVal">-</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Action bar (injected by JS) -->
+<div class="action-bar" id="actionBar"></div>
+
+<!-- Rules modal -->
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 役一覧</span>
+      <button class="modal-close" onclick="closeRules()">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="rankings-table">
+        <tr><td><span class="rank-num">1</span>ロイヤルフラッシュ</td><td>A K Q J 10 同スーツ</td></tr>
+        <tr><td><span class="rank-num">2</span>ストレートフラッシュ</td><td>連続5枚 同スーツ</td></tr>
+        <tr><td><span class="rank-num">3</span>フォーカード</td><td>同ランク4枚</td></tr>
+        <tr><td><span class="rank-num">4</span>フルハウス</td><td>3枚＋2枚</td></tr>
+        <tr><td><span class="rank-num">5</span>フラッシュ</td><td>同スーツ5枚</td></tr>
+        <tr><td><span class="rank-num">6</span>ストレート</td><td>連続する5枚</td></tr>
+        <tr><td><span class="rank-num">7</span>スリーカード</td><td>同ランク3枚</td></tr>
+        <tr><td><span class="rank-num">8</span>ツーペア</td><td>ペア×2組</td></tr>
+        <tr><td><span class="rank-num">9</span>ワンペア</td><td>ペア×1組</td></tr>
+        <tr><td><span class="rank-num">10</span>ハイカード</td><td>上記なし（最高位牌）</td></tr>
+      </table>
+      <div style="margin-top:10px; font-size:11px; color:#6050a0; line-height:1.6;">
+        勝利: ベット×2倍 獲得<br>引き分け: ベット返却<br>敗北: ベット没収
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STAR CANVAS
+// ══════════════════════════════════════════════
+(function() {
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  let stars = [];
+  function resize() {
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+    stars = Array.from({length: 130}, () => ({
+      x: Math.random() * c.width,
+      y: Math.random() * c.height,
+      r: Math.random() * 1.4 + 0.3,
+      phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.6 + 0.3
+    }));
+  }
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    const t = Date.now() * 0.001;
+    stars.forEach(s => {
+      const a = 0.25 + 0.65 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(190,170,255,${a.toFixed(2)})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+// ══════════════════════════════════════════════
+//  CONFETTI
+// ══════════════════════════════════════════════
+const cCanvas = document.getElementById('confettiCanvas');
+const cCtx = cCanvas.getContext('2d');
+let confettiParts = [];
+let confettiRaf = null;
+
+function resizeCC() { cCanvas.width = window.innerWidth; cCanvas.height = window.innerHeight; }
+resizeCC();
+window.addEventListener('resize', resizeCC);
+
+function launchConfetti() {
+  const cols = ['#ff60c0','#ffe870','#7060ff','#60ffb0','#ff8040','#40c0ff'];
+  confettiParts = Array.from({length: 140}, () => ({
+    x: Math.random() * cCanvas.width,
+    y: -12,
+    vx: (Math.random() - 0.5) * 5,
+    vy: Math.random() * 3.5 + 1.5,
+    w: Math.random() * 8 + 4,
+    h: Math.random() * 5 + 3,
+    rot: Math.random() * Math.PI * 2,
+    rs: (Math.random() - 0.5) * 0.18,
+    col: cols[Math.floor(Math.random() * cols.length)]
+  }));
+  if (confettiRaf) cancelAnimationFrame(confettiRaf);
+  let frames = 0;
+  function animCC() {
+    cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+    frames++;
+    confettiParts.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.rot += p.rs;
+      cCtx.save();
+      cCtx.translate(p.x, p.y);
+      cCtx.rotate(p.rot);
+      cCtx.fillStyle = p.col;
+      cCtx.globalAlpha = Math.max(0, 1 - frames / 160);
+      cCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      cCtx.restore();
+    });
+    if (frames < 160) confettiRaf = requestAnimationFrame(animCC);
+    else cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+  }
+  animCC();
+}
+
+// ══════════════════════════════════════════════
+//  CARD & DECK
+// ══════════════════════════════════════════════
+const SUITS = ['♠','♥','♦','♣'];
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const RV = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
+
+function makeDeck() {
+  const d = [];
+  for (const s of SUITS) for (const r of RANKS) d.push({s, r});
+  return d;
+}
+function shuffle(d) {
+  for (let i = d.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+// ══════════════════════════════════════════════
+//  HAND EVALUATION
+// ══════════════════════════════════════════════
+function evalHand(hand) {
+  const vals = hand.map(c => RV[c.r]).sort((a,b) => b-a);
+  const suits = hand.map(c => c.s);
+
+  // Flush check
+  const isFlush = suits.every(s => s === suits[0]);
+
+  // Straight check (including A-low: A-2-3-4-5)
+  const uv = [...new Set(vals)].sort((a,b) => b-a);
+  let isStraight = false;
+  if (uv.length === 5) {
+    if (uv[0] - uv[4] === 4) isStraight = true;
+    // A-low: [14,5,4,3,2]
+    if (uv[0] === 14 && uv[1] === 5 && uv[2] === 4 && uv[3] === 3 && uv[4] === 2) isStraight = true;
+  }
+
+  // Frequency map
+  const freq = {};
+  vals.forEach(v => freq[v] = (freq[v]||0)+1);
+  // Sort entries by count desc, then value desc
+  const groups = Object.entries(freq).sort((a,b) => b[1]-a[1] || b[0]-a[0]);
+  const counts = groups.map(g => g[1]);
+
+  let rank, nameJa;
+  if (isFlush && isStraight) {
+    if (vals[0] === 14 && vals[4] === 10) { rank = 9; nameJa = 'ロイヤルフラッシュ'; }
+    else { rank = 8; nameJa = 'ストレートフラッシュ'; }
+  } else if (counts[0] === 4) { rank = 7; nameJa = 'フォーカード'; }
+  else if (counts[0] === 3 && counts[1] === 2) { rank = 6; nameJa = 'フルハウス'; }
+  else if (isFlush) { rank = 5; nameJa = 'フラッシュ'; }
+  else if (isStraight) { rank = 4; nameJa = 'ストレート'; }
+  else if (counts[0] === 3) { rank = 3; nameJa = 'スリーカード'; }
+  else if (counts[0] === 2 && counts[1] === 2) { rank = 2; nameJa = 'ツーペア'; }
+  else if (counts[0] === 2) { rank = 1; nameJa = 'ワンペア'; }
+  else { rank = 0; nameJa = 'ハイカード'; }
+
+  // Tiebreaker value array: sort by group count desc, then group value desc
+  const tbVals = groups.flatMap(g => Array(g[1]).fill(Number(g[0])));
+
+  return { rank, nameJa, tbVals };
+}
+
+function compareHands(ph, ch) {
+  const pe = evalHand(ph), ce = evalHand(ch);
+  if (pe.rank !== ce.rank) return pe.rank > ce.rank ? 1 : -1;
+  for (let i = 0; i < pe.tbVals.length; i++) {
+    if (pe.tbVals[i] !== ce.tbVals[i]) return pe.tbVals[i] > ce.tbVals[i] ? 1 : -1;
+  }
+  return 0;
+}
+
+// ══════════════════════════════════════════════
+//  CPU AI — which cards to discard
+//  Returns boolean[] where true = discard
+// ══════════════════════════════════════════════
+function cpuDiscardMask(hand) {
+  const ev = evalHand(hand);
+
+  // Keep everything for strong hands
+  if (ev.rank >= 4) return hand.map(() => false);
+
+  // Build frequency map by index
+  const freq = {};
+  hand.forEach((c, i) => {
+    const v = RV[c.r];
+    if (!freq[v]) freq[v] = [];
+    freq[v].push(i);
+  });
+
+  // One pair, two pair, three of a kind, full house: keep matched cards
+  if (ev.rank >= 1) {
+    const keepIdx = new Set();
+    Object.values(freq).forEach(idxArr => {
+      if (idxArr.length >= 2) idxArr.forEach(i => keepIdx.add(i));
+    });
+    // For three of a kind: also included via length >= 2 check above (length 3)
+    return hand.map((_, i) => !keepIdx.has(i));
+  }
+
+  // High card: keep top 2 cards by rank value (conservative discard)
+  const sorted = hand.map((c,i) => ({v: RV[c.r], i})).sort((a,b) => b.v-a.v);
+  const keep = new Set(sorted.slice(0, 2).map(x => x.i));
+  return hand.map((_, i) => !keep.has(i));
+}
+
+// ══════════════════════════════════════════════
+//  RENDER HELPERS
+// ══════════════════════════════════════════════
+function makeCardEl(card, faceDown, selected, clickable) {
+  const el = document.createElement('div');
+  el.className = 'card';
+
+  if (faceDown) {
+    el.classList.add('back');
+    return el;
+  }
+
+  const isRed = card.s === '♥' || card.s === '♦';
+  el.classList.add(isRed ? 'red' : 'black');
+  if (selected) el.classList.add('selected');
+
+  // Top-left corner
+  const tl = document.createElement('div');
+  tl.className = 'card-corner-tl';
+  tl.innerHTML = `${card.r}<span class="suit-small">${card.s}</span>`;
+
+  // Center suit
+  const mid = document.createElement('div');
+  mid.className = 'card-center';
+  mid.textContent = card.s;
+
+  // Bottom-right corner
+  const br = document.createElement('div');
+  br.className = 'card-corner-br';
+  br.innerHTML = `${card.r}<span class="suit-small">${card.s}</span>`;
+
+  el.appendChild(tl);
+  el.appendChild(mid);
+  el.appendChild(br);
+
+  if (clickable) el.addEventListener('click', () => clickable(el));
+  return el;
+}
+
+// ══════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════
+let chips = parseInt(localStorage.getItem('poker_chips') || '1000');
+let deck = [];
+let playerHand = [];  // [{r, s}]
+let cpuHand    = [];
+let discardIdx = new Set(); // player's selected cards to discard
+let betAmt = 0;
+let currentBet = 0;
+let phase = 'betting'; // betting | draw | result
+
+function saveChips() { localStorage.setItem('poker_chips', String(chips)); }
+
+function updateTopHUD() {
+  document.getElementById('chipsLed').textContent = chips.toLocaleString();
+  document.getElementById('chipsVal').textContent = chips.toLocaleString() + ' chips';
+  document.getElementById('betVal').textContent = currentBet > 0 ? currentBet.toLocaleString() : '-';
+  const phaseNames = { betting:'ベット中', draw:'カード交換', result:'結果' };
+  document.getElementById('phaseVal').textContent = phaseNames[phase] || '-';
+}
+
+function setMsg(html) { document.getElementById('messageArea').innerHTML = html; }
+function setPlayerHN(t) { document.getElementById('playerHandName').textContent = t; }
+function setCpuHN(t)    { document.getElementById('cpuHandName').textContent = t; }
+function setHint(t)     { document.getElementById('phaseHint').textContent = t; }
+
+function renderPlayerHand(clickable) {
+  const el = document.getElementById('playerHand');
+  el.innerHTML = '';
+  playerHand.forEach((card, i) => {
+    const sel = discardIdx.has(i);
+    const cardEl = makeCardEl(card, false, sel, clickable ? () => toggleDiscard(i) : null);
+    el.appendChild(cardEl);
+  });
+}
+function renderCpuHand(faceDown) {
+  const el = document.getElementById('cpuHand');
+  el.innerHTML = '';
+  cpuHand.forEach(card => el.appendChild(makeCardEl(card, faceDown, false, null)));
+}
+
+function toggleDiscard(idx) {
+  if (phase !== 'draw') return;
+  if (discardIdx.has(idx)) discardIdx.delete(idx);
+  else discardIdx.add(idx);
+  renderPlayerHand(true);
+  updateHint();
+  renderActionBar();
+}
+
+function updateHint() {
+  if (phase === 'draw') {
+    if (discardIdx.size === 0) setHint('カードをタップして捨てる枚数を選択（タップで選択/解除）');
+    else setHint(`${discardIdx.size}枚を選択中 → 「カードを引く」で交換`);
+  } else {
+    setHint('');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ACTION BAR
+// ══════════════════════════════════════════════
+function renderActionBar() {
+  const bar = document.getElementById('actionBar');
+  bar.innerHTML = '';
+
+  if (phase === 'betting') {
+    // Bet amount buttons
+    [10, 50, 100, 500].forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'btn' + (betAmt === b ? ' bet-selected' : '');
+      btn.textContent = b.toLocaleString() + 'G';
+      btn.disabled = b > chips;
+      btn.onclick = () => { betAmt = b; renderActionBar(); };
+      bar.appendChild(btn);
+    });
+    // Deal button
+    const deal = document.createElement('button');
+    deal.className = 'btn btn-primary';
+    deal.textContent = '🃏 ディール';
+    deal.disabled = betAmt === 0 || betAmt > chips;
+    deal.onclick = doDeal;
+    bar.appendChild(deal);
+    // Rules
+    bar.appendChild(rulesBtn());
+
+  } else if (phase === 'draw') {
+    // Draw / keep button
+    const drawBtn = document.createElement('button');
+    drawBtn.className = 'btn btn-primary';
+    if (discardIdx.size === 0) {
+      drawBtn.textContent = '✔ このままキープ';
+    } else {
+      drawBtn.textContent = `🔄 ${discardIdx.size}枚交換`;
+    }
+    drawBtn.onclick = doDraw;
+    bar.appendChild(drawBtn);
+    bar.appendChild(rulesBtn());
+
+  } else if (phase === 'result') {
+    const again = document.createElement('button');
+    again.className = 'btn btn-primary';
+    again.textContent = chips > 0 ? '▶ もう一度' : '🔄 リセット（1000G）';
+    again.onclick = doNextRound;
+    bar.appendChild(again);
+    bar.appendChild(rulesBtn());
+  }
+}
+
+function rulesBtn() {
+  const b = document.createElement('button');
+  b.className = 'btn';
+  b.textContent = '📖 ルール';
+  b.onclick = openRules;
+  return b;
+}
+
+function openRules()  { document.getElementById('rulesModal').classList.add('visible'); }
+function closeRules() { document.getElementById('rulesModal').classList.remove('visible'); }
+
+// ══════════════════════════════════════════════
+//  GAME PHASES
+// ══════════════════════════════════════════════
+function doDeal() {
+  if (betAmt <= 0 || betAmt > chips) return;
+
+  currentBet = betAmt;
+  chips -= currentBet;
+  saveChips();
+
+  deck = shuffle(makeDeck());
+  playerHand = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+  cpuHand    = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+  discardIdx = new Set();
+
+  phase = 'draw';
+  updateTopHUD();
+
+  renderCpuHand(true);
+  renderPlayerHand(true);
+
+  const pe = evalHand(playerHand);
+  setPlayerHN(pe.nameJa);
+  setCpuHN('');
+  setMsg(`ベット <span class="led-sm">${currentBet}</span> チップを賭けました。捨てるカードを選んでください。`);
+  updateHint();
+  renderActionBar();
+}
+
+function doDraw() {
+  // CPU decides
+  const cpuMask = cpuDiscardMask(cpuHand);
+
+  // Player draws
+  const toDiscard = [...discardIdx].sort((a,b) => b-a);
+  toDiscard.forEach(i => { playerHand[i] = deck.pop(); });
+  discardIdx = new Set();
+
+  // CPU draws
+  cpuMask.forEach((discard, i) => { if (discard) cpuHand[i] = deck.pop(); });
+
+  renderPlayerHand(false);
+  renderCpuHand(true); // still face down while we compute
+
+  const pe = evalHand(playerHand);
+  setPlayerHN(pe.nameJa);
+  setHint('');
+
+  // Small delay then reveal CPU
+  setMsg('CPUのカードを確認中...');
+  phase = 'result'; // temporarily block further interaction
+  renderActionBar();
+
+  setTimeout(() => {
+    renderCpuHand(false);
+    const ce = evalHand(cpuHand);
+    setCpuHN(ce.nameJa);
+
+    const cmp = compareHands(playerHand, cpuHand);
+    let msgHtml = '';
+
+    if (cmp > 0) {
+      chips += currentBet * 2;
+      saveChips();
+      msgHtml = `<span class="badge badge-win">🎉 あなたの勝ち！ +${currentBet.toLocaleString()}G</span>`;
+      launchConfetti();
+    } else if (cmp < 0) {
+      saveChips();
+      msgHtml = `<span class="badge badge-lose">😢 CPUの勝ち！ −${currentBet.toLocaleString()}G</span>`;
+    } else {
+      chips += currentBet; // push
+      saveChips();
+      msgHtml = `<span class="badge badge-push">🤝 引き分け！ ベット返却</span>`;
+    }
+
+    setMsg(msgHtml);
+    updateTopHUD();
+    renderActionBar();
+  }, 700);
+}
+
+function doNextRound() {
+  if (chips <= 0) {
+    chips = 1000;
+    saveChips();
+  }
+  betAmt = 0;
+  currentBet = 0;
+  phase = 'betting';
+  playerHand = [];
+  cpuHand = [];
+  discardIdx = new Set();
+
+  document.getElementById('playerHand').innerHTML = '';
+  document.getElementById('cpuHand').innerHTML = '';
+  setPlayerHN('');
+  setCpuHN('');
+  setHint('');
+  setMsg('ベット額を選んでゲームを開始してください');
+  updateTopHUD();
+  renderActionBar();
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+updateTopHUD();
+setMsg('ベット額を選んでゲームを開始してください');
+renderActionBar();
+</script>
+</body>
+</html>

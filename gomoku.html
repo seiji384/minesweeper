@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>五目並べ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.modal-body p { margin-bottom: 6px; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 18px; font-weight: bold; padding: 3px 10px;
+  min-width: 54px; text-align: center; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+canvas#board { display: block; margin: 0 auto; touch-action: manipulation; cursor: pointer; border-radius: 8px; }
+.turn-text { color: #c0b0e8; font-size: 13px; font-weight: bold; }
+.turn-sub { font-size: 9px; color: #6050a0; }
+select.act-btn { -webkit-appearance: none; appearance: none; text-align: center; }
+.msg-toast {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: rgba(20,10,60,0.95); border: 1px solid #7060ff;
+  color: #ffe870; font-size: 14px; font-weight: bold;
+  padding: 8px 20px; border-radius: 12px; z-index: 500;
+  pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+.msg-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">←</a>
+    <span>⚫ 五目並べ ⚪</span>
+    <span style="width:18px;"></span>
+  </div>
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="moveCount">0</span>
+      <span class="led-label">手数</span>
+    </div>
+    <div class="led-group">
+      <span class="turn-text" id="turnDisplay">あなた ⚫</span>
+      <span class="turn-sub">ターン</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="winCount">0-0</span>
+      <span class="led-label">勝-敗</span>
+    </div>
+  </div>
+  <div class="content" style="position:relative;">
+    <canvas id="board"></canvas>
+    <div class="msg-toast" id="msgToast"></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="showRules()">📖 ルール</button>
+  <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <select class="act-btn" id="diffSelect" onchange="setDifficulty(this.value)">
+    <option value="easy">かんたん</option>
+    <option value="normal" selected>ふつう</option>
+    <option value="hard">つよい</option>
+  </select>
+</div>
+
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 五目並べのルール</span>
+      <button class="modal-close" onclick="closeModal('rulesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>・15×15のマスにお互いに石を置きます。</p>
+      <p>・縦・横・斜めのいずれかに<strong style="color:#ffe870">5つ</strong>並べたら勝ちです。</p>
+      <p>・あなたは <strong>⚫ 黒</strong>、CPUは <strong>⚪ 白</strong> です。</p>
+      <p>・黒が先手（先に置く）です。</p>
+      <p>・マス目の<strong style="color:#ffe870">交差点</strong>に石を置きます。</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span id="resultTitle">ゲーム終了</span>
+      <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center; padding:20px 14px;">
+      <p id="resultMsg" style="font-size:24px; color:#ffe870; margin-bottom:16px;"></p>
+      <p id="resultSub" style="font-size:13px; color:#c0b0e8; margin-bottom:20px;"></p>
+      <button class="act-btn" onclick="newGame();closeModal('resultModal')" style="font-size:13px; padding:8px 28px;">🔄 もう一度</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STARS =====
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ===== CONFETTI =====
+function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
+
+// ===== VISUAL VIEWPORT FIX =====
+const actionBar=document.querySelector('.action-bar');
+function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fixAB);window.visualViewport.addEventListener('scroll',fixAB);fixAB();}
+
+// ===== GAME CONSTANTS =====
+const SIZE = 15;
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const PLAYER = BLACK, CPU = WHITE;
+const STAR_POINTS = [[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]];
+const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+
+// ===== GAME STATE =====
+let board, currentTurn, gameOver, moveCount, lastMove, winCells;
+let playerWins = 0, cpuWins = 0;
+let difficulty = 'normal';
+let cpuThinking = false;
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+// ===== CANVAS INIT =====
+function initCanvas() {
+  const maxW = Math.min(window.innerWidth - 32, 440);
+  canvas.width = maxW;
+  canvas.height = maxW;
+}
+
+function cellSize() { return canvas.width / (SIZE + 1); }
+
+function boardToXY(r, c) {
+  const cs = cellSize();
+  return { x: cs + c * cs, y: cs + r * cs };
+}
+
+function XYToBoard(x, y) {
+  const cs = cellSize();
+  return { r: Math.round((y - cs) / cs), c: Math.round((x - cs) / cs) };
+}
+
+// ===== DRAW =====
+function drawBoard() {
+  const w = canvas.width;
+  const cs = cellSize();
+
+  // Board background — dark wood
+  ctx.fillStyle = '#1a0e08';
+  ctx.fillRect(0, 0, w, w);
+
+  // Subtle wood grain
+  for (let i = 0; i < w; i += 5) {
+    ctx.strokeStyle = `rgba(150,90,20,${0.02 + Math.sin(i * 0.3) * 0.01})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(w, i + 3);
+    ctx.stroke();
+  }
+
+  // Board border glow
+  ctx.strokeStyle = 'rgba(245,200,66,0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cs - 1, cs - 1, (SIZE - 1) * cs + 2, (SIZE - 1) * cs + 2);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(245,200,66,0.4)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < SIZE; i++) {
+    const p = cs + i * cs;
+    ctx.beginPath(); ctx.moveTo(cs, p); ctx.lineTo(cs + (SIZE-1)*cs, p); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p, cs); ctx.lineTo(p, cs + (SIZE-1)*cs); ctx.stroke();
+  }
+
+  // Star points
+  STAR_POINTS.forEach(([r, c]) => {
+    const { x, y } = boardToXY(r, c);
+    ctx.fillStyle = 'rgba(245,200,66,0.85)';
+    ctx.beginPath();
+    ctx.arc(x, y, cs * 0.11, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Stones
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] !== EMPTY) {
+        const isLast = lastMove && lastMove.r === r && lastMove.c === c;
+        drawStone(r, c, board[r][c], isLast);
+      }
+    }
+  }
+
+  // Win highlight
+  if (winCells && winCells.length > 0) {
+    winCells.forEach(([r, c]) => {
+      const { x, y } = boardToXY(r, c);
+      ctx.shadowColor = '#ffe040';
+      ctx.shadowBlur = 16;
+      ctx.strokeStyle = 'rgba(255,220,50,0.95)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, cellSize() * 0.4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+  }
+}
+
+function drawStone(r, c, color, isLast) {
+  const { x, y } = boardToXY(r, c);
+  const cs = cellSize();
+  const radius = cs * 0.42;
+
+  if (color === BLACK) {
+    const grad = ctx.createRadialGradient(x - radius*0.28, y - radius*0.28, radius*0.08, x, y, radius);
+    grad.addColorStop(0, '#606060');
+    grad.addColorStop(0.35, '#252525');
+    grad.addColorStop(1, '#080808');
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 5;
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x - radius*0.22, y - radius*0.26, radius*0.2, radius*0.12, -0.5, 0, Math.PI*2);
+    ctx.fill();
+  } else {
+    const grad = ctx.createRadialGradient(x - radius*0.28, y - radius*0.28, radius*0.08, x, y, radius);
+    grad.addColorStop(0, '#f0eeff');
+    grad.addColorStop(0.45, '#c8b0ff');
+    grad.addColorStop(1, '#8040c0');
+    ctx.shadowColor = 'rgba(170,130,255,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(x - radius*0.22, y - radius*0.26, radius*0.2, radius*0.12, -0.5, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Last move indicator
+  if (isLast) {
+    ctx.strokeStyle = color === BLACK ? 'rgba(255,80,80,0.85)' : 'rgba(255,60,60,0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+// ===== GAME LOGIC =====
+function initBoard() {
+  board = Array.from({length: SIZE}, () => new Array(SIZE).fill(EMPTY));
+  currentTurn = PLAYER;
+  gameOver = false;
+  moveCount = 0;
+  lastMove = null;
+  winCells = [];
+  cpuThinking = false;
+  updateStatus();
+  drawBoard();
+}
+
+function updateStatus() {
+  document.getElementById('moveCount').textContent = moveCount;
+  document.getElementById('winCount').textContent = `${playerWins}-${cpuWins}`;
+  const td = document.getElementById('turnDisplay');
+  if (gameOver) td.textContent = '終了';
+  else if (cpuThinking) td.textContent = 'CPU思考中...';
+  else td.textContent = currentTurn === PLAYER ? 'あなた ⚫' : 'CPU ⚪';
+}
+
+function placeStone(r, c) {
+  if (gameOver || board[r][c] !== EMPTY || currentTurn !== PLAYER || cpuThinking) return;
+  if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return;
+
+  board[r][c] = PLAYER;
+  lastMove = { r, c };
+  moveCount++;
+
+  const win = checkWin(board, r, c, PLAYER);
+  if (win) {
+    winCells = win;
+    gameOver = true;
+    playerWins++;
+    updateStatus();
+    drawBoard();
+    startConfetti();
+    setTimeout(() => showResult('🎉 あなたの勝ち！', '五目並べました！勝利おめでとう！'), 400);
+    return;
+  }
+
+  let full = true;
+  for (let i = 0; i < SIZE && full; i++) for (let j = 0; j < SIZE && full; j++) if (board[i][j] === EMPTY) full = false;
+  if (full) {
+    gameOver = true;
+    updateStatus(); drawBoard();
+    showResult('引き分け', 'マスが全て埋まりました');
+    return;
+  }
+
+  currentTurn = CPU;
+  cpuThinking = true;
+  updateStatus();
+  drawBoard();
+
+  const delay = difficulty === 'easy' ? 250 : difficulty === 'normal' ? 450 : 550;
+  setTimeout(() => { doCpuMove(); cpuThinking = false; }, delay + Math.random() * 150);
+}
+
+function doCpuMove() {
+  const move = getBestMove(board, difficulty);
+  if (!move) return;
+
+  board[move.r][move.c] = CPU;
+  lastMove = { r: move.r, c: move.c };
+  moveCount++;
+
+  const win = checkWin(board, move.r, move.c, CPU);
+  if (win) {
+    winCells = win;
+    gameOver = true;
+    cpuWins++;
+    updateStatus(); drawBoard();
+    setTimeout(() => showResult('💀 CPUの勝ち', 'またチャレンジしてね！'), 400);
+    return;
+  }
+
+  let full = true;
+  for (let i = 0; i < SIZE && full; i++) for (let j = 0; j < SIZE && full; j++) if (board[i][j] === EMPTY) full = false;
+  if (full) {
+    gameOver = true; updateStatus(); drawBoard();
+    showResult('引き分け', 'マスが全て埋まりました');
+    return;
+  }
+
+  currentTurn = PLAYER;
+  updateStatus(); drawBoard();
+}
+
+function checkWin(board, r, c, color) {
+  for (const [dr, dc] of DIRS) {
+    const cells = [[r, c]];
+    for (let d = 1; d < 5; d++) {
+      const nr = r + dr*d, nc = c + dc*d;
+      if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === color) cells.push([nr,nc]); else break;
+    }
+    for (let d = 1; d < 5; d++) {
+      const nr = r - dr*d, nc = c - dc*d;
+      if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === color) cells.push([nr,nc]); else break;
+    }
+    if (cells.length >= 5) return cells;
+  }
+  return null;
+}
+
+// ===== AI =====
+function getCandidates(board, range) {
+  const seen = new Set();
+  const result = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] === EMPTY) continue;
+      for (let dr = -range; dr <= range; dr++) {
+        for (let dc = -range; dc <= range; dc++) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === EMPTY) {
+            const key = nr * SIZE + nc;
+            if (!seen.has(key)) { seen.add(key); result.push({ r: nr, c: nc }); }
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function scoreAt(board, r, c, color) {
+  let score = 0;
+  for (const [dr, dc] of DIRS) {
+    let count = 1, openEnds = 0;
+    let nr = r+dr, nc = c+dc;
+    while (nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===color){count++;nr+=dr;nc+=dc;}
+    if (nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===EMPTY) openEnds++;
+    nr=r-dr;nc=c-dc;
+    while (nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===color){count++;nr-=dr;nc-=dc;}
+    if (nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===EMPTY) openEnds++;
+
+    if (count>=5) score+=100000;
+    else if (count===4&&openEnds===2) score+=10000;
+    else if (count===4&&openEnds===1) score+=1000;
+    else if (count===3&&openEnds===2) score+=500;
+    else if (count===3&&openEnds===1) score+=100;
+    else if (count===2&&openEnds===2) score+=50;
+    else if (count===2&&openEnds===1) score+=10;
+  }
+  return score;
+}
+
+function hasAnyStone(board) {
+  for (let r=0;r<SIZE;r++) for (let c=0;c<SIZE;c++) if(board[r][c]!==EMPTY) return true;
+  return false;
+}
+
+function getBestMove(board, diff) {
+  if (!hasAnyStone(board)) return { r: 7, c: 7 };
+
+  const range = diff === 'hard' ? 3 : 2;
+  const candidates = getCandidates(board, range);
+  if (candidates.length === 0) return { r: 7, c: 7 };
+
+  // Always check immediate win first
+  for (const { r, c } of candidates) {
+    board[r][c] = CPU;
+    const win = checkWin(board, r, c, CPU);
+    board[r][c] = EMPTY;
+    if (win) return { r, c };
+  }
+
+  // Block player immediate win
+  let blockMove = null;
+  for (const { r, c } of candidates) {
+    board[r][c] = PLAYER;
+    const win = checkWin(board, r, c, PLAYER);
+    board[r][c] = EMPTY;
+    if (win) { blockMove = { r, c }; break; }
+  }
+
+  if (diff === 'easy') {
+    // 40% chance to miss the block and play randomly
+    if (Math.random() < 0.6 && blockMove) return blockMove;
+    if (Math.random() < 0.5) return candidates[Math.floor(Math.random() * Math.min(candidates.length, 8))];
+  }
+
+  let bestScore = -1;
+  let bestMove = blockMove;
+
+  for (const { r, c } of candidates) {
+    const cpuScore = scoreAt(board, r, c, CPU);
+    const playerThreat = scoreAt(board, r, c, PLAYER);
+    const weight = diff === 'hard' ? 1.15 : 1.0;
+    const total = cpuScore * weight + playerThreat;
+
+    if (total > bestScore) {
+      bestScore = total;
+      bestMove = { r, c };
+    }
+  }
+
+  return bestMove || candidates[0];
+}
+
+// ===== UI =====
+function showResult(title, sub) {
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMsg').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+  document.getElementById('resultModal').classList.add('visible');
+}
+
+function showRules() { document.getElementById('rulesModal').classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+function newGame() {
+  closeModal('resultModal');
+  initBoard();
+}
+
+function setDifficulty(val) { difficulty = val; }
+
+function showToast(msg) {
+  const t = document.getElementById('msgToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== EVENT HANDLERS =====
+function handleTap(x, y) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (x - rect.left) * scaleX;
+  const cy = (y - rect.top) * scaleY;
+  const { r, c } = XYToBoard(cx, cy);
+  placeStone(r, c);
+}
+
+canvas.addEventListener('click', (e) => handleTap(e.clientX, e.clientY));
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  handleTap(t.clientX, t.clientY);
+}, { passive: false });
+
+window.addEventListener('resize', () => { initCanvas(); drawBoard(); });
+
+// ===== INIT =====
+initCanvas();
+initBoard();
+</script>
+</body>
+</html>

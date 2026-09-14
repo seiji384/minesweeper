@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>リズム天国</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;}
+body{
+  background:radial-gradient(ellipse at 25% 20%,rgba(80,30,180,0.5) 0%,transparent 50%),
+    radial-gradient(ellipse at 75% 80%,rgba(20,60,180,0.4) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 50%,#120830 0%,#050210 100%);
+  display:flex;justify-content:center;align-items:flex-start;
+  min-height:100vh;padding:16px 8px 80px;
+  font-family:Arial,sans-serif;overflow-x:hidden;
+}
+#stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+.window{
+  position:relative;z-index:1;
+  background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);
+  border:2px solid #7060ff;border-radius:16px;
+  box-shadow:0 0 30px rgba(112,90,255,0.55),0 0 80px rgba(112,90,255,0.2),0 24px 64px rgba(0,0,0,0.85);
+  max-width:460px;width:100%;overflow:hidden;
+}
+.titlebar{
+  background:linear-gradient(90deg,#a06008 0%,#f5c842 28%,#ffe870 50%,#f5c842 72%,#a06008 100%);
+  color:#3a1a00;font-size:14px;font-weight:900;padding:7px 14px;
+  text-align:center;letter-spacing:2px;text-shadow:0 1px 0 rgba(255,255,200,0.8);
+  border-bottom:2px solid #804000;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.titlebar a{color:#3a1a00;text-decoration:none;font-size:18px;}
+.action-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:600;
+  display:flex;gap:6px;padding:8px 12px 10px;
+  background:linear-gradient(0deg,#060412 0%,rgba(10,6,28,0.97) 100%);
+  border-top:1px solid #4030a0;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.85),0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap:wrap;justify-content:center;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.act-btn{
+  padding:5px 14px;font-size:11px;border-radius:14px;
+  background:linear-gradient(160deg,#3a2080 0%,#22105a 100%);
+  color:#b898ff;border:1px solid #5a3aaa;
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+  cursor:pointer;font-weight:bold;transition:all 0.15s;touch-action:manipulation;
+}
+.act-btn:active{transform:scale(0.93);}
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.78);z-index:10000;
+  justify-content:center;align-items:center;padding:16px;
+}
+.modal-overlay.visible{display:flex;}
+.modal-box{
+  background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);
+  border:2px solid #7060ff;border-radius:16px;
+  box-shadow:0 0 40px rgba(112,90,255,0.6),0 24px 64px rgba(0,0,0,0.9);
+  max-width:360px;width:100%;max-height:88vh;overflow-y:auto;
+}
+.modal-title{
+  background:linear-gradient(90deg,#a06008 0%,#f5c842 28%,#ffe870 50%,#f5c842 72%,#a06008 100%);
+  color:#3a1a00;font-size:14px;font-weight:900;padding:8px 14px;
+  text-align:center;letter-spacing:2px;border-radius:14px 14px 0 0;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#3a1a00;}
+.modal-body{padding:14px;color:#c0b0e8;font-size:13px;line-height:1.6;}
+.led{
+  background:linear-gradient(160deg,#080518 0%,#040210 100%);
+  color:#ff44aa;font-family:'Courier New',monospace;
+  font-size:22px;font-weight:bold;padding:3px 10px;
+  min-width:64px;text-align:right;border-radius:6px;border:1px solid #4020a0;
+  text-shadow:0 0 10px #ff44aa,0 0 20px #ff2288;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,0.8),0 0 10px rgba(255,68,170,0.3);
+  display:inline-block;
+}
+.led-label{font-size:9px;color:#6050a0;display:block;text-align:center;margin-top:2px;}
+.status-panel{
+  background:linear-gradient(160deg,#100a30 0%,#08051a 100%);
+  border:1px solid #4030a0;border-radius:10px;
+  padding:6px 12px;margin:8px;
+  display:flex;justify-content:space-around;align-items:center;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.content{padding:8px;}
+#confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;}
+
+/* Menu styles */
+#menu-screen{padding:12px;}
+.menu-title{
+  text-align:center;color:#ffe870;font-size:22px;font-weight:900;
+  letter-spacing:3px;margin-bottom:4px;
+  text-shadow:0 0 10px rgba(255,232,112,0.7);
+}
+.menu-subtitle{text-align:center;color:#9080c0;font-size:12px;margin-bottom:16px;}
+.game-cards{display:flex;gap:8px;margin-bottom:10px;}
+.game-card{
+  flex:1;background:linear-gradient(160deg,#2a1868 0%,#180f40 100%);
+  border:2px solid #5040c0;border-radius:12px;
+  padding:12px 6px;text-align:center;cursor:pointer;
+  transition:all 0.15s;touch-action:manipulation;
+}
+.game-card:active{transform:scale(0.95);}
+.game-card:hover{border-color:#a080ff;box-shadow:0 0 15px rgba(160,128,255,0.4);}
+.game-card-icon{font-size:32px;display:block;margin-bottom:6px;}
+.game-card-name{color:#c0b0ff;font-size:11px;font-weight:bold;letter-spacing:1px;}
+.game-card-hs{color:#6050a0;font-size:10px;margin-top:3px;}
+.all-stages-btn{
+  width:100%;padding:12px;font-size:14px;font-weight:900;letter-spacing:3px;
+  background:linear-gradient(90deg,#a06008 0%,#f5c842 28%,#ffe870 50%,#f5c842 72%,#a06008 100%);
+  color:#3a1a00;border:none;border-radius:10px;cursor:pointer;
+  box-shadow:0 0 20px rgba(245,200,66,0.4);transition:all 0.15s;touch-action:manipulation;
+}
+.all-stages-btn:active{transform:scale(0.97);}
+
+/* Game canvas area */
+#game-area{display:none;}
+#game-canvas{
+  display:block;width:100%;cursor:pointer;touch-action:manipulation;
+  border-bottom:1px solid #4030a0;
+}
+.tap-zone{
+  width:100%;padding:16px;text-align:center;
+  background:linear-gradient(160deg,#180f40 0%,#0d0830 100%);
+  cursor:pointer;touch-action:manipulation;
+  font-size:28px;letter-spacing:2px;color:#c0b0ff;
+  border-top:1px solid #4030a0;
+  transition:background 0.1s;
+}
+.tap-zone:active,.tap-zone.tapped{
+  background:linear-gradient(160deg,#3020a0 0%,#1a1060 100%);
+}
+
+/* End screen */
+#end-screen{display:none;padding:16px;text-align:center;}
+.end-rank{font-size:48px;margin:10px 0;}
+.end-rank-text{font-size:22px;font-weight:900;margin-bottom:8px;}
+.end-stats{
+  background:linear-gradient(160deg,#100a30 0%,#08051a 100%);
+  border:1px solid #4030a0;border-radius:10px;padding:12px;margin:10px 0;
+}
+.end-stat-row{display:flex;justify-content:space-between;padding:4px 0;color:#c0b0e8;font-size:13px;}
+.end-btn{
+  padding:10px 24px;font-size:13px;font-weight:bold;border-radius:10px;
+  border:none;cursor:pointer;margin:4px;touch-action:manipulation;
+}
+.end-btn-primary{
+  background:linear-gradient(90deg,#a06008,#f5c842,#ffe870,#f5c842,#a06008);
+  color:#3a1a00;
+}
+.end-btn-secondary{
+  background:linear-gradient(160deg,#3a2080,#22105a);
+  color:#b898ff;border:1px solid #5a3aaa;
+}
+
+/* Progress bar for all stages */
+.stage-progress{
+  display:flex;gap:4px;justify-content:center;padding:6px 8px;
+  background:rgba(0,0,0,0.3);
+}
+.stage-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#302060;border:1px solid #5040a0;transition:all 0.3s;
+}
+.stage-dot.done{background:#ffe870;border-color:#a06008;box-shadow:0 0 6px rgba(255,232,112,0.6);}
+.stage-dot.active{background:#b898ff;border-color:#7060ff;box-shadow:0 0 6px rgba(184,152,255,0.6);}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="window">
+  <div class="titlebar">
+    <a href="index.html">🏠</a>
+    <span>🥁 リズム天国</span>
+    <span style="font-size:11px;opacity:0.6">RHYTHM</span>
+  </div>
+
+  <!-- Menu Screen -->
+  <div id="menu-screen">
+    <div class="menu-title">リズム天国</div>
+    <div class="menu-subtitle">リズムに合わせてタップしよう！</div>
+    <div class="game-cards">
+      <div class="game-card" onclick="startGame(0)">
+        <span class="game-card-icon">🥁</span>
+        <div class="game-card-name">タンバリン</div>
+        <div class="game-card-hs" id="hs-0">-</div>
+      </div>
+      <div class="game-card" onclick="startGame(1)">
+        <span class="game-card-icon">🐸</span>
+        <div class="game-card-name">カエル</div>
+        <div class="game-card-hs" id="hs-1">-</div>
+      </div>
+      <div class="game-card" onclick="startGame(2)">
+        <span class="game-card-icon">⚔️</span>
+        <div class="game-card-name">サムライ</div>
+        <div class="game-card-hs" id="hs-2">-</div>
+      </div>
+    </div>
+    <div class="game-cards" style="margin-top:6px">
+      <div class="game-card" onclick="startGame(3)">
+        <span class="game-card-icon">🏀</span>
+        <div class="game-card-name">ドリブル</div>
+        <div class="game-card-hs" id="hs-3">-</div>
+      </div>
+      <div class="game-card" onclick="startGame(4)">
+        <span class="game-card-icon">🎹</span>
+        <div class="game-card-name">ピアノ</div>
+        <div class="game-card-hs" id="hs-4">-</div>
+      </div>
+      <div class="game-card" onclick="startGame(5)">
+        <span class="game-card-icon">🐤</span>
+        <div class="game-card-name">ひよこ</div>
+        <div class="game-card-hs" id="hs-5">-</div>
+      </div>
+      <div class="game-card" onclick="startGame(6)">
+        <span class="game-card-icon">🎤</span>
+        <div class="game-card-name">歌手</div>
+        <div class="game-card-hs" id="hs-6">-</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="all-stages-btn" onclick="startAllStages()" style="flex:1;min-width:120px">🎵 全ステージ</button>
+      <button class="all-stages-btn" onclick="showRandomSelect()" style="flex:1;min-width:100px;font-size:12px">🎲 ランダム</button>
+      <button class="all-stages-btn" onclick="startEndless()" style="flex:1;min-width:100px;font-size:12px">♾️ エンドレス</button>
+    </div>
+    <div style="margin-top:10px;color:#6050a0;font-size:11px;text-align:center;">
+      タップ または スペースキー でアクション
+    </div>
+  </div>
+  <!-- Random mode select overlay -->
+  <div id="random-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:20000;justify-content:center;align-items:center;">
+    <div style="background:linear-gradient(160deg,#1e1248,#0d0830);border:2px solid #7060ff;border-radius:16px;padding:20px;width:280px;text-align:center">
+      <div style="color:#f5c842;font-size:16px;font-weight:900;margin-bottom:16px">🎲 ランダムモード</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="act-btn" style="padding:10px" onclick="startRandom(5)">初級 — 5ゲーム</button>
+        <button class="act-btn" style="padding:10px" onclick="startRandom(10)">中級 — 10ゲーム</button>
+        <button class="act-btn" style="padding:10px" onclick="startRandom(20)">上級 — 20ゲーム</button>
+        <button class="act-btn" style="padding:10px;color:#ffd080;border-color:#ff8030" onclick="startRandom(50)">ULTRA — 50ゲーム</button>
+        <button class="act-btn" style="padding:8px;margin-top:4px" onclick="document.getElementById('random-overlay').style.display='none'">✕ キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Area -->
+  <div id="game-area">
+    <div class="stage-progress" id="stage-progress" style="display:none;">
+      <div class="stage-dot" id="sd-0"></div>
+      <div class="stage-dot" id="sd-1"></div>
+      <div class="stage-dot" id="sd-2"></div>
+      <div class="stage-dot" id="sd-3"></div>
+      <div class="stage-dot" id="sd-4"></div>
+      <div class="stage-dot" id="sd-5"></div>
+      <div class="stage-dot" id="sd-6"></div>
+    </div>
+    <canvas id="game-canvas" width="440" height="300"></canvas>
+    <div class="status-panel">
+      <div class="led-group">
+        <span class="led" id="led-score">0</span>
+        <span class="led-label">スコア</span>
+      </div>
+      <div class="led-group">
+        <span class="led" id="led-perfect" style="color:#ffe870;text-shadow:0 0 10px #ffe870;">0</span>
+        <span class="led-label">パーフェクト</span>
+      </div>
+      <div class="led-group">
+        <span class="led" id="led-combo" style="color:#44ffaa;text-shadow:0 0 10px #44ffaa;">0</span>
+        <span class="led-label">コンボ</span>
+      </div>
+    </div>
+    <div class="tap-zone" id="tap-zone" ontouchstart="handleTap(event)" onmousedown="handleTap(event)">
+      ▼ TAP ▼
+    </div>
+    <!-- Piano key buttons (shown only for piano game) -->
+    <div id="piano-keys-ui" style="display:none;display:flex;gap:4px;padding:6px 8px;justify-content:center">
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(0)" onmousedown="window._pianoKeyTap(0)">ド</button>
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(1)" onmousedown="window._pianoKeyTap(1)">レ</button>
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(2)" onmousedown="window._pianoKeyTap(2)">ミ</button>
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(3)" onmousedown="window._pianoKeyTap(3)">ソ</button>
+    </div>
+  </div>
+
+  <!-- End Screen -->
+  <div id="end-screen">
+    <div class="end-rank" id="end-emoji"></div>
+    <div class="end-rank-text" id="end-rank-text"></div>
+    <div class="end-stats" id="end-stats"></div>
+    <div id="end-buttons"></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
+  <button class="act-btn" onclick="goMenu()">🔄 メニュー</button>
+  <button class="act-btn" onclick="showModal('hs-modal')">🏆 ハイスコア</button>
+</div>
+
+<!-- Rules Modal -->
+<div class="modal-overlay" id="rules-modal" onclick="if(event.target===this)closeModal('rules-modal')">
+  <div class="modal-box">
+    <div class="modal-title"><span>📖 ルール</span><button class="modal-close" onclick="closeModal('rules-modal')">✕</button></div>
+    <div class="modal-body">
+      <b>🥁 タンバリン</b><br>
+      指揮者が棒を振り下ろすタイミングでタップ！<br>
+      「はい はい はいはいはい」のリズムで叩こう。<br><br>
+      <b>🐸 カエルの飛び込み</b><br>
+      花がカエルのところに来たらタップ！<br>
+      ジャンプして花をキャッチしよう。<br><br>
+      <b>⚔️ サムライスライス</b><br>
+      「セイ！」「ヤー！」の掛け声に合わせてタップ！<br>
+      飛んでくるものを斬りまくれ！<br><br>
+      <b>判定</b><br>
+      ✨ PERFECT: ±50ms以内<br>
+      👍 GOOD: ±120ms以内<br>
+      💦 MISS: それ以外<br>
+    </div>
+  </div>
+</div>
+
+<!-- High Score Modal -->
+<div class="modal-overlay" id="hs-modal" onclick="if(event.target===this)closeModal('hs-modal')">
+  <div class="modal-box">
+    <div class="modal-title"><span>🏆 ハイスコア</span><button class="modal-close" onclick="closeModal('hs-modal')">✕</button></div>
+    <div class="modal-body" id="hs-body"></div>
+  </div>
+</div>
+
+<script>
+// ─── Stars ───────────────────────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ─── Visual Viewport Fix ─────────────────────────────────────────────────────
+const actionBar=document.querySelector('.action-bar');
+function fixActionBar(){
+  const vv=window.visualViewport;if(!vv)return;
+  const layoutWidth=document.documentElement.clientWidth||window.innerWidth;
+  const scaleRatio=layoutWidth/vv.width;
+  const isZoomed=vv.scale>1.05||scaleRatio>1.05;
+  if(!isZoomed){actionBar.style.cssText='';return;}
+  const scale=Math.max(vv.scale,scaleRatio);
+  const inv=1/scale,barH=actionBar.offsetHeight||52;
+  const layoutW=document.documentElement.clientWidth||Math.round(vv.width*scale);
+  actionBar.style.top=Math.round(vv.offsetTop+vv.height-barH)+'px';
+  actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';
+  actionBar.style.width=layoutW+'px';actionBar.style.right='auto';
+  actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';
+}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fixActionBar);window.visualViewport.addEventListener('scroll',fixActionBar);fixActionBar();}
+
+// ─── Audio ───────────────────────────────────────────────────────────────────
+let audioCtx=null;
+function getAudio(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq=220,dur=0.08,vol=0.3,type='sine',when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  const osc=a.createOscillator(),gain=a.createGain();
+  osc.connect(gain);gain.connect(a.destination);
+  osc.type=type;osc.frequency.value=freq;
+  gain.gain.setValueAtTime(vol,t);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  osc.start(t);osc.stop(t+dur);
+}
+
+function playDrum(when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  const osc=a.createOscillator(),gain=a.createGain();
+  osc.connect(gain);gain.connect(a.destination);
+  osc.frequency.setValueAtTime(150,t);
+  osc.frequency.exponentialRampToValueAtTime(0.001,t+0.15);
+  gain.gain.setValueAtTime(1,t);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+  osc.start(t);osc.stop(t+0.15);
+}
+
+function playHihat(when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  const bufferSize=Math.floor(a.sampleRate*0.05);
+  const buffer=a.createBuffer(1,bufferSize,a.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++)data[i]=Math.random()*2-1;
+  const src=a.createBufferSource(),filter=a.createBiquadFilter(),gain=a.createGain();
+  src.buffer=buffer;filter.type='highpass';filter.frequency.value=7000;
+  src.connect(filter);filter.connect(gain);gain.connect(a.destination);
+  gain.gain.setValueAtTime(0.25,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+  src.start(t);src.stop(t+0.05);
+}
+
+function playClang(when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  [660,880,1100,1320].forEach((f,i)=>{
+    const osc=a.createOscillator(),gain=a.createGain();
+    osc.connect(gain);gain.connect(a.destination);
+    osc.type='triangle';osc.frequency.value=f;
+    gain.gain.setValueAtTime(0.15/(i+1),t);
+    gain.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+    osc.start(t);osc.stop(t+0.3);
+  });
+}
+
+function playSplash(when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  const bufferSize=Math.floor(a.sampleRate*0.15);
+  const buffer=a.createBuffer(1,bufferSize,a.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++)data[i]=(Math.random()*2-1)*Math.exp(-i/(bufferSize*0.3));
+  const src=a.createBufferSource(),filter=a.createBiquadFilter(),gain=a.createGain();
+  src.buffer=buffer;filter.type='bandpass';filter.frequency.value=1000;
+  src.connect(filter);filter.connect(gain);gain.connect(a.destination);
+  gain.gain.setValueAtTime(0.4,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+  src.start(t);src.stop(t+0.15);
+}
+
+function playSwoosh(freq1=800,freq2=400,when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  const osc=a.createOscillator(),gain=a.createGain();
+  osc.connect(gain);gain.connect(a.destination);
+  osc.type='sawtooth';
+  osc.frequency.setValueAtTime(freq1,t);
+  osc.frequency.exponentialRampToValueAtTime(freq2,t+0.12);
+  gain.gain.setValueAtTime(0.3,t);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  osc.start(t);osc.stop(t+0.12);
+}
+
+function playMiss(when=0){
+  const a=getAudio();const t=when||a.currentTime;
+  const osc=a.createOscillator(),gain=a.createGain();
+  osc.connect(gain);gain.connect(a.destination);
+  osc.type='square';osc.frequency.value=120;
+  gain.gain.setValueAtTime(0.2,t);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  osc.start(t);osc.stop(t+0.2);
+}
+
+function playCue(high=false,when=0){
+  playTone(high?660:440,0.1,0.25,'sine',when);
+}
+
+// ─── Modal helpers ────────────────────────────────────────────────────────────
+function showModal(id){document.getElementById(id).classList.add('visible');}
+function closeModal(id){document.getElementById(id).classList.remove('visible');}
+
+// ─── High Score ───────────────────────────────────────────────────────────────
+const HS_KEY='rhythm_hs_v1';
+const GAME_NAMES=['🥁 タンバリン','🐸 カエル','⚔️ サムライ'];
+function loadHS(){try{return JSON.parse(localStorage.getItem(HS_KEY))||{};}catch(e){return {};}}
+function saveHS(idx,rank){const hs=loadHS();const order=['パーフェクト！','グレート！','OK！','もう一回！'];const cur=hs[idx];if(!cur||order.indexOf(rank)<order.indexOf(cur))hs[idx]=rank;localStorage.setItem(HS_KEY,JSON.stringify(hs));}
+function updateMenuHS(){const hs=loadHS();for(let i=0;i<3;i++){const el=document.getElementById('hs-'+i);el.textContent=hs[i]?('Best: '+hs[i]):'-';}}
+function buildHSBody(){const hs=loadHS();let s='';GAME_NAMES.forEach((n,i)=>{s+=`<div style="padding:6px 0;border-bottom:1px solid #302060"><b>${n}</b><br><span style="color:#ffe870">${hs[i]||'未プレイ'}</span></div>`;});document.getElementById('hs-body').innerHTML=s||'まだ記録なし';}
+
+// ─── Judge ────────────────────────────────────────────────────────────────────
+function judge(deltaMs){
+  if(deltaMs<50)return'perfect';
+  if(deltaMs<120)return'good';
+  return'miss';
+}
+
+// ─── Game State ───────────────────────────────────────────────────────────────
+let currentGame=-1;
+let allStages=false;
+let stageIdx=0;
+let animId=null;
+let randomMode=false,randomMax=5,randomCount=0;
+let endlessMode=false,endlessCount=0;
+let gameRunning=false;
+let startAudioTime=0; // audioCtx.currentTime at game start
+let startPerfTime=0;  // performance.now() at game start
+let score=0,perfects=0,goods=0,misses=0,combo=0,maxCombo=0;
+
+const canvas=document.getElementById('game-canvas');
+const ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height;
+
+// Judgment display
+let judgments=[];
+function addJudgment(text,color,x,y){
+  judgments.push({text,color,x,y,age:0,life:60});
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function goMenu(){
+  stopGame();
+  document.getElementById('menu-screen').style.display='';
+  document.getElementById('game-area').style.display='none';
+  document.getElementById('end-screen').style.display='none';
+  updateMenuHS();
+}
+
+function startGame(idx){
+  getAudio(); // ensure context created
+  currentGame=idx;
+  allStages=false;
+  score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;
+  document.getElementById('menu-screen').style.display='none';
+  document.getElementById('game-area').style.display='';
+  document.getElementById('end-screen').style.display='none';
+  document.getElementById('stage-progress').style.display='none';
+  updateLEDs();
+  judgments=[];
+  setTimeout(()=>launchGame(idx),200);
+}
+
+function startAllStages(){
+  getAudio();
+  allStages=true;
+  stageIdx=0;
+  score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;
+  document.getElementById('menu-screen').style.display='none';
+  document.getElementById('game-area').style.display='';
+  document.getElementById('end-screen').style.display='none';
+  const sp=document.getElementById('stage-progress');
+  sp.style.display='flex';
+  const totalDots=document.querySelectorAll('.stage-dot').length;
+  for(let i=0;i<totalDots;i++){
+    const d=document.getElementById('sd-'+i);
+    if(d)d.className='stage-dot'+(i===0?' active':'');
+  }
+  updateLEDs();
+  judgments=[];
+  setTimeout(()=>launchGame(0),200);
+}
+
+function updateLEDs(){
+  document.getElementById('led-score').textContent=score;
+  document.getElementById('led-perfect').textContent=perfects;
+  document.getElementById('led-combo').textContent=combo;
+}
+
+function stopGame(){
+  gameRunning=false;
+  if(animId){cancelAnimationFrame(animId);animId=null;}
+}
+
+function launchGame(idx){
+  stopGame();
+  currentGame=idx;
+  gameRunning=true;
+  // Show/hide piano key UI
+  const pui=document.getElementById('piano-keys-ui');
+  if(pui){pui.style.display=idx===4?'flex':'none';}
+  document.getElementById('tap-zone').style.display=idx===4?'none':'flex';
+  const a=getAudio();
+  startAudioTime=a.currentTime+0.3;
+  startPerfTime=performance.now()+300;
+  if(idx===0)initTambourine();
+  else if(idx===1)initFrog();
+  else if(idx===2)initSamurai();
+  else if(idx===3)initDribble();
+  else if(idx===4)initPiano();
+  else if(idx===5)initChick();
+  else if(idx===6)initSinger();
+  animId=requestAnimationFrame(gameLoop);
+}
+
+function gameLoop(ts){
+  if(!gameRunning)return;
+  const elapsed=(performance.now()-startPerfTime)/1000;
+  const a=getAudio();
+  const audioNow=a.currentTime-startAudioTime;
+  if(currentGame===0)updateTambourine(elapsed,audioNow);
+  else if(currentGame===1)updateFrog(elapsed,audioNow);
+  else if(currentGame===2)updateSamurai(elapsed,audioNow);
+  else if(currentGame===3)updateDribble(elapsed,audioNow);
+  else if(currentGame===4)updatePiano(elapsed,audioNow);
+  else if(currentGame===5)updateChick(elapsed,audioNow);
+  else if(currentGame===6)updateSinger(elapsed,audioNow);
+  updateLEDs();
+  animId=requestAnimationFrame(gameLoop);
+}
+
+function onGameEnd(){
+  gameRunning=false;
+  if(animId){cancelAnimationFrame(animId);animId=null;}
+  const total=perfects+goods+misses;
+  let rank,emoji;
+  if(total>0&&perfects/total>=0.8){rank='パーフェクト！';emoji='✨';}
+  else if(total>0&&(perfects+goods)/total>=0.6){rank='グレート！';emoji='👍';}
+  else if(total>0&&(perfects+goods)/total>=0.3){rank='OK！';emoji='😊';}
+  else{rank='もう一回！';emoji='💦';}
+  saveHS(currentGame,rank);
+  const ALL_GAME_COUNT = 7;
+  if(allStages&&stageIdx<ALL_GAME_COUNT-1){
+    showBriefEnd(rank,emoji,()=>{
+      document.getElementById('sd-'+stageIdx).className='stage-dot done';
+      stageIdx++;
+      document.getElementById('sd-'+stageIdx).className='stage-dot active';
+      judgments=[];
+      setTimeout(()=>launchGame(stageIdx),300);
+    });
+  } else if(randomMode&&randomCount<randomMax){
+    document.getElementById('sd-'+stageIdx).className='stage-dot done';
+    showBriefEnd(rank,emoji,()=>{
+      randomCount++;
+      const next=pickRandomGame(currentGame);
+      currentGame=next;
+      score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;judgments=[];
+      setTimeout(()=>launchGame(next),300);
+    });
+  } else if(endlessMode){
+    if(misses>0){
+      // game over
+      endlessMode=false;
+      const best=parseInt(localStorage.getItem('rhythm_endless_best')||'0');
+      if(endlessCount>best)localStorage.setItem('rhythm_endless_best',endlessCount);
+      document.getElementById('game-area').style.display='none';
+      const es=document.getElementById('end-screen');
+      es.style.display='';
+      document.getElementById('end-emoji').textContent='💦';
+      document.getElementById('end-rank-text').textContent='エンドレス終了！';
+      document.getElementById('end-rank-text').style.color='#ff6688';
+      document.getElementById('end-stats').innerHTML=`<p>クリア: <b style="color:#ff44aa">${endlessCount}ゲーム</b></p><p>ベスト: <b style="color:#f5c842">${Math.max(endlessCount,best)}ゲーム</b></p>`;
+      const btns=document.getElementById('end-buttons');
+      btns.innerHTML='';
+      const mb=document.createElement('button');mb.className='end-btn end-btn-secondary';mb.textContent='🏠 メニューへ';mb.onclick=goMenu;btns.appendChild(mb);
+    } else {
+      endlessCount++;
+      showBriefEnd(rank,emoji,()=>{
+        const next=pickRandomGame(currentGame);
+        currentGame=next;
+        score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;judgments=[];
+        setTimeout(()=>launchGame(next),300);
+      });
+    }
+  } else {
+    if(allStages){
+      document.getElementById('sd-'+stageIdx).className='stage-dot done';
+    }
+    showEndScreen(rank,emoji);
+  }
+}
+
+function showBriefEnd(rank,emoji,cb){
+  // Flash rank on canvas for 1.5s then callback
+  const flash=()=>{
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#ffe870';ctx.fillText(emoji,W/2,H/2-30);
+    ctx.font='bold 22px Arial';ctx.fillStyle='#fff';ctx.fillText(rank,W/2,H/2+20);
+  };
+  flash();
+  setTimeout(cb,1200);
+}
+
+function showEndScreen(rank,emoji){
+  document.getElementById('game-area').style.display='none';
+  const es=document.getElementById('end-screen');
+  es.style.display='';
+  document.getElementById('end-emoji').textContent=emoji;
+  document.getElementById('end-rank-text').textContent=rank;
+  document.getElementById('end-rank-text').style.color=rank==='パーフェクト！'?'#ffe870':rank==='グレート！'?'#44ffaa':rank==='OK！'?'#88aaff':'#ff6688';
+  const total=perfects+goods+misses;
+  document.getElementById('end-stats').innerHTML=`
+    <div class="end-stat-row"><span>ゲーム</span><span>${GAME_NAMES[allStages?2:currentGame].split(' ')[0]}</span></div>
+    <div class="end-stat-row"><span>スコア</span><span style="color:#ff44aa">${score}</span></div>
+    <div class="end-stat-row"><span>✨ パーフェクト</span><span style="color:#ffe870">${perfects}</span></div>
+    <div class="end-stat-row"><span>👍 グッド</span><span style="color:#44ffaa">${goods}</span></div>
+    <div class="end-stat-row"><span>💦 ミス</span><span style="color:#ff6688">${misses}</span></div>
+    <div class="end-stat-row"><span>最大コンボ</span><span style="color:#88ccff">${maxCombo}</span></div>
+    <div class="end-stat-row"><span>合計</span><span>${total}回</span></div>
+  `;
+  const btns=document.getElementById('end-buttons');
+  btns.innerHTML='';
+  const again=document.createElement('button');
+  again.className='end-btn end-btn-primary';
+  again.textContent='🔄 もう一回';
+  again.onclick=()=>allStages?startAllStages():startGame(currentGame);
+  btns.appendChild(again);
+  const menu=document.createElement('button');
+  menu.className='end-btn end-btn-secondary';
+  menu.textContent='🏠 メニューへ';
+  menu.onclick=goMenu;
+  btns.appendChild(menu);
+  if(rank==='パーフェクト！')launchConfetti();
+}
+
+// ─── Tap handling ─────────────────────────────────────────────────────────────
+let lastTapTime=-999;
+function handleTap(e){
+  e.preventDefault();
+  if(!gameRunning)return;
+  const a=getAudio();
+  const tapAudio=a.currentTime-startAudioTime;
+  const tapPerf=(performance.now()-startPerfTime)/1000;
+  // debounce 80ms
+  if(tapPerf-lastTapTime<0.08)return;
+  lastTapTime=tapPerf;
+  document.getElementById('tap-zone').classList.add('tapped');
+  setTimeout(()=>document.getElementById('tap-zone').classList.remove('tapped'),100);
+  if(currentGame===0)onTapTambourine(tapAudio);
+  else if(currentGame===1)onTapFrog(tapAudio);
+  else if(currentGame===2)onTapSamurai(tapAudio);
+  else if(currentGame===3)dribbleTap(tapAudio);
+  else if(currentGame===5)chickTap(tapAudio);
+  else if(currentGame===6)singerTap(tapAudio);
+}
+
+canvas.addEventListener('mousedown',handleTap);
+canvas.addEventListener('touchstart',handleTap,{passive:false});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&gameRunning){e.preventDefault();handleTap(e);}});
+
+function applyJudgment(j,cx,cy){
+  if(j==='perfect'){
+    perfects++;combo++;score+=100;
+    addJudgment('PERFECT!','#ffe870',cx,cy);
+    playClang();
+  } else if(j==='good'){
+    goods++;combo++;score+=50;
+    addJudgment('GOOD','#44ffaa',cx,cy);
+    playTone(440,0.15,0.3,'triangle');
+  } else {
+    misses++;combo=0;
+    addJudgment('MISS','#ff4466',cx,cy);
+    playMiss();
+  }
+  if(combo>maxCombo)maxCombo=combo;
+}
+
+function drawJudgments(){
+  judgments.forEach(j=>{
+    j.age++;
+    const alpha=1-j.age/j.life;
+    ctx.globalAlpha=alpha;
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle=j.color;
+    ctx.shadowColor=j.color;
+    ctx.shadowBlur=10;
+    ctx.fillText(j.text,j.x,j.y-j.age*0.5);
+    ctx.shadowBlur=0;
+    ctx.globalAlpha=1;
+  });
+  judgments=judgments.filter(j=>j.age<j.life);
+}
+
+// ─── MINI-GAME 1: TAMBOURINE ──────────────────────────────────────────────────
+// Pattern: groups of (tap, tap, tap+tap+tap) repeating 4 times
+// BPM=120 → beat=0.5s
+// Each group spans 7 beats: beat 1,3,5,5.5,6 are taps, beats 0,2,4 are cues
+// Actually: cue at 0, tap at 1, cue at 2, tap at 3, cue at 4, tap at 5, tap5.5, tap6
+// Group = 7 beats = 3.5s
+// 4 groups = 14s + countdown
+
+let tambEvents=[]; // {time, type:'cue'|'tap', scheduled, triggered}
+let tambTapEvents=[];
+let tambConductorAngle=0;
+let tambConductorSwing=0;
+let tambCharBounce=0;
+let tambFlash=0;
+let tambSad=0;
+let tambGameDone=false;
+
+function initTambourine(){
+  tambEvents=[];tambTapEvents=[];tambGameDone=false;
+  tambConductorAngle=0;tambConductorSwing=0;
+  tambCharBounce=0;tambFlash=0;tambSad=0;
+  const BPS=0.5; // beat period in seconds
+  // 4 repeats of the 7-beat pattern
+  for(let r=0;r<4;r++){
+    const base=r*7*BPS;
+    // Cue+tap pairs
+    tambEvents.push({time:base+0*BPS,type:'cue',done:false});
+    tambTapEvents.push({time:base+1*BPS,type:'tap',judged:false,idx:tambTapEvents.length});
+    tambEvents.push({time:base+2*BPS,type:'cue',done:false});
+    tambTapEvents.push({time:base+3*BPS,type:'tap',judged:false,idx:tambTapEvents.length});
+    tambEvents.push({time:base+4*BPS,type:'cue',done:false});
+    // Triple
+    tambTapEvents.push({time:base+5*BPS,type:'tap',judged:false,idx:tambTapEvents.length});
+    tambTapEvents.push({time:base+5.5*BPS,type:'tap',judged:false,idx:tambTapEvents.length});
+    tambTapEvents.push({time:base+6*BPS,type:'tap',judged:false,idx:tambTapEvents.length});
+    // Background drum on beat 0,2,4,6
+    for(let b=0;b<7;b+=2){
+      tambEvents.push({time:base+b*BPS,type:'drum',done:false});
+    }
+  }
+  tambEvents.sort((a,b)=>a.time-b.time);
+  // Schedule countdown beeps
+  const a=getAudio();
+  for(let i=3;i>=1;i--){
+    playTone(i===1?660:440,0.1,0.2,'sine',startAudioTime-(i)*0.5);
+  }
+}
+
+function updateTambourine(elapsed,audioNow){
+  // Trigger events
+  tambEvents.forEach(ev=>{
+    if(!ev.done&&audioNow>=ev.time){
+      ev.done=true;
+      if(ev.type==='cue'){
+        playCue(false,startAudioTime+ev.time);
+        tambConductorSwing=1;
+      } else if(ev.type==='drum'){
+        playDrum(startAudioTime+ev.time);
+        playHihat(startAudioTime+ev.time);
+      }
+    }
+  });
+  // Auto-miss tap events not yet judged that are overdue
+  tambTapEvents.forEach(ev=>{
+    if(!ev.judged&&audioNow>ev.time+0.15){
+      ev.judged=true;ev.result='miss';
+      misses++;combo=0;tambSad=30;
+      addJudgment('MISS','#ff4466',W*0.65,H*0.45);
+    }
+  });
+  // Conductor animation
+  tambConductorSwing*=0.9;
+  tambConductorAngle=Math.sin(audioNow*Math.PI*2)*15+tambConductorSwing*40;
+  tambCharBounce*=0.85;
+  tambFlash*=0.88;
+  tambSad=Math.max(0,tambSad-1);
+  // Check done
+  const lastTap=tambTapEvents[tambTapEvents.length-1];
+  if(!tambGameDone&&lastTap&&lastTap.judged&&audioNow>lastTap.time+0.5){
+    tambGameDone=true;
+    setTimeout(onGameEnd,800);
+  }
+  drawTambourine(audioNow);
+}
+
+function onTapTambourine(tapTime){
+  let closest=null,closestDelta=999;
+  tambTapEvents.forEach(ev=>{
+    if(!ev.judged){
+      const d=Math.abs(tapTime-ev.time)*1000;
+      if(d<closestDelta){closestDelta=d;closest=ev;}
+    }
+  });
+  if(!closest||closestDelta>300){
+    // No nearby tap
+    addJudgment('MISS','#ff4466',W*0.65,H*0.45);
+    misses++;combo=0;tambSad=30;
+    playMiss();return;
+  }
+  closest.judged=true;closest.result=judge(closestDelta);
+  applyJudgment(closest.result,W*0.65,H*0.45);
+  if(closest.result!=='miss'){tambFlash=1;tambCharBounce=1;}
+  else tambSad=30;
+}
+
+function drawTambourine(audioNow){
+  // Background
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#ff9966');bg.addColorStop(1,'#ffcc44');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Polka dots decoration
+  ctx.globalAlpha=0.15;
+  for(let i=0;i<8;i++)for(let j=0;j<5;j++){
+    ctx.fillStyle='#fff';ctx.beginPath();
+    ctx.arc(30+i*55,30+j*55,12,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // Conductor (left side)
+  const condX=100,condY=130;
+  ctx.save();
+  ctx.translate(condX,condY);
+  // Body
+  ctx.fillStyle='#2233aa';
+  ctx.fillRect(-18,-60,36,60);
+  // Head
+  ctx.fillStyle='#ffddaa';
+  ctx.beginPath();ctx.arc(0,-70,22,0,Math.PI*2);ctx.fill();
+  // Face
+  ctx.fillStyle='#333';
+  ctx.beginPath();ctx.arc(-7,-72,3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(7,-72,3,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#333';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(0,-65,8,0,Math.PI);ctx.stroke();
+  // Hat
+  ctx.fillStyle='#111';
+  ctx.fillRect(-20,-96,40,8);
+  ctx.fillRect(-12,-96-24,24,24);
+  // Baton arm
+  ctx.save();
+  ctx.translate(18,-30);
+  ctx.rotate(tambConductorAngle*Math.PI/180);
+  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(40,-40);ctx.stroke();
+  // Baton tip
+  ctx.fillStyle='#ffe870';
+  ctx.beginPath();ctx.arc(40,-40,5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  // Character with tambourine (right side)
+  const charX=300,charY=150;
+  const bounce=tambCharBounce*15;
+  ctx.save();
+  ctx.translate(charX,charY-bounce);
+  // Body
+  ctx.fillStyle=tambSad>0?'#aa4444':'#cc44aa';
+  ctx.beginPath();ctx.ellipse(0,0,30,40,0,0,Math.PI*2);ctx.fill();
+  // Head
+  ctx.fillStyle='#ffddaa';
+  ctx.beginPath();ctx.arc(0,-58,24,0,Math.PI*2);ctx.fill();
+  // Eyes
+  ctx.fillStyle='#333';
+  ctx.beginPath();ctx.arc(-8,-60,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-60,4,0,Math.PI*2);ctx.fill();
+  // Mouth
+  ctx.strokeStyle='#333';ctx.lineWidth=2;
+  if(tambSad>0){ctx.beginPath();ctx.arc(0,-48,8,Math.PI,0);ctx.stroke();}
+  else if(tambFlash>0.3){ctx.beginPath();ctx.arc(0,-52,8,0,Math.PI);ctx.stroke();}
+  else{ctx.beginPath();ctx.arc(0,-52,6,0,Math.PI);ctx.stroke();}
+  // Tambourine
+  const tAngle=tambFlash>0?(Math.sin(audioNow*20)*20):10;
+  ctx.save();
+  ctx.translate(36,-10);
+  ctx.rotate(tAngle*Math.PI/180);
+  ctx.strokeStyle=tambFlash>0.5?'#ffe870':'#884422';
+  ctx.lineWidth=6;
+  ctx.beginPath();ctx.arc(0,0,20,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=tambFlash>0.5?'rgba(255,232,112,0.4)':'rgba(200,100,50,0.3)';
+  ctx.beginPath();ctx.arc(0,0,17,0,Math.PI*2);ctx.fill();
+  // Jingles
+  for(let i=0;i<6;i++){
+    const a=i/6*Math.PI*2;
+    ctx.fillStyle='#ffcc44';
+    ctx.beginPath();ctx.arc(Math.cos(a)*20,Math.sin(a)*20,4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+  // Flash sparkles
+  if(tambFlash>0.3){
+    ctx.fillStyle='#ffe870';
+    for(let i=0;i<6;i++){
+      const a=i/6*Math.PI*2+audioNow*5;
+      const r=40+tambFlash*20;
+      ctx.globalAlpha=tambFlash;
+      ctx.beginPath();ctx.arc(36+Math.cos(a)*r,-10+Math.sin(a)*r,3,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+    }
+  }
+  ctx.restore();
+
+  // Beat indicator bar at bottom
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.fillRect(0,H-30,W,30);
+  // Show upcoming tap events
+  tambTapEvents.forEach(ev=>{
+    if(ev.judged)return;
+    const dt=ev.time-audioNow;
+    if(dt>-0.2&&dt<2){
+      const x=W*0.5+dt*120;
+      if(x>0&&x<W){
+        const col=dt<0.1?'#ffe870':dt<0.3?'#ff8844':'#ff4488';
+        ctx.fillStyle=col;
+        ctx.beginPath();ctx.arc(x,H-15,8,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#fff';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(x,H-15,8,0,Math.PI*2);ctx.stroke();
+      }
+    }
+  });
+  // Target line
+  ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=2;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(W*0.5,H-30);ctx.lineTo(W*0.5,H);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Title
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,32);
+  ctx.font='bold 16px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#ffe870';ctx.fillText('🥁 タンバリン',W/2,16);
+
+  drawJudgments();
+}
+
+// ─── MINI-GAME 2: FROG ────────────────────────────────────────────────────────
+let frogEvents=[]; // {time, x, judged, result}
+let frogY=0;       // frog jump height
+let frogJumping=false;
+let frogJumpStart=0;
+let frogJumpDur=0.4;
+let frogSad=0;
+let frogFlower=0; // caught flower display
+let frogGameDone=false;
+let frogRiverOffset=0;
+let frogSparkles=[];
+
+const FROG_X=80;
+const FROG_PAD_Y=200;
+const FROG_TARGET_X=130; // where flower should be at tap time
+const FLOWER_SPEED=140;  // px/s from right to left
+
+function initFrog(){
+  frogEvents=[];frogGameDone=false;
+  frogY=0;frogJumping=false;frogSad=0;frogFlower=0;frogSparkles=[];
+  const BPS=0.5;
+  // 16 flowers, rhythm mix
+  const beats=[1,3,5,7,9,11,12.5,14,16,18,20,21.5,23,25,27,28.5];
+  beats.forEach((b,i)=>{
+    const t=b*BPS;
+    const startX=W+(t*FLOWER_SPEED)+(i%3)*20; // flowers start off-screen right
+    frogEvents.push({time:t,startX,x:startX,judged:false});
+  });
+  // Background music
+  const a=getAudio();
+  for(let b=0;b<32;b++){
+    if(b%4===0)playDrum(startAudioTime+b*BPS);
+    if(b%2===1)playHihat(startAudioTime+b*BPS);
+  }
+}
+
+function updateFrog(elapsed,audioNow){
+  frogRiverOffset=(audioNow*60)%80;
+  // Move flowers
+  frogEvents.forEach(ev=>{
+    ev.x=ev.startX-audioNow*FLOWER_SPEED;
+    // Auto miss if flower passed well beyond target
+    if(!ev.judged&&ev.x<FROG_TARGET_X-60){
+      ev.judged=true;ev.result='miss';
+      misses++;combo=0;frogSad=40;
+      addJudgment('MISS','#ff4466',FROG_TARGET_X,FROG_PAD_Y-50);
+    }
+  });
+  // Frog jump physics
+  if(frogJumping){
+    const t=(audioNow-frogJumpStart)/frogJumpDur;
+    if(t<1){frogY=Math.sin(t*Math.PI)*60;}
+    else{frogY=0;frogJumping=false;}
+  }
+  frogSad=Math.max(0,frogSad-1);
+  frogFlower=Math.max(0,frogFlower-1);
+  frogSparkles=frogSparkles.filter(s=>{s.life--;return s.life>0;});
+  // Check done
+  const lastEv=frogEvents[frogEvents.length-1];
+  if(!frogGameDone&&lastEv&&lastEv.judged&&audioNow>lastEv.time+0.8){
+    frogGameDone=true;setTimeout(onGameEnd,800);
+  }
+  drawFrog(audioNow);
+}
+
+function onTapFrog(tapTime){
+  let closest=null,closestDelta=999;
+  frogEvents.forEach(ev=>{
+    if(!ev.judged){
+      const d=Math.abs(tapTime-ev.time)*1000;
+      if(d<closestDelta){closestDelta=d;closest=ev;}
+    }
+  });
+  if(!closest||closestDelta>350){
+    frogSad=40;playMiss();
+    addJudgment('MISS','#ff4466',FROG_TARGET_X,FROG_PAD_Y-50);
+    misses++;combo=0;return;
+  }
+  closest.judged=true;closest.result=judge(closestDelta);
+  // Start jump
+  const a=getAudio();
+  frogJumping=true;frogJumpStart=a.currentTime-startAudioTime;
+  applyJudgment(closest.result,FROG_TARGET_X,FROG_PAD_Y-80);
+  if(closest.result!=='miss'){
+    frogFlower=50;playSplash();
+    for(let i=0;i<8;i++){
+      frogSparkles.push({x:FROG_TARGET_X+Math.random()*40-20,y:FROG_PAD_Y-40,vx:(Math.random()-0.5)*3,vy:-Math.random()*4-2,life:30});
+    }
+  } else{frogSad=40;}
+}
+
+function drawFrog(audioNow){
+  // Sky/water background
+  const sky=ctx.createLinearGradient(0,0,0,H*0.4);
+  sky.addColorStop(0,'#44aaff');sky.addColorStop(1,'#88ddff');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*0.4);
+  // River
+  for(let i=0;i<5;i++){
+    const y=H*0.4+i*((H*0.6)/5);
+    const col=i%2===0?'#22aa88':'#1a9977';
+    ctx.fillStyle=col;
+    ctx.fillRect(0,y,W,(H*0.6)/5);
+  }
+  // River ripples
+  ctx.globalAlpha=0.3;
+  for(let i=0;i<6;i++){
+    const x=((i*100+frogRiverOffset*2)%W);
+    ctx.strokeStyle='#fff';ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(x,H*0.55+i*20,20,5,0,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  // Lily pads
+  ctx.fillStyle='#228833';
+  ctx.beginPath();ctx.ellipse(FROG_X,FROG_PAD_Y+10,35,12,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#33aa44';
+  ctx.beginPath();ctx.ellipse(FROG_X,FROG_PAD_Y+10,30,10,0,0,Math.PI*2);ctx.fill();
+  // Second lily pad (catch target)
+  ctx.fillStyle='#228833';
+  ctx.beginPath();ctx.ellipse(FROG_X+50,FROG_PAD_Y+10,28,10,0,0,Math.PI*2);ctx.fill();
+
+  // Frog
+  const fx=FROG_X,fy=FROG_PAD_Y-frogY;
+  ctx.save();ctx.translate(fx,fy);
+  // Body
+  ctx.fillStyle=frogSad>0?'#558833':'#66aa22';
+  ctx.beginPath();ctx.ellipse(0,0,22,18,0,0,Math.PI*2);ctx.fill();
+  // Head
+  ctx.beginPath();ctx.ellipse(0,-18,18,14,0,0,Math.PI*2);ctx.fill();
+  // Eyes
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(-8,-22,7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-22,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.arc(-8,-22,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-22,4,0,Math.PI*2);ctx.fill();
+  // Highlight
+  ctx.fillStyle='rgba(255,255,255,0.7)';
+  ctx.beginPath();ctx.arc(-6,-24,2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(10,-24,2,0,Math.PI*2);ctx.fill();
+  // Mouth
+  ctx.strokeStyle='#333';ctx.lineWidth=2;
+  if(frogSad>0){ctx.beginPath();ctx.arc(0,-12,6,Math.PI,0);ctx.stroke();}
+  else{ctx.beginPath();ctx.arc(0,-14,7,0,Math.PI);ctx.stroke();}
+  // Legs
+  ctx.fillStyle='#66aa22';
+  ctx.beginPath();ctx.ellipse(-25,10,12,7,Math.PI*0.3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(25,10,12,7,-Math.PI*0.3,0,Math.PI*2);ctx.fill();
+  // Caught flower
+  if(frogFlower>20){
+    ctx.font='22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('🌸',0,-45);
+  }
+  ctx.restore();
+
+  // Flowers scrolling
+  frogEvents.forEach(ev=>{
+    if(ev.judged&&ev.result!=='miss')return;
+    if(ev.x>-20&&ev.x<W+20){
+      ctx.font='24px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('🌸',ev.x,FROG_PAD_Y-30);
+    }
+  });
+
+  // Sparkles
+  frogSparkles.forEach(s=>{
+    s.x+=s.vx;s.y+=s.vy;s.vy+=0.2;
+    ctx.globalAlpha=s.life/30;
+    ctx.fillStyle='#ffe870';
+    ctx.beginPath();ctx.arc(s.x,s.y,3,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  });
+
+  // Target zone indicator
+  ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(FROG_TARGET_X,FROG_PAD_Y-60);ctx.lineTo(FROG_TARGET_X,FROG_PAD_Y+5);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,32);
+  ctx.font='bold 16px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#44ffaa';ctx.fillText('🐸 カエルの飛び込み',W/2,16);
+
+  drawJudgments();
+}
+
+// ─── MINI-GAME 3: SAMURAI ─────────────────────────────────────────────────────
+let samEvents=[]; // {time, cueTime, word, judged, result, objX}
+let samSlash=0;
+let samSlashAngle=0;
+let samObjSplit=[];
+let samBg=0;
+let samGameDone=false;
+let samWordDisplay='';
+let samWordAlpha=0;
+
+const SAM_X=310; // samurai x
+const OBJ_SPEED=180; // px/s
+
+function initSamurai(){
+  samEvents=[];samGameDone=false;
+  samSlash=0;samSlashAngle=0;samObjSplit=[];samBg=0;
+  samWordDisplay='';samWordAlpha=0;
+  const BPS=0.5;
+  // Patterns: 2-slash and 3-slash groups
+  const groups=[
+    {start:1,words:['セイ！','ヤー！']},
+    {start:5,words:['セイ！','ヤー！']},
+    {start:9,words:['セイ！','ヤー！','ハッ！']},
+    {start:14,words:['セイ！','ヤー！']},
+    {start:18,words:['セイ！','ヤー！','ハッ！']},
+    {start:23,words:['セイ！','ヤー！']},
+    {start:27,words:['セイ！','ヤー！','ハッ！']},
+  ];
+  groups.forEach(g=>{
+    g.words.forEach((w,i)=>{
+      const tapTime=(g.start+i)*BPS;
+      const cueTime=tapTime-BPS*0.5; // half beat before
+      const objX=W+60+(tapTime*OBJ_SPEED); // start pos so it arrives at SAM_X at tapTime
+      samEvents.push({time:tapTime,cueTime,word:w,judged:false,result:null,
+        objX:SAM_X+(tapTime*OBJ_SPEED)}); // will be computed in draw
+    });
+  });
+  // Background beat
+  const a=getAudio();
+  for(let b=0;b<32;b++){
+    if(b%4===0)playDrum(startAudioTime+b*BPS);
+    if(b%4===2)playHihat(startAudioTime+b*BPS);
+  }
+}
+
+function updateSamurai(elapsed,audioNow){
+  samSlash=Math.max(0,samSlash-0.06);
+  samWordAlpha=Math.max(0,samWordAlpha-0.02);
+  // Trigger cues
+  samEvents.forEach(ev=>{
+    if(!ev.cueTriggered&&audioNow>=ev.cueTime){
+      ev.cueTriggered=true;
+      samWordDisplay=ev.word;samWordAlpha=1;
+      const freq=ev.word==='セイ！'?660:ev.word==='ヤー！'?880:1100;
+      playCue(true,startAudioTime+ev.cueTime);
+      playTone(freq,0.15,0.3,'square',startAudioTime+ev.cueTime);
+    }
+    if(!ev.judged&&audioNow>ev.time+0.15){
+      ev.judged=true;ev.result='miss';
+      misses++;combo=0;
+      addJudgment('MISS','#ff4466',SAM_X-60,H*0.5);
+    }
+  });
+  samObjSplit=samObjSplit.filter(o=>{o.life--;return o.life>0;});
+  const lastEv=samEvents[samEvents.length-1];
+  if(!samGameDone&&lastEv&&lastEv.judged&&audioNow>lastEv.time+0.8){
+    samGameDone=true;setTimeout(onGameEnd,800);
+  }
+  drawSamurai(audioNow);
+}
+
+function onTapSamurai(tapTime){
+  let closest=null,closestDelta=999;
+  samEvents.forEach(ev=>{
+    if(!ev.judged){
+      const d=Math.abs(tapTime-ev.time)*1000;
+      if(d<closestDelta){closestDelta=d;closest=ev;}
+    }
+  });
+  samSlash=1;samSlashAngle=(Math.random()-0.5)*40+(-30);
+  if(!closest||closestDelta>350){
+    misses++;combo=0;playMiss();
+    addJudgment('MISS','#ff4466',SAM_X-60,H*0.45);
+    return;
+  }
+  closest.judged=true;closest.result=judge(closestDelta);
+  applyJudgment(closest.result,SAM_X-80,H*0.45);
+  if(closest.result!=='miss'){
+    playSwoosh();
+    // Add split pieces
+    const a=getAudio();const aN=a.currentTime-startAudioTime;
+    const objX=SAM_X-(aN-closest.time)*OBJ_SPEED;
+    samObjSplit.push({x:objX,y:H*0.45,vx1:-2,vy1:-3,vx2:2,vy2:-2,life:40,word:closest.word});
+  }
+}
+
+const OBJ_ICONS=['⭐','💎','🪙','🔮'];
+function drawSamurai(audioNow){
+  // Dark dojo background
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#221133');bg.addColorStop(1,'#110822');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Floor
+  ctx.fillStyle='#2a1a0a';ctx.fillRect(0,H*0.75,W,H*0.25);
+  // Floor lines
+  for(let i=0;i<8;i++){
+    ctx.strokeStyle='rgba(80,40,10,0.5)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,H*0.75+i*10);ctx.lineTo(W,H*0.75+i*10);ctx.stroke();
+  }
+  // Window/paper panels
+  for(let i=0;i<3;i++){
+    ctx.fillStyle='rgba(255,200,100,0.05)';
+    ctx.strokeStyle='rgba(100,60,20,0.4)';ctx.lineWidth=1;
+    ctx.fillRect(20+i*80,40,60,100);ctx.strokeRect(20+i*80,40,60,100);
+  }
+
+  // Moving objects from right to left
+  samEvents.forEach((ev,i)=>{
+    if(ev.judged&&ev.result!=='miss')return;
+    const x=SAM_X+(ev.time-audioNow)*OBJ_SPEED;
+    if(x<-30||x>W+30)return;
+    const icon=OBJ_ICONS[i%OBJ_ICONS.length];
+    ctx.font='26px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    // Glow
+    ctx.shadowColor='#ff8844';ctx.shadowBlur=15;
+    ctx.fillText(icon,x,H*0.45);
+    ctx.shadowBlur=0;
+  });
+
+  // Split pieces
+  samObjSplit.forEach(o=>{
+    const alpha=o.life/40;
+    ctx.globalAlpha=alpha;
+    ctx.font='20px Arial';ctx.textAlign='center';
+    // two halves flying apart (simplified)
+    o.vx1*=0.95;o.vy1+=0.3;
+    o.vx2*=0.95;o.vy2+=0.3;
+    ctx.fillText('⭐',o.x+o.vx1*(41-o.life),o.y+o.vy1*(41-o.life));
+    ctx.fillText('✨',o.x+o.vx2*(41-o.life),o.y+o.vy2*(41-o.life));
+    ctx.globalAlpha=1;
+  });
+
+  // Samurai
+  const samY=H*0.72;
+  ctx.save();ctx.translate(SAM_X,samY);
+  // Slash effect
+  if(samSlash>0){
+    ctx.save();
+    ctx.rotate(samSlashAngle*Math.PI/180);
+    const sg=ctx.createLinearGradient(-60,0,60,0);
+    sg.addColorStop(0,'rgba(255,255,255,0)');
+    sg.addColorStop(0.5,`rgba(200,220,255,${samSlash*0.9})`);
+    sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sg;
+    ctx.fillRect(-80,-8,160,16);
+    // Sword arc
+    ctx.strokeStyle=`rgba(255,255,255,${samSlash})`;
+    ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(0,0,50,-Math.PI*0.8,Math.PI*0.1);ctx.stroke();
+    ctx.restore();
+  }
+  // Legs/hakama
+  ctx.fillStyle='#223366';
+  ctx.beginPath();ctx.moveTo(-18,0);ctx.lineTo(-22,70);ctx.lineTo(-2,70);ctx.lineTo(0,20);ctx.lineTo(2,70);ctx.lineTo(22,70);ctx.lineTo(18,0);ctx.closePath();ctx.fill();
+  // Body/gi
+  ctx.fillStyle='#e8e0d0';
+  ctx.beginPath();ctx.moveTo(-18,0);ctx.lineTo(-20,-50);ctx.lineTo(0,-55);ctx.lineTo(20,-50);ctx.lineTo(18,0);ctx.closePath();ctx.fill();
+  // Gi lines
+  ctx.strokeStyle='#aaa090';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,-55);ctx.lineTo(0,-10);ctx.stroke();
+  // Head
+  ctx.fillStyle='#f0d8a8';
+  ctx.beginPath();ctx.arc(0,-68,18,0,Math.PI*2);ctx.fill();
+  // Hair
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.ellipse(0,-80,14,10,0,Math.PI,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(0,-68,18,Math.PI,Math.PI*2);ctx.fill();
+  // Topknot
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.ellipse(0,-87,5,8,0,0,Math.PI*2);ctx.fill();
+  // Face
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.arc(-6,-70,3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(6,-70,3,0,Math.PI*2);ctx.fill();
+  if(samSlash>0){// determined face
+    ctx.strokeStyle='#222';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(-8,-75);ctx.lineTo(-3,-73);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(8,-75);ctx.lineTo(3,-73);ctx.stroke();
+  }
+  // Sword arm
+  ctx.save();
+  const swordAngle=samSlash>0?(-60+samSlash*-30):(-20);
+  ctx.translate(-15,-35);
+  ctx.rotate(swordAngle*Math.PI/180);
+  // Arm
+  ctx.fillStyle='#f0d8a8';ctx.fillRect(-5,0,10,30);
+  // Sword hilt
+  ctx.fillStyle='#884422';ctx.fillRect(-6,28,12,10);
+  // Sword blade
+  ctx.fillStyle='#dde8f0';
+  ctx.beginPath();ctx.moveTo(-3,38);ctx.lineTo(3,38);ctx.lineTo(1,90);ctx.lineTo(-1,90);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#aab8c8';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,38);ctx.lineTo(0,90);ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+
+  // Cue word display
+  if(samWordAlpha>0){
+    ctx.globalAlpha=samWordAlpha;
+    ctx.font='bold 36px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    const wordCol=samWordDisplay==='セイ！'?'#ff8844':samWordDisplay==='ヤー！'?'#ff4488':'#ff44ff';
+    ctx.shadowColor=wordCol;ctx.shadowBlur=20;
+    ctx.fillStyle=wordCol;
+    ctx.fillText(samWordDisplay,W/2,H*0.25);
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+  }
+
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,32);
+  ctx.font='bold 16px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#ff8866';ctx.fillText('⚔️ サムライスライス',W/2,16);
+
+  drawJudgments();
+}
+
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+function launchConfetti(){
+  const cc=document.getElementById('confetti');
+  cc.style.display='block';
+  cc.width=window.innerWidth;cc.height=window.innerHeight;
+  const cctx=cc.getContext('2d');
+  const pieces=[];
+  const colors=['#ffe870','#ff44aa','#44ffaa','#4488ff','#ff8844'];
+  for(let i=0;i<120;i++){
+    pieces.push({
+      x:Math.random()*cc.width,y:-20,
+      vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,
+      r:Math.random()*8+4,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      rot:Math.random()*360,rv:(Math.random()-0.5)*10,
+    });
+  }
+  let frame=0;
+  function drawCC(){
+    cctx.clearRect(0,0,cc.width,cc.height);
+    pieces.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;p.rot+=p.rv;
+      cctx.save();cctx.translate(p.x,p.y);cctx.rotate(p.rot*Math.PI/180);
+      cctx.fillStyle=p.color;cctx.globalAlpha=Math.max(0,1-(frame/200));
+      cctx.fillRect(-p.r/2,-p.r/2,p.r,p.r);
+      cctx.restore();
+    });
+    frame++;
+    if(frame<200)requestAnimationFrame(drawCC);
+    else{cctx.clearRect(0,0,cc.width,cc.height);cc.style.display='none';}
+  }
+  requestAnimationFrame(drawCC);
+}
+
+// ─── Random / Endless modes ───────────────────────────────────────────────────
+function pickRandomGame(exclude){
+  const pool=[0,1,2,3,4,5,6].filter(g=>g!==exclude);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function showRandomSelect(){
+  document.getElementById('random-overlay').style.display='flex';
+}
+function startRandom(n){
+  document.getElementById('random-overlay').style.display='none';
+  getAudio();
+  randomMode=true; randomMax=n; randomCount=0;
+  endlessMode=false; allStages=false;
+  score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;judgments=[];
+  document.getElementById('menu-screen').style.display='none';
+  document.getElementById('game-area').style.display='';
+  document.getElementById('end-screen').style.display='none';
+  document.getElementById('stage-progress').style.display='none';
+  updateLEDs();
+  const first=Math.floor(Math.random()*7);
+  currentGame=first;
+  setTimeout(()=>launchGame(first),200);
+}
+function startEndless(){
+  getAudio();
+  endlessMode=true; endlessCount=0;
+  randomMode=false; allStages=false;
+  score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;judgments=[];
+  document.getElementById('menu-screen').style.display='none';
+  document.getElementById('game-area').style.display='';
+  document.getElementById('end-screen').style.display='none';
+  document.getElementById('stage-progress').style.display='none';
+  updateLEDs();
+  const first=Math.floor(Math.random()*7);
+  currentGame=first;
+  setTimeout(()=>launchGame(first),200);
+}
+
+// ─── Game 3: ドリブル ─────────────────────────────────────────────────────────
+let dEvents=[],dEventIdx=0,dBallY=0,dBallVY=0,dPad=0,dWidth=0,dFlash=0,dDone=false;
+const DRIB_BPM=120, DRIB_BEAT=60/DRIB_BPM;
+function initDribble(){
+  dDone=false; dEventIdx=0; dFlash=0;
+  dEvents=[];
+  // pattern: beat 0,1,2,4,5,6,8,9,10,12,13,14,16,18,19,20,22,23,24,25
+  const beats=[1,2,3,5,6,7,9,10,11,13,14,15,17,19,20,21,23,24,25,26];
+  beats.forEach(b=>dEvents.push({beat:b,done:false,judged:false,tapTime:b*DRIB_BEAT}));
+  scheduleDribbleAudio();
+}
+function scheduleDribbleAudio(){
+  const a=getAudio(),base=startAudioTime;
+  dEvents.forEach(ev=>{
+    // cue bounce sound
+    const t=base+ev.tapTime-0.1;
+    if(t>a.currentTime){
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='sine';o.frequency.value=120;
+      o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(40,t+0.15);
+      g.gain.setValueAtTime(0.5,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+      o.start(t);o.stop(t+0.2);
+    }
+  });
+}
+function updateDribble(elapsed,audioNow){
+  const cv=canvas,ctx2=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx2.fillStyle='#180a28';ctx2.fillRect(0,0,W,H);
+  // floor
+  const floorY=H-50;
+  ctx2.fillStyle='#3a2010';ctx2.fillRect(0,floorY,W,4);
+  ctx2.fillStyle='rgba(255,160,40,0.15)';ctx2.fillRect(0,floorY+4,W,H-floorY-4);
+  // ball bounce sine
+  const phase=(audioNow%(DRIB_BEAT))/DRIB_BEAT;
+  const ballY=floorY-30-Math.abs(Math.sin(audioNow*Math.PI/DRIB_BEAT))*120;
+  const shadowScale=1-Math.abs(ballY-floorY+30)/130;
+  // shadow
+  ctx2.save();ctx2.globalAlpha=0.3*shadowScale;
+  ctx2.fillStyle='#000';ctx2.beginPath();ctx2.ellipse(W/2,floorY+2,20*shadowScale,5*shadowScale,0,0,Math.PI*2);ctx2.fill();
+  ctx2.restore();
+  // ball
+  const bR=22*(1-0.2*(1-shadowScale));
+  ctx2.save();
+  ctx2.shadowColor='#ff8020';ctx2.shadowBlur=16;
+  ctx2.fillStyle='#ff6010';ctx2.beginPath();ctx2.arc(W/2,ballY,bR,0,Math.PI*2);ctx2.fill();
+  // lines on ball
+  ctx2.strokeStyle='rgba(0,0,0,0.4)';ctx2.lineWidth=2;
+  ctx2.beginPath();ctx2.moveTo(W/2-bR,ballY);ctx2.lineTo(W/2+bR,ballY);ctx2.stroke();
+  ctx2.beginPath();ctx2.arc(W/2,ballY,bR,0,Math.PI,false);ctx2.stroke();
+  ctx2.restore();
+  // flash
+  if(dFlash>0){
+    dFlash--;
+    ctx2.save();ctx2.globalAlpha=dFlash/10;
+    ctx2.fillStyle='#ffff80';ctx2.fillRect(0,0,W,H);
+    ctx2.restore();
+  }
+  // title
+  ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(0,0,W,32);
+  ctx2.font='bold 16px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+  ctx2.fillStyle='#ff8040';ctx2.fillText('🏀 ドリブル',W/2,16);
+  drawJudgments();
+  // check for missed events
+  dEvents.forEach(ev=>{
+    if(!ev.judged&&audioNow>ev.tapTime+0.15){
+      ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();
+    }
+  });
+  if(!dDone&&dEvents.every(e=>e.judged)){dDone=true;setTimeout(onGameEnd,600);}
+}
+function dribbleTap(audioNow){
+  const hit=dEvents.find(ev=>!ev.judged&&Math.abs(audioNow-ev.tapTime)<0.15);
+  if(hit){
+    hit.judged=true;
+    const delta=Math.abs(audioNow-hit.tapTime)*1000;
+    const j=judge(delta);
+    dFlash=10;
+    if(j==='perfect'){perfects++;combo++;score+=100;}
+    else if(j==='good'){goods++;combo++;score+=50;}
+    else{misses++;combo=0;}
+    if(combo>maxCombo)maxCombo=combo;
+    const cv=canvas,W=cv.width,H=cv.height;
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    updateLEDs();
+  }
+}
+
+// ─── Game 4: ピアノ ───────────────────────────────────────────────────────────
+let pianoPhase=0,pianoSeq=[],pianoPlayerIdx=0,pianoPlayIdx=0,pianoPlayDone=false;
+let pianoKeys=[261.63,293.66,329.63,392.00],pianoKeyNames=['ド','レ','ミ','ソ'];
+let pianoRound=0,pianoRounds=[[],[],[]], pianoWaiting=false, pianoExpectedKey=-1, pianoKeyFlash=[-1,0];
+let pianoEvents=[],pianoEvIdx=0,pianoDone=false;
+function initPiano(){
+  pianoDone=false; pianoEvIdx=0; pianoEvents=[];
+  pianoRound=0;
+  // 3 rounds of sequences: 4,5,6 notes
+  const lens=[4,5,6];
+  let t=1.0; // start after 1 second
+  for(let r=0;r<3;r++){
+    const len=lens[r];
+    const seq=Array.from({length:len},()=>Math.floor(Math.random()*4));
+    // computer plays each note
+    for(let i=0;i<len;i++){pianoEvents.push({type:'play',key:seq[i],time:t,done:false});t+=0.5;}
+    t+=0.3;
+    // player repeats
+    for(let i=0;i<len;i++){pianoEvents.push({type:'tap',key:seq[i],time:t,done:false,judged:false});t+=0.6;}
+    t+=0.5;
+  }
+  schedulePianoAudio();
+}
+function schedulePianoAudio(){
+  const a=getAudio(),base=startAudioTime;
+  pianoEvents.filter(e=>e.type==='play').forEach(ev=>{
+    const t=base+ev.time;
+    if(t>a.currentTime){
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='sine';o.frequency.value=pianoKeys[ev.key];
+      g.gain.setValueAtTime(0.4,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+      o.start(t);o.stop(t+0.45);
+    }
+  });
+}
+function updatePiano(elapsed,audioNow){
+  const cv=canvas,ctx2=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx2.fillStyle='#0a1428';ctx2.fillRect(0,0,W,H);
+  // title
+  ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(0,0,W,32);
+  ctx2.font='bold 16px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+  ctx2.fillStyle='#88ccff';ctx2.fillText('🎹 ピアノ',W/2,16);
+  // keys (4 keys)
+  const kw=W/4,kh=100,ky=H-kh-10;
+  const kcolors=['#60b8ff','#60ff90','#ffa040','#c060ff'];
+  for(let k=0;k<4;k++){
+    const active=pianoKeyFlash[0]===k&&pianoKeyFlash[1]>0;
+    ctx2.save();
+    ctx2.shadowColor=kcolors[k];ctx2.shadowBlur=active?24:0;
+    ctx2.fillStyle=active?kcolors[k]:'rgba(60,30,120,0.8)';
+    ctx2.beginPath();ctx2.roundRect(k*kw+4,ky,kw-8,kh,8);ctx2.fill();
+    ctx2.fillStyle=active?'#000':'#fff';
+    ctx2.font='bold 20px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+    ctx2.fillText(pianoKeyNames[k],k*kw+kw/2,ky+kh/2);
+    ctx2.restore();
+  }
+  if(pianoKeyFlash[1]>0)pianoKeyFlash[1]--;
+  // instruction text
+  const tapEvs=pianoEvents.filter(e=>e.type==='tap'&&!e.judged);
+  const compEvs=pianoEvents.filter(e=>e.type==='play'&&audioNow<e.time&&!e.done);
+  if(compEvs.length>0){
+    ctx2.font='bold 14px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+    ctx2.fillStyle='#a090d0';ctx2.fillText('コンピューターの番',W/2,H/2-20);
+  } else if(tapEvs.length>0){
+    ctx2.font='bold 16px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+    ctx2.fillStyle='#f5c842';ctx2.fillText('あなたの番！',W/2,H/2-20);
+    // highlight expected key
+    const next=tapEvs[0];
+    if(audioNow>=next.time-0.3){
+      const k=next.key;
+      ctx2.font='bold 28px Arial';ctx2.fillStyle=kcolors[k];ctx2.fillText('▼',k*kw+kw/2,ky-20);
+    }
+  }
+  // mark played events
+  pianoEvents.forEach(ev=>{
+    if(ev.type==='play'&&!ev.done&&audioNow>=ev.time){ev.done=true;pianoKeyFlash=[ev.key,8];}
+    if(ev.type==='tap'&&!ev.judged&&audioNow>ev.time+0.5){ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();}
+  });
+  drawJudgments();
+  if(!pianoDone&&pianoEvents.every(e=>e.done||e.judged)){pianoDone=true;setTimeout(onGameEnd,600);}
+}
+function pianoTap(audioNow,key){
+  const next=pianoEvents.find(e=>e.type==='tap'&&!e.judged);
+  if(!next)return;
+  const cv=canvas,W=cv.width,H=cv.height;
+  // play sound for tap
+  const a=getAudio(),t=a.currentTime;
+  const o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);
+  o.type='sine';o.frequency.value=pianoKeys[key];
+  g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+  o.start(t);o.stop(t+0.35);
+  pianoKeyFlash=[key,10];
+  if(key===next.key&&Math.abs(audioNow-next.time)<0.3){
+    next.judged=true;
+    const delta=Math.abs(audioNow-next.time)*1000;
+    const j=judge(delta);
+    if(j==='perfect'){perfects++;combo++;score+=100;}
+    else if(j==='good'){goods++;combo++;score+=50;}
+    else{misses++;combo=0;}
+    if(combo>maxCombo)maxCombo=combo;
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    updateLEDs();
+  } else if(key!==next.key){
+    next.judged=true;misses++;combo=0;
+    addJudgment('MISS',W/2,H/2-60,'#ff4466');updateLEDs();
+  }
+}
+
+// ─── Game 5: ひよこ行進 ───────────────────────────────────────────────────────
+let chickEvents=[],chickEvIdx=0,chickDone=false,chickFlash=0,chickJump=0,chickDir=1;
+const CHICK_BPM=120,CHICK_BEAT=60/CHICK_BPM;
+function initChick(){
+  chickDone=false;chickEvIdx=0;chickFlash=0;chickJump=0;chickDir=1;
+  chickEvents=[];
+  const pattern=[2,4,6,8,10,12,13,15,17,19,21,23,24,26,28,30];
+  pattern.forEach(b=>chickEvents.push({beat:b,tapTime:b*CHICK_BEAT,done:false,judged:false}));
+  scheduleChickAudio();
+}
+function scheduleChickAudio(){
+  const a=getAudio(),base=startAudioTime;
+  // march beat every beat
+  for(let b=0;b<32;b++){
+    const t=base+b*CHICK_BEAT;
+    if(t>a.currentTime){
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='triangle';o.frequency.value=440;
+      g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+      o.start(t);o.stop(t+0.1);
+    }
+  }
+  // cue sound before tap events
+  chickEvents.forEach(ev=>{
+    const t=base+ev.tapTime-0.1;
+    if(t>a.currentTime){
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='sine';o.frequency.value=880;
+      g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+      o.start(t);o.stop(t+0.1);
+    }
+  });
+}
+function updateChick(elapsed,audioNow){
+  const cv=canvas,ctx2=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx2.fillStyle='#0a1a08';ctx2.fillRect(0,0,W,H);
+  // grass
+  ctx2.fillStyle='#1a3a10';ctx2.fillRect(0,H-40,W,40);
+  ctx2.fillStyle='#2a5020';ctx2.fillRect(0,H-44,W,6);
+  // chicks marching
+  const marchX=(audioNow%4)*W/4;
+  const edgeMark=W-60;
+  for(let c=0;c<3;c++){
+    const cx=((marchX+c*(W/3))%W);
+    const jumpOff=chickJump>0&&c===2?-chickJump:0;
+    ctx2.font='36px Arial';ctx2.textAlign='center';ctx2.textBaseline='bottom';
+    ctx2.fillText('🐤',cx,H-44+jumpOff);
+  }
+  // edge marker
+  ctx2.strokeStyle='#f5c842';ctx2.lineWidth=3;ctx2.setLineDash([4,4]);
+  ctx2.beginPath();ctx2.moveTo(edgeMark,H-80);ctx2.lineTo(edgeMark,H-30);ctx2.stroke();
+  ctx2.setLineDash([]);
+  if(chickFlash>0){chickFlash--;ctx2.save();ctx2.globalAlpha=chickFlash/12;ctx2.fillStyle='#ffff80';ctx2.fillRect(0,0,W,H);ctx2.restore();}
+  if(chickJump>0)chickJump=Math.max(0,chickJump-3);
+  ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(0,0,W,32);
+  ctx2.font='bold 16px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+  ctx2.fillStyle='#ffe870';ctx2.fillText('🐤 ひよこ行進',W/2,16);
+  drawJudgments();
+  chickEvents.forEach(ev=>{
+    if(!ev.judged&&audioNow>ev.tapTime+0.15){ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();}
+  });
+  if(!chickDone&&chickEvents.every(e=>e.judged)){chickDone=true;setTimeout(onGameEnd,600);}
+}
+function chickTap(audioNow){
+  const hit=chickEvents.find(ev=>!ev.judged&&Math.abs(audioNow-ev.tapTime)<0.15);
+  if(hit){
+    hit.judged=true;
+    const delta=Math.abs(audioNow-hit.tapTime)*1000;
+    const j=judge(delta);
+    chickFlash=12;chickJump=30;
+    if(j==='perfect'){perfects++;combo++;score+=100;}
+    else if(j==='good'){goods++;combo++;score+=50;}
+    else{misses++;combo=0;}
+    if(combo>maxCombo)maxCombo=combo;
+    const W=canvas.width,H=canvas.height;
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    updateLEDs();
+  }
+}
+
+// ─── Game 6: 歌手 ────────────────────────────────────────────────────────────
+let singerEvents=[],singerDone=false,singerFlash=0,singerBounce=0;
+const SYLLABLES=['ウッ！','ハッ！','ヘイ！','ホッ！','イェ！','ヤッ！'];
+const SINGER_BPM=120,SINGER_BEAT=60/SINGER_BPM;
+function initSinger(){
+  singerDone=false;singerFlash=0;singerBounce=0;singerEvents=[];
+  const beats=[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23,25,26];
+  beats.forEach((b,i)=>singerEvents.push({
+    beat:b,tapTime:b*SINGER_BEAT,
+    syllable:SYLLABLES[i%SYLLABLES.length],
+    done:false,judged:false
+  }));
+  scheduleSingerAudio();
+}
+function scheduleSingerAudio(){
+  const a=getAudio(),base=startAudioTime;
+  singerEvents.forEach(ev=>{
+    const t=base+ev.tapTime-0.1;
+    if(t>a.currentTime){
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='triangle';
+      const freq=330+Math.sin(ev.beat)*110;
+      o.frequency.value=freq;
+      g.gain.setValueAtTime(0.35,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+      o.start(t);o.stop(t+0.15);
+    }
+  });
+}
+function updateSinger(elapsed,audioNow){
+  const cv=canvas,ctx2=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx2.fillStyle='#080018';ctx2.fillRect(0,0,W,H);
+  // spotlight
+  const grad=ctx2.createRadialGradient(W/2,H/2,20,W/2,H/2,160);
+  grad.addColorStop(0,'rgba(255,240,180,0.15)');grad.addColorStop(1,'transparent');
+  ctx2.fillStyle=grad;ctx2.fillRect(0,0,W,H);
+  // singer emoji
+  const by=singerBounce>0?-singerBounce:0;
+  ctx2.font='56px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+  ctx2.fillText('🎤',W/2,H/2+20+by);
+  if(singerBounce>0)singerBounce=Math.max(0,singerBounce-4);
+  // show upcoming syllable
+  const next=singerEvents.find(e=>!e.judged&&audioNow>=e.tapTime-0.35);
+  if(next){
+    const fade=Math.min(1,(next.tapTime-audioNow+0.35)/0.35);
+    ctx2.save();ctx2.globalAlpha=Math.max(0,fade);
+    ctx2.font='bold 36px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+    ctx2.fillStyle='#f5c842';ctx2.fillText(next.syllable,W/2,H/2-70);
+    ctx2.restore();
+  }
+  if(singerFlash>0){singerFlash--;ctx2.save();ctx2.globalAlpha=singerFlash/12;ctx2.fillStyle='#ffaaff';ctx2.fillRect(0,0,W,H);ctx2.restore();}
+  ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(0,0,W,32);
+  ctx2.font='bold 16px Arial';ctx2.textAlign='center';ctx2.textBaseline='middle';
+  ctx2.fillStyle='#ff88cc';ctx2.fillText('🎤 歌手',W/2,16);
+  drawJudgments();
+  singerEvents.forEach(ev=>{
+    if(!ev.judged&&audioNow>ev.tapTime+0.15){ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();}
+  });
+  if(!singerDone&&singerEvents.every(e=>e.judged)){singerDone=true;setTimeout(onGameEnd,600);}
+}
+function singerTap(audioNow){
+  const hit=singerEvents.find(ev=>!ev.judged&&Math.abs(audioNow-ev.tapTime)<0.15);
+  if(hit){
+    hit.judged=true;
+    const delta=Math.abs(audioNow-hit.tapTime)*1000;
+    const j=judge(delta);
+    singerFlash=12;singerBounce=20;
+    if(j==='perfect'){perfects++;combo++;score+=100;}
+    else if(j==='good'){goods++;combo++;score+=50;}
+    else{misses++;combo=0;}
+    if(combo>maxCombo)maxCombo=combo;
+    const W=canvas.width,H=canvas.height;
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    updateLEDs();
+  }
+}
+
+// ─── Updated handleTap to route piano key taps ────────────────────────────────
+const _origHandleTap=handleTap;
+// Override: for game 3,5,6 use single tap; for game 4 route to piano
+window._pianoKeyTap=function(key){
+  const a=getAudio();
+  const audioNow=a.currentTime-startAudioTime;
+  pianoTap(audioNow,key);
+};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.querySelector('.action-bar').querySelector('button:nth-child(2)').onclick=goMenu;
+
+// High score modal build on open
+document.querySelector('.act-btn[onclick="showModal(\'hs-modal\')"]')
+  .addEventListener('click',buildHSBody);
+
+updateMenuHS();
+goMenu();
+</script>
+</body>
+</html>

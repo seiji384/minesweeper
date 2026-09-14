@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マインスイーパー PLUS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+    body {
+      background:
+        radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 16px 8px 72px;
+      font-family: Arial, sans-serif; overflow-x: hidden;
+    }
+    #stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+
+    .window {
+      position: relative; z-index: 1;
+      background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+      border: 2px solid #7060ff; border-radius: 16px;
+      box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+      max-width: 100%; overflow: hidden;
+    }
+    .titlebar {
+      background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+      color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+      text-align: center; letter-spacing: 3px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+      border-bottom: 2px solid #804000;
+    }
+
+    .diff-bar {
+      display: flex; padding: 5px 8px; gap: 4px;
+      background: linear-gradient(160deg, #150d38 0%, #0d0820 100%);
+      border-bottom: 1px solid #4030a0; justify-content: center; flex-wrap: wrap;
+    }
+    .diff-btn {
+      padding: 4px 11px; font-size: 11px; border-radius: 14px;
+      background: linear-gradient(160deg, #2a1a6a 0%, #1a0a4a 100%);
+      color: #a080ff; border: 1px solid #4030a0; font-weight: bold; cursor: pointer;
+    }
+    .diff-btn.active {
+      background: linear-gradient(160deg, #6040cc 0%, #4020aa 100%);
+      color: #e8d0ff; border-color: #9070ee; box-shadow: 0 0 10px rgba(144,112,238,0.6);
+    }
+    .ultra-btn {
+      background: linear-gradient(160deg, #602000 0%, #300800 100%);
+      color: #ff9050; border-color: #a04010; font-style: italic; letter-spacing: 1px;
+    }
+    .ultra-btn.active {
+      background: linear-gradient(160deg, #c04000 0%, #801800 100%);
+      color: #ffd080; border-color: #ff6020; box-shadow: 0 0 14px rgba(255,96,32,0.7);
+    }
+
+    .char-bar {
+      display: flex; padding: 4px 8px; gap: 5px; align-items: center;
+      background: linear-gradient(160deg, #100830 0%, #080520 100%);
+      border-bottom: 1px solid #3020a0; justify-content: center;
+    }
+    .char-label { font-size: 10px; color: #7060b0; white-space: nowrap; }
+    .char-btn {
+      width: 32px; height: 32px; border-radius: 50%; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(145deg, #2a1a6a, #1a0a4a);
+      border: 1px solid #4030a0; cursor: pointer; transition: all 0.15s;
+    }
+    .char-btn.active {
+      background: radial-gradient(circle at 38% 32%, #ffe060, #c88010 60%, #804000);
+      border: 2px solid #ffe080; box-shadow: 0 0 10px rgba(245,200,66,0.7);
+    }
+    .char-btn:active { transform: scale(0.88); }
+
+    .custom-row {
+      display: none; padding: 5px 8px; gap: 8px; align-items: center;
+      font-size: 11px; border-bottom: 1px solid #4030a0;
+      background: linear-gradient(160deg, #100a28 0%, #080518 100%);
+      flex-wrap: wrap; justify-content: center; color: #a090d0;
+    }
+    .custom-row.visible { display: flex; }
+    .custom-row label { display: flex; align-items: center; gap: 4px; }
+    .custom-row input {
+      width: 46px; font-size: 11px; background: #0d0820; color: #c0a8ff;
+      border: 1px solid #5040a0; border-radius: 4px; padding: 2px 4px;
+    }
+    .custom-row button {
+      font-size: 11px; padding: 3px 12px; cursor: pointer;
+      background: linear-gradient(160deg, #4a28a0 0%, #2a1070 100%);
+      color: #d0b8ff; border: 1px solid #6040c0; border-radius: 10px;
+    }
+
+    .content { padding: 8px; }
+    .status-panel {
+      background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+      border: 1px solid #4030a0; border-radius: 10px;
+      padding: 6px 12px; margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+    }
+    .led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .led-label { font-size: 9px; color: #6050a0; white-space: nowrap; }
+    .led {
+      background: linear-gradient(160deg, #080518 0%, #040210 100%);
+      color: #ff44aa; font-family: 'Courier New', monospace;
+      font-size: 22px; font-weight: bold; padding: 3px 10px;
+      min-width: 54px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
+      text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+    }
+    .smiley-btn {
+      font-size: 20px; width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      background: radial-gradient(circle at 38% 32%, #ffe060 0%, #c88010 60%, #804000 100%);
+      border-radius: 50%; border: 2px solid #ffe080;
+      box-shadow: 0 0 16px rgba(245,200,66,0.7), 0 4px 10px rgba(0,0,0,0.6);
+      transition: transform 0.1s;
+    }
+    .smiley-btn:active { transform: scale(0.88); }
+
+    .grid-wrap {
+      border: 2px solid #4030a0; border-radius: 10px; background: #04020e; padding: 5px;
+      box-shadow: inset 0 4px 16px rgba(0,0,0,0.9), 0 0 20px rgba(64,48,160,0.3);
+      overflow: auto; max-width: calc(100vw - 30px);
+    }
+    .grid { display: grid; gap: 2px; }
+    .cell {
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; cursor: pointer; border-radius: 7px;
+      background: linear-gradient(145deg, #5a3aaa 10%, #3a1a8a 60%, #28106a 100%);
+      box-shadow: inset 0 2px 3px rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.6), 0 3px 6px rgba(0,0,0,0.7);
+      border: 1px solid #6048b0; line-height: 1;
+      touch-action: manipulation; transition: transform 0.08s;
+    }
+    .cell.open {
+      background: linear-gradient(145deg, #0e0a22 0%, #08051a 100%);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.9);
+      border: 1px solid #1a1040; cursor: default;
+    }
+    .cell.mine-hit {
+      background: radial-gradient(circle at 38% 32%, #ff8840 0%, #cc2200 60%, #880000 100%);
+      box-shadow: 0 0 20px #ff4400, 0 0 40px #ff2200, inset 0 2px 4px rgba(255,200,100,0.4);
+      border-color: #ff6620; animation: explode 0.5s ease-out;
+    }
+    .cell.hint-hl {
+      background: radial-gradient(circle at 38% 32%, #ffff80 0%, #ddaa00 60%, #aa7700 100%) !important;
+      box-shadow: 0 0 16px #ffff00, 0 0 32px #ffcc00 !important; border-color: #ffee40 !important;
+    }
+    .cell.replay-hl { background: linear-gradient(145deg, #8a6000 0%, #604000 100%); border-color: #c09020; }
+    .cell.pressing {
+      background: linear-gradient(145deg, #8060cc 0%, #5840aa 100%); transform: scale(0.84);
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 22px rgba(160,128,255,0.7);
+    }
+    @keyframes explode { 0%{transform:scale(1)} 40%{transform:scale(1.38)} 100%{transform:scale(1)} }
+
+    .n1{color:#60b8ff;text-shadow:0 0 8px #60b8ff,0 0 16px #2088ff}
+    .n2{color:#60ff90;text-shadow:0 0 8px #60ff90,0 0 16px #20cc60}
+    .n3{color:#ff6060;text-shadow:0 0 8px #ff6060,0 0 16px #ff2020}
+    .n4{color:#c060ff;text-shadow:0 0 8px #c060ff,0 0 16px #9020ff}
+    .n5{color:#ffa040;text-shadow:0 0 8px #ffa040,0 0 16px #ff6010}
+    .n6{color:#40ffee;text-shadow:0 0 8px #40ffee,0 0 16px #00cccc}
+    .n7{color:#ffffff;text-shadow:0 0 8px #fff,0 0 16px #ccccff}
+    .n8{color:#ffee40;text-shadow:0 0 8px #ffee40,0 0 16px #ccaa00}
+
+    .action-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+      display: flex; gap: 6px; padding: 8px 12px 10px;
+      background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+      border-top: 1px solid #4030a0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+      flex-wrap: wrap; justify-content: center;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    .act-btn {
+      padding: 5px 12px; font-size: 11px; border-radius: 14px;
+      background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+      color: #b898ff; border: 1px solid #5a3aaa;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      cursor: pointer; font-weight: bold; transition: all 0.15s;
+    }
+    .act-btn:active { transform: scale(0.93); }
+    .act-btn.on {
+      background: linear-gradient(160deg, #c05000 0%, #802800 100%);
+      color: #ffd080; border-color: #ff8030; box-shadow: 0 0 14px rgba(255,128,48,0.65);
+    }
+
+    /* ===== ハイスコア（モーダル内） ===== */
+    .hs-item {
+      padding: 8px 10px; border-bottom: 1px solid #2a1870;
+    }
+    .hs-item:last-child { border-bottom: none; }
+    .hs-diff-label {
+      font-size: 11px; font-weight: 900; color: #f5c842;
+      text-shadow: 0 0 6px #f5c842; margin-bottom: 5px; letter-spacing: 0.5px;
+    }
+    .hs-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+    .hs-row { display: flex; align-items: baseline; gap: 5px; font-size: 11px; }
+    .hs-period { color: #6050a0; font-size: 10px; white-space: nowrap; min-width: 30px; }
+    .hs-record { color: #60ff90; font-weight: 900; text-shadow: 0 0 6px #60ff90; }
+    .hs-val { color: #a090d0; font-weight: bold; }
+    .hs-date { color: #7060a0; font-size: 9px; margin-left: 3px; }
+    .hs-footer { padding: 8px 14px; text-align: right; border-top: 1px solid #2a1870; }
+
+    /* ===== Confetti / Win ===== */
+    #confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+    .win-msg {
+      display: none; margin-top: 7px; text-align: center;
+      font-size: 14px; font-weight: 900; color: #f5c842;
+      border-radius: 10px; border: 1px solid #c08010; padding: 7px;
+      background: linear-gradient(160deg, #3a2400 0%, #1a1000 100%);
+      text-shadow: 0 0 12px #f5c842, 0 0 25px #c09010; letter-spacing: 1px;
+    }
+    .win-msg.visible { display: block; }
+
+    /* ===== Modals ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.78); z-index: 10000;
+      justify-content: center; align-items: center; padding: 16px;
+    }
+    .modal-overlay.visible { display: flex; }
+    .modal-box {
+      background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+      border: 2px solid #7060ff; border-radius: 16px;
+      box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+      max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+    }
+    .modal-title {
+      background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+      color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+      text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; padding: 0 4px; }
+    .modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+    .modal-section { margin-bottom: 14px; }
+    .modal-section h3 {
+      color: #f5c842; font-size: 12px; font-weight: 900; margin-bottom: 6px; letter-spacing: 1px;
+      text-shadow: 0 0 8px #f5c842; border-bottom: 1px solid #4030a0; padding-bottom: 4px;
+    }
+    .rule-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 5px; }
+    .rule-icon { font-size: 16px; min-width: 22px; text-align: center; }
+    .num-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-top: 6px; }
+    .num-cell {
+      display: flex; flex-direction: column; align-items: center;
+      background: #0d0820; border: 1px solid #3020a0; border-radius: 6px; padding: 4px 2px; font-size: 11px;
+    }
+    .num-cell .n { font-size: 15px; font-weight: 900; }
+    .num-cell .desc { color: #8878b8; font-size: 10px; margin-top: 1px; }
+
+    /* ===== 爆弾チャンスポップアップ ===== */
+    .bomb-popup-box {
+      background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+      border: 2px solid #ff4040; border-radius: 16px;
+      box-shadow: 0 0 40px rgba(255,64,64,0.5), 0 24px 64px rgba(0,0,0,0.9);
+      max-width: 300px; width: 100%;
+    }
+    .bomb-popup-title {
+      background: linear-gradient(90deg, #800000 0%, #cc2000 30%, #ff4020 50%, #cc2000 70%, #800000 100%);
+      color: #fff8e0; font-size: 14px; font-weight: 900; padding: 8px 14px;
+      text-align: center; letter-spacing: 1px; border-radius: 14px 14px 0 0;
+    }
+    .bomb-popup-body { padding: 16px; text-align: center; }
+    .bomb-char-face { font-size: 40px; margin-bottom: 10px; line-height: 1.3; }
+    .chance-count-line { color: #f5c842; font-size: 13px; margin-bottom: 14px; }
+    .chance-count-line .big { font-size: 28px; font-weight: 900; color: #ff6060; text-shadow: 0 0 12px #ff3030; }
+    .bomb-btns { display: flex; gap: 10px; justify-content: center; }
+    .challenge-btn {
+      padding: 9px 22px; font-size: 13px; border-radius: 14px; font-weight: 900; cursor: pointer;
+      background: linear-gradient(160deg, #2060c0 0%, #104080 100%);
+      color: #c8e8ff; border: 1px solid #4080e0; box-shadow: 0 0 12px rgba(64,128,224,0.5);
+    }
+    .giveup-btn {
+      padding: 9px 22px; font-size: 13px; border-radius: 14px; font-weight: 900; cursor: pointer;
+      background: linear-gradient(160deg, #a02000 0%, #600800 100%);
+      color: #ffd0c0; border: 1px solid #e04020; box-shadow: 0 0 12px rgba(224,64,32,0.5);
+    }
+  </style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<!-- 爆弾チャンスポップアップ -->
+<div class="modal-overlay" id="bomb-popup">
+  <div class="bomb-popup-box">
+    <div class="bomb-popup-title">💣 爆弾を踏みました！</div>
+    <div class="bomb-popup-body">
+      <div class="bomb-char-face" id="bomb-char-face">😱</div>
+      <div class="chance-count-line" id="chance-msg">
+        あと <span class="big">5</span> 回チャレンジできます
+      </div>
+      <div class="bomb-btns">
+        <button class="challenge-btn" id="chance-challenge-btn">チャレンジ</button>
+        <button class="giveup-btn"    id="chance-giveup-btn">ギブアップ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ルール説明モーダル -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール説明</span>
+      <button class="modal-close" id="rules-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <h3>🎯 目的</h3>
+        <div class="rule-row"><span class="rule-icon">💣</span><span>盤面に隠れた<strong style="color:#f5c842">地雷をすべて避けながら</strong>、安全なマスを全部開けたらクリア！</span></div>
+      </div>
+      <div class="modal-section">
+        <h3>👆 操作方法</h3>
+        <div class="rule-row"><span class="rule-icon">☝️</span><span><strong style="color:#60b8ff">タップ</strong>でマスを開く</span></div>
+        <div class="rule-row"><span class="rule-icon">✋</span><span><strong style="color:#ffa040">長押し（0.5秒）</strong>で旗🚩を立てる／外す</span></div>
+        <div class="rule-row"><span class="rule-icon">🚩</span><span><strong style="color:#ff8030">旗モードON</strong>のとき：タップで旗を立てる／外す（長押しは無効）</span></div>
+        <div class="rule-row"><span class="rule-icon">💣</span><span>地雷を踏んでも <strong style="color:#60ff90">5回チャレンジ可能</strong>！</span></div>
+      </div>
+      <div class="modal-section">
+        <h3>🔢 数字の意味</h3>
+        <p style="margin-bottom:8px;color:#9080c0">開いたマスの数字は<strong style="color:#f5c842">まわり8マスの地雷の数</strong>！</p>
+        <div class="num-grid">
+          <div class="num-cell"><span class="n n1">1</span><span class="desc">地雷<br>1個</span></div>
+          <div class="num-cell"><span class="n n2">2</span><span class="desc">地雷<br>2個</span></div>
+          <div class="num-cell"><span class="n n3">3</span><span class="desc">地雷<br>3個</span></div>
+          <div class="num-cell"><span class="n" style="color:#888">空白</span><span class="desc">周囲<br>0個</span></div>
+        </div>
+        <p style="margin-top:8px;color:#9080c0">空白は自動的に周囲も広がります。</p>
+      </div>
+      <div class="modal-section">
+        <h3>🗺️ 例：こんな時は安全！</h3>
+        <div class="rule-row"><span class="rule-icon">1️⃣</span><span>「1」のまわりに未開封マスが1つだけ → <span style="color:#60ff90">そこが地雷！旗を立てよう</span></span></div>
+        <div class="rule-row"><span class="rule-icon">✅</span><span>「1」の周囲に旗が1つ → <span style="color:#60ff90">残りは安心してタップ</span></span></div>
+      </div>
+      <div class="modal-section">
+        <h3>💡 コツ</h3>
+        <div class="rule-row"><span class="rule-icon">🛡️</span><span>最初のタップは絶対に安全（3×3範囲に地雷なし）</span></div>
+        <div class="rule-row"><span class="rule-icon">💡</span><span>「ヒント」ボタンで安全なマスを黄色ハイライト</span></div>
+        <div class="rule-row"><span class="rule-icon">😊</span><span>顔文字をタップするといつでもリセット</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="window">
+  <div class="titlebar">💣 MINE SWEEPER PLUS 💣</div>
+
+  <div class="diff-bar">
+    <button class="diff-btn active" data-diff="beginner">初級</button>
+    <button class="diff-btn" data-diff="intermediate">中級</button>
+    <button class="diff-btn" data-diff="expert">上級</button>
+    <button class="diff-btn ultra-btn" data-diff="ultra">⚡ULTRA</button>
+    <button class="diff-btn" data-diff="custom">カスタム</button>
+  </div>
+
+  <div class="char-bar">
+    <span class="char-label">キャラ選択:</span>
+    <button class="char-btn active" data-char="default" title="デフォルト">😊</button>
+    <button class="char-btn" data-char="neko"    title="ネコ">🐱</button>
+    <button class="char-btn" data-char="inu"     title="イヌ">🐶</button>
+    <button class="char-btn" data-char="kuma"    title="クマ">🐻</button>
+    <button class="char-btn" data-char="usagi"   title="うさぎ">🐰</button>
+  </div>
+
+  <div class="custom-row" id="custom-row">
+    <label>縦 <input type="number" id="c-rows" value="9" min="5" max="64"></label>
+    <label>横 <input type="number" id="c-cols" value="9" min="5" max="64"></label>
+    <label>地雷 <input type="number" id="c-mines" value="10" min="1"></label>
+    <button id="c-apply">適用</button>
+  </div>
+
+  <div class="content">
+    <div class="status-panel">
+      <div class="led-group">
+        <div class="led-label">爆弾の残り数</div>
+        <div class="led" id="led-mines">010</div>
+      </div>
+      <div class="smiley-btn" id="smiley" title="タップでリセット">🙂</div>
+      <div class="led-group" style="align-items:flex-end">
+        <div class="led-label">タイム（秒）</div>
+        <div class="led" id="led-timer">000</div>
+      </div>
+    </div>
+
+    <div class="grid-wrap">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="win-msg" id="win-msg"></div>
+
+    <!-- タブの順: ルール, 旗モード, ヒント, ハイスコア -->
+    <div class="action-bar">
+      <button class="act-btn" id="rules-btn">📖 ルール</button>
+      <button class="act-btn" id="flag-btn">🚩 旗モード</button>
+      <button class="act-btn" id="hint-btn">💡 ヒント</button>
+      <button class="act-btn" id="hs-btn">🏆 ハイスコア</button>
+      <button class="act-btn" id="save-btn">💾 保存</button>
+      <button class="act-btn" id="replay-btn" style="display:none">🔍 地雷配置</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- セーブデータ復元モーダル -->
+<div class="modal-overlay" id="restore-modal" style="z-index:20000">
+  <div class="modal-box" style="max-width:320px">
+    <div class="modal-title">💾 セーブデータがあります</div>
+    <div class="modal-body" style="text-align:center">
+      <div id="restore-info" style="font-size:13px;margin-bottom:14px;color:#c0b0e8;line-height:1.7"></div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="restore-yes" style="padding:8px 18px;border-radius:10px;background:linear-gradient(160deg,#6040cc,#4020aa);color:#e8d0ff;border:1px solid #9070ee;font-size:13px;font-weight:900;cursor:pointer">▶ 再開する</button>
+        <button id="restore-no"  style="padding:8px 18px;border-radius:10px;background:linear-gradient(160deg,#3a1010,#200808);color:#ff8080;border:1px solid #803030;font-size:13px;font-weight:900;cursor:pointer">✕ 新規スタート</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ハイスコアモーダル -->
+<div class="modal-overlay" id="hs-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" id="hs-close">✕</button>
+    </div>
+    <div id="hs-content"></div>
+    <div class="hs-footer">
+      <button class="act-btn" id="clear-hs" style="font-size:10px;padding:3px 8px;">記録をリセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== 星空 =====
+  (function () {
+    const cvs = document.getElementById('stars');
+    const ctx = cvs.getContext('2d');
+    function resize() { cvs.width = innerWidth; cvs.height = innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    const stars = Array.from({length:140}, () => ({
+      x:Math.random(), y:Math.random(), r:Math.random()*1.6+0.3,
+      a:Math.random(), da:(Math.random()-0.5)*0.009
+    }));
+    function draw() {
+      ctx.clearRect(0,0,cvs.width,cvs.height);
+      stars.forEach(s => {
+        s.a = Math.max(0.1, Math.min(1, s.a+s.da));
+        if (s.a<=0.1||s.a>=1) s.da=-s.da;
+        ctx.beginPath(); ctx.arc(s.x*cvs.width,s.y*cvs.height,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(200,180,255,${s.a})`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  // ===== キャラ =====
+  const CHARS = {
+    default: { name:'デフォルト', normal:'🙂', tense:'😮', win:'😎',  lose:'😵', oops:'😱' },
+    neko:    { name:'ネコ',       normal:'😺', tense:'🙀', win:'😸',  lose:'😿', oops:'😾' },
+    inu:     { name:'イヌ',       normal:'🐶', tense:'😟', win:'🐶🎊',lose:'🐶😭',oops:'🐶😱' },
+    kuma:    { name:'クマ',       normal:'🐻', tense:'😰', win:'🐻🎉',lose:'🐻😢',oops:'🐻😱' },
+    usagi:   { name:'うさぎ',     normal:'🐰', tense:'😨', win:'🐰🌟',lose:'🐰😭',oops:'🐰😱' },
+  };
+  let currentChar = 'default';
+  function face(st) { return CHARS[currentChar][st] || '🙂'; }
+  function updateSmiley(st) { smileyEl.textContent = face(st); }
+
+  // ===== 難易度（縦>横でスマホ縦長に合わせる） =====
+  const DIFF = {
+    beginner:     { r:9,  c:9,  m:10  },
+    intermediate: { r:16, c:16, m:40  },
+    expert:       { r:30, c:16, m:99  },  // 縦30 × 横16
+    ultra:        { r:64, c:30, m:300 },  // 縦64 × 横30
+  };
+  const BOMB_CHANCES = 5;
+
+  let ROWS=9, COLS=9, MINES=10, currentDiff='beginner';
+  let board, revealed, flagged, state, firstClick, timerID, secs, flagCount, hitR, hitC;
+  let flagMode=false, replayMode=false;
+  let pressTimer=null, longPressed=false, touchStartX=0, touchStartY=0;
+  let chancesLeft=BOMB_CHANCES, pendingBombR=-1, pendingBombC=-1;
+
+  const gridEl    = document.getElementById('grid');
+  const smileyEl  = document.getElementById('smiley');
+  const ledM      = document.getElementById('led-mines');
+  const ledT      = document.getElementById('led-timer');
+  const replayBtn = document.getElementById('replay-btn');
+  const winMsgEl  = document.getElementById('win-msg');
+  const confCvs   = document.getElementById('confetti');
+
+  function p3(n) { return Math.max(0,n).toString().padStart(3,'0'); }
+  function fmtTime(s) { const v=Math.max(0,s); return v<1000?v.toString().padStart(3,'0'):String(v); }
+  function cellSize() {
+    const maxW = Math.min(innerWidth-40, 640);
+    return Math.min(34, Math.max(18, Math.floor((maxW - COLS*2) / COLS)));
+  }
+
+  function init(r,c,m,diff) {
+    ROWS=r; COLS=c; MINES=m;
+    if (diff!==undefined) currentDiff=diff;
+    board    = Array.from({length:ROWS},()=>Array(COLS).fill(0));
+    revealed = Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    flagged  = Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    state='ready'; firstClick=true; secs=0; flagCount=0; hitR=-1; hitC=-1;
+    chancesLeft=BOMB_CHANCES; pendingBombR=-1; pendingBombC=-1;
+    replayMode=false;
+    clearInterval(timerID); timerID=null;
+    updateSmiley('normal');
+    ledT.textContent='000'; ledM.textContent=p3(MINES);
+    replayBtn.style.display='none'; replayBtn.textContent='🔍 地雷配置';
+    confCvs.style.display='none';
+    winMsgEl.classList.remove('visible');
+    render();
+  }
+
+  function placeMines(sr,sc) {
+    const safe=new Set();
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
+      const nr=sr+dr,nc=sc+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) safe.add(nr*COLS+nc);
+    }
+    let placed=0;
+    while(placed<MINES) {
+      const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
+      if(board[r][c]!==-1&&!safe.has(r*COLS+c)){board[r][c]=-1;placed++;}
+    }
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+      if(board[r][c]===-1) continue;
+      let cnt=0;
+      for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
+        const nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&board[nr][nc]===-1) cnt++;
+      }
+      board[r][c]=cnt;
+    }
+  }
+
+  function bfsReveal(sr,sc) {
+    const q=[[sr,sc]],vis=new Set([sr*COLS+sc]);
+    while(q.length) {
+      const [r,c]=q.shift();
+      if(flagged[r][c]) continue;
+      revealed[r][c]=true;
+      if(board[r][c]===0) {
+        for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
+          const nr=r+dr,nc=c+dc,k=nr*COLS+nc;
+          if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!vis.has(k)&&!revealed[nr][nc]){vis.add(k);q.push([nr,nc]);}
+        }
+      }
+    }
+  }
+
+  function checkWin() {
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(board[r][c]!==-1&&!revealed[r][c]) return false;
+    return true;
+  }
+
+  // ズームをリセットしてからコールバックを実行する
+  function resetZoomThen(cb) {
+    const vv = window.visualViewport;
+    if (!vv || vv.scale <= 1.05) { cb(); return; }
+    // viewport の maximum-scale=1 を一時的に設定するとiOSがズームをリセットする
+    const meta = document.querySelector('meta[name="viewport"]');
+    const orig = meta.content;
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+    setTimeout(() => {
+      meta.content = orig;  // ピンチズームを再び許可
+      cb();
+    }, 350);
+  }
+
+  function handleWin() {
+    state='won'; clearInterval(timerID); updateSmiley('win');
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]===-1) flagged[r][c]=true;
+    flagCount=MINES; ledM.textContent=p3(0);
+    saveHS();
+    replayBtn.style.display='inline-flex';
+    resetZoomThen(() => {
+      startConfetti();
+      winMsgEl.textContent=`✨ クリア！ タイム: ${secs}秒 ✨`;
+      winMsgEl.classList.add('visible');
+    });
+  }
+
+  function doReveal(r,c) {
+    if(state==='lost'||state==='won') return;
+    if(flagged[r][c]||revealed[r][c]) return;
+    if(firstClick) {
+      firstClick=false; placeMines(r,c); state='playing';
+      timerID=setInterval(()=>{secs++;ledT.textContent=fmtTime(secs);},1000);
+    }
+    if(board[r][c]===-1) {
+      pendingBombR=r; pendingBombC=c;
+      clearInterval(timerID);
+      updateSmiley('oops');
+      document.getElementById('bomb-char-face').textContent=face('oops');
+      if(chancesLeft>0) {
+        document.getElementById('chance-msg').innerHTML=`あと <span class="big">${chancesLeft}</span> 回チャレンジできます`;
+        document.getElementById('chance-challenge-btn').style.display='';
+      } else {
+        document.getElementById('chance-msg').innerHTML='チャンスが残っていません…';
+        document.getElementById('chance-challenge-btn').style.display='none';
+      }
+      document.getElementById('bomb-popup').classList.add('visible');
+      return;
+    }
+    bfsReveal(r,c);
+    if(checkWin()) { handleWin(); return; }
+    ledM.textContent=p3(MINES-flagCount);
+    render();
+  }
+
+  function doFlag(r,c) {
+    if(state==='lost'||state==='won'||revealed[r][c]) return;
+    flagged[r][c]=!flagged[r][c];
+    flagCount+=flagged[r][c]?1:-1;
+    ledM.textContent=p3(MINES-flagCount);
+    render();
+  }
+
+  function onClick(r,c) { if(flagMode) doFlag(r,c); else doReveal(r,c); }
+  function onRight(e,r,c) { e.preventDefault(); if(flagMode) doReveal(r,c); else doFlag(r,c); }
+
+  // 爆弾チャンス
+  document.getElementById('chance-challenge-btn').addEventListener('click',()=>{
+    chancesLeft--;
+    flagged[pendingBombR][pendingBombC]=true; flagCount++;
+    pendingBombR=-1; pendingBombC=-1;
+    document.getElementById('bomb-popup').classList.remove('visible');
+    state='playing';
+    timerID=setInterval(()=>{secs++;ledT.textContent=fmtTime(secs);},1000);
+    updateSmiley('normal');
+    ledM.textContent=p3(MINES-flagCount);
+    render();
+    if(checkWin()) handleWin();
+  });
+
+  document.getElementById('chance-giveup-btn').addEventListener('click',()=>{
+    state='lost';
+    revealed[pendingBombR][pendingBombC]=true;
+    hitR=pendingBombR; hitC=pendingBombC;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(board[r][c]===-1&&!flagged[r][c]) revealed[r][c]=true;
+    pendingBombR=-1; pendingBombC=-1;
+    document.getElementById('bomb-popup').classList.remove('visible');
+    updateSmiley('lose');
+    replayBtn.style.display='inline-flex';
+    render();
+  });
+
+  // ===== レンダリング =====
+  function render() {
+    const cs=cellSize();
+    const fs=Math.max(9,Math.floor(cs*0.44));
+    const es=Math.max(11,Math.floor(cs*0.55));
+    gridEl.style.gridTemplateColumns=`repeat(${COLS},${cs}px)`;
+    gridEl.innerHTML='';
+
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+      const el=document.createElement('div');
+      el.className='cell';
+      el.style.cssText=`width:${cs}px;height:${cs}px;font-size:${fs}px`;
+      el.dataset.r=r; el.dataset.c=c;
+
+      if(revealed[r][c]) {
+        el.classList.add('open');
+        if(board[r][c]===-1) {
+          el.textContent='💣'; el.style.fontSize=es+'px';
+          if(r===hitR&&c===hitC) el.classList.add('mine-hit');
+          else if(replayMode) el.classList.add('replay-hl');
+        } else if(board[r][c]>0) {
+          el.textContent=board[r][c]; el.classList.add('n'+board[r][c]);
+        }
+      } else if(flagged[r][c]) {
+        el.textContent=(state==='lost'&&board[r][c]!==-1)?'❌':'🚩';
+        el.style.fontSize=es+'px';
+        if(replayMode&&board[r][c]===-1) el.classList.add('replay-hl');
+      } else if(replayMode&&board[r][c]===-1) {
+        el.textContent='💣'; el.style.fontSize=es+'px'; el.classList.add('replay-hl');
+      }
+
+      el.addEventListener('click',()=>onClick(r,c));
+      el.addEventListener('contextmenu',e=>onRight(e,r,c));
+      el.addEventListener('mousedown',e=>{
+        if(e.button===0&&state==='playing'&&!flagMode&&!revealed[r][c]&&!flagged[r][c])
+          updateSmiley('tense');
+      });
+
+      el.addEventListener('touchstart',e=>{
+        if(e.touches.length>1){clearTimeout(pressTimer);pressTimer=null;longPressed=true;el.classList.remove('pressing');return;}
+        const t=e.touches[0]; touchStartX=t.clientX; touchStartY=t.clientY;
+        longPressed=false; el.classList.add('pressing');
+        pressTimer=setTimeout(()=>{
+          longPressed=true; el.classList.remove('pressing');
+          if(!flagMode){doFlag(r,c);if(navigator.vibrate)navigator.vibrate(40);}
+        },500);
+      },{passive:true});
+
+      el.addEventListener('touchend',e=>{
+        e.preventDefault();
+        el.classList.remove('pressing');
+        const wasTap=pressTimer!==null&&!longPressed;
+        clearTimeout(pressTimer); pressTimer=null;
+        if(wasTap) onClick(r,c);
+        longPressed=false;
+      },{passive:false});
+
+      el.addEventListener('touchmove',e=>{
+        if(e.touches.length>1){el.classList.remove('pressing');clearTimeout(pressTimer);pressTimer=null;longPressed=true;return;}
+        if(!pressTimer) return;
+        const t=e.touches[0];
+        const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;
+        if(Math.sqrt(dx*dx+dy*dy)>10){el.classList.remove('pressing');clearTimeout(pressTimer);pressTimer=null;}
+      },{passive:true});
+
+      gridEl.appendChild(el);
+    }
+  }
+
+  // ===== ハイスコア（日付・今日・今週・今月） =====
+  function getDateKey() { return new Date().toISOString().slice(0,10); }
+  function getWeekKey() {
+    const d=new Date(), day=d.getDay()||7;
+    const mon=new Date(d); mon.setDate(d.getDate()-day+1); return mon.toISOString().slice(0,10);
+  }
+  function getMonthKey() { return new Date().toISOString().slice(0,7); }
+  function fmtDate(s) { const p=s.slice(5).split('-'); return `${parseInt(p[0])}/${parseInt(p[1])}`; }
+
+  const HS_DIFFS = [
+    { key:'beginner',     label:'初級 (9×9, 10個)' },
+    { key:'intermediate', label:'中級 (16×16, 40個)' },
+    { key:'expert',       label:'上級 (30×16, 99個)' },
+    { key:'ultra',        label:'⚡ULTRA (64×30, 300個)' },
+  ];
+
+  function saveHS() {
+    if(!HS_DIFFS.find(d=>d.key===currentDiff)) return;
+    const today=getDateKey(), weekKey=getWeekKey(), monthKey=getMonthKey();
+    const storKey='ms_hs3_'+currentDiff;
+    let data=JSON.parse(localStorage.getItem(storKey)||'{}');
+    if(!data.alltime||secs<data.alltime.secs) data.alltime={secs,date:today};
+    if(!data.today||data.today.date!==today||secs<data.today.secs) data.today={secs,date:today};
+    if(!data.week||data.week.key!==weekKey||secs<data.week.secs) data.week={secs,key:weekKey,date:today};
+    if(!data.month||data.month.key!==monthKey||secs<data.month.secs) data.month={secs,key:monthKey,date:today};
+    localStorage.setItem(storKey,JSON.stringify(data));
+    refreshHSPanel();
+  }
+
+  function refreshHSPanel() {
+    const today=getDateKey(), weekKey=getWeekKey(), monthKey=getMonthKey();
+    const fmt=e=>e?`${e.secs}秒`:'--';
+    const fmtWithDate=e=>e?`<span class="hs-record">${e.secs}秒</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';
+    document.getElementById('hs-content').innerHTML = HS_DIFFS.map(d=>{
+      const data=JSON.parse(localStorage.getItem('ms_hs3_'+d.key)||'{}');
+      const todayVal=data.today?.date===today?fmt(data.today):'--';
+      const weekVal=data.week?.key===weekKey?fmt(data.week):'--';
+      const monthVal=data.month?.key===monthKey?fmt(data.month):'--';
+      return `
+        <div class="hs-item">
+          <div class="hs-diff-label">${d.label}</div>
+          <div class="hs-rows">
+            <div class="hs-row"><span class="hs-period">全期間</span>${fmtWithDate(data.alltime)}</div>
+            <div class="hs-row"><span class="hs-period">今日</span><span class="hs-val">${todayVal}</span></div>
+            <div class="hs-row"><span class="hs-period">今週</span><span class="hs-val">${weekVal}</span></div>
+            <div class="hs-row"><span class="hs-period">今月</span><span class="hs-val">${monthVal}</span></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ===== ヒント =====
+  function showHint() {
+    if(state!=='playing') return;
+    const cands=[];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(!revealed[r][c]&&!flagged[r][c]&&board[r][c]!==-1) cands.push([r,c]);
+    if(!cands.length) return;
+    const [r,c]=cands[Math.floor(Math.random()*cands.length)];
+    const el=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if(el){el.classList.add('hint-hl');setTimeout(()=>el.classList.remove('hint-hl'),1800);}
+  }
+
+  // ===== 紙吹雪 =====
+  function startConfetti() {
+    confCvs.style.display='block'; confCvs.width=innerWidth; confCvs.height=innerHeight;
+    const ctx2=confCvs.getContext('2d');
+    const cols=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#ff69b4'];
+    const ps=Array.from({length:130},()=>({
+      x:Math.random()*confCvs.width,y:-10,w:Math.random()*10+4,h:Math.random()*5+2,
+      color:cols[Math.floor(Math.random()*cols.length)],
+      vx:(Math.random()-0.5)*6,vy:Math.random()*4+2,
+      rot:Math.random()*Math.PI*2,vr:(Math.random()-0.5)*0.2
+    }));
+    let frame=0;
+    function anim(){
+      ctx2.clearRect(0,0,confCvs.width,confCvs.height);
+      ps.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+        if(p.y>confCvs.height){p.y=-10;p.x=Math.random()*confCvs.width;}
+        ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.rot);
+        ctx2.fillStyle=p.color;ctx2.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx2.restore();
+      });
+      if(++frame<240) requestAnimationFrame(anim); else confCvs.style.display='none';
+    }
+    requestAnimationFrame(anim);
+  }
+
+  // ===== グローバルイベント =====
+  document.addEventListener('touchstart',e=>{
+    if(e.touches.length>1){
+      clearTimeout(pressTimer);pressTimer=null;longPressed=true;
+      document.querySelectorAll('.cell.pressing').forEach(c=>c.classList.remove('pressing'));
+    }
+  },{passive:true});
+
+  document.addEventListener('mouseup',()=>{if(state==='playing')updateSmiley('normal');});
+
+  function doReset(){
+    if(currentDiff==='custom') init(ROWS,COLS,MINES,'custom');
+    else{const d=DIFF[currentDiff];init(d.r,d.c,d.m,currentDiff);}
+  }
+  smileyEl.addEventListener('click',doReset);
+  smileyEl.addEventListener('touchend',e=>{e.preventDefault();doReset();},{passive:false});
+
+  document.querySelectorAll('.char-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.char-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); currentChar=btn.dataset.char;
+      if(state==='won') updateSmiley('win');
+      else if(state==='lost') updateSmiley('lose');
+      else updateSmiley('normal');
+    });
+  });
+
+  document.querySelectorAll('.diff-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const d=btn.dataset.diff;
+      document.getElementById('custom-row').classList.toggle('visible',d==='custom');
+      if(d!=='custom'){const cfg=DIFF[d];init(cfg.r,cfg.c,cfg.m,d);}
+    });
+  });
+
+  document.getElementById('c-apply').addEventListener('click',()=>{
+    const r=Math.min(64,Math.max(5,parseInt(document.getElementById('c-rows').value)||9));
+    const c=Math.min(64,Math.max(5,parseInt(document.getElementById('c-cols').value)||9));
+    const m=Math.min(Math.max(1,r*c-9),Math.max(1,parseInt(document.getElementById('c-mines').value)||10));
+    init(r,c,m,'custom');
+  });
+
+  document.getElementById('hint-btn').addEventListener('click',showHint);
+
+  document.getElementById('flag-btn').addEventListener('click',function(){
+    flagMode=!flagMode;
+    this.classList.toggle('on',flagMode);
+    this.textContent=flagMode?'🚩 旗モード ON':'🚩 旗モード';
+  });
+
+  document.getElementById('replay-btn').addEventListener('click',function(){
+    replayMode=!replayMode;
+    this.textContent=replayMode?'🔍 配置を隠す':'🔍 地雷配置';
+    render();
+  });
+
+  // ===== モーダルを視覚ビューポートに追従させる =====
+  // ===== モーダルを視覚ビューポートに追従させる =====
+  function openModal(modal) {
+    const vv = window.visualViewport;
+    const box = modal.querySelector('.modal-box');
+    function snap() {
+      if (!vv) return;
+      // オーバーレイを視覚ビューポートにぴったり合わせる
+      modal.style.left   = vv.offsetLeft + 'px';
+      modal.style.top    = vv.offsetTop  + 'px';
+      modal.style.width  = vv.width  + 'px';
+      modal.style.height = vv.height + 'px';
+      modal.style.right  = 'auto';
+      modal.style.bottom = 'auto';
+      // コンテンツBoxにズームの逆数スケールを適用して等倍サイズに見せる
+      if (box && vv.scale > 1.05) {
+        const inv = 1 / vv.scale;
+        box.style.transform = `scale(${inv})`;
+        box.style.transformOrigin = 'center center';
+        // スケール縮小した分だけ幅を拡大して実際の画面幅を活かす
+        box.style.width  = Math.min(360 * vv.scale, vv.width  * vv.scale * 0.95) + 'px';
+        box.style.maxHeight = (vv.height * vv.scale * 0.9) + 'px';
+      } else if (box) {
+        box.style.transform = '';
+        box.style.width = '';
+        box.style.maxHeight = '';
+      }
+    }
+    snap();
+    modal.classList.add('visible');
+    if (vv) { vv.addEventListener('scroll', snap); vv.addEventListener('resize', snap); }
+    modal._snapFn = snap;
+  }
+  function closeModal(modal) {
+    modal.classList.remove('visible');
+    modal.style.left = modal.style.top = modal.style.width = modal.style.height = '';
+    modal.style.right = modal.style.bottom = '';
+    const box = modal.querySelector('.modal-box');
+    if (box) { box.style.transform = ''; box.style.width = ''; box.style.maxHeight = ''; }
+    if (window.visualViewport && modal._snapFn) {
+      window.visualViewport.removeEventListener('scroll', modal._snapFn);
+      window.visualViewport.removeEventListener('resize', modal._snapFn);
+      modal._snapFn = null;
+    }
+  }
+
+  const hsModal=document.getElementById('hs-modal');
+  document.getElementById('hs-btn').addEventListener('click',()=>{
+    refreshHSPanel();
+    openModal(hsModal);
+  });
+  document.getElementById('hs-close').addEventListener('click',()=>closeModal(hsModal));
+  hsModal.addEventListener('click',e=>{if(e.target===hsModal)closeModal(hsModal);});
+
+  document.getElementById('clear-hs').addEventListener('click',()=>{
+    HS_DIFFS.forEach(d=>localStorage.removeItem('ms_hs3_'+d.key));
+    refreshHSPanel();
+  });
+
+  const rulesModal=document.getElementById('rules-modal');
+  document.getElementById('rules-btn').addEventListener('click',()=>openModal(rulesModal));
+  document.getElementById('rules-close').addEventListener('click',()=>closeModal(rulesModal));
+  rulesModal.addEventListener('click',e=>{if(e.target===rulesModal)closeModal(rulesModal);});
+
+  window.addEventListener('resize',render);
+
+  // ===== Visual Viewport API：ピンチズーム時のみバーを視覚ビューポート下部に固定 =====
+  const actionBar = document.querySelector('.action-bar');
+  function fixActionBar() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    // clientWidth はズームに関係なくレイアウトビューポート幅を返す（iOS 互換）
+    const layoutWidth = document.documentElement.clientWidth || window.innerWidth;
+    const scaleRatio  = layoutWidth / vv.width;
+    const isZoomed    = vv.scale > 1.05 || scaleRatio > 1.05;
+
+    if (!isZoomed) {
+      // 非ズーム時：CSSデフォルト（position:fixed; bottom:0）に完全リセット
+      actionBar.style.top             = '';
+      actionBar.style.bottom          = '';
+      actionBar.style.left            = '';
+      actionBar.style.right           = '';
+      actionBar.style.width           = '';
+      actionBar.style.transform       = '';
+      actionBar.style.transformOrigin = '';
+      return;
+    }
+
+    // ズーム時：
+    //  - scale(1/zoom) で「非ズーム時と同じ物理サイズ」に縮小
+    //  - width: window.innerWidth + transform-origin:bottom left で画面幅に合わせる
+    //  - top で視覚ビューポート下端に配置
+    const scale = Math.max(vv.scale, scaleRatio);
+    const inv   = 1 / scale;
+    const barH  = actionBar.offsetHeight || 52; // transformはoffsetHeightに影響しない
+
+    // iOS では window.innerWidth がズーム後の視覚幅を返す場合があるため
+    // clientWidth（レイアウトビューポート幅、ズーム不問）を使う
+    const layoutW = document.documentElement.clientWidth || Math.round(vv.width * scale);
+
+    actionBar.style.top             = Math.round(vv.offsetTop + vv.height - barH) + 'px';
+    actionBar.style.bottom          = 'auto';
+    actionBar.style.left            = Math.round(vv.offsetLeft) + 'px';
+    actionBar.style.width           = layoutW + 'px'; // ページ本来の幅でボタンを横並び配置
+    actionBar.style.right           = 'auto';
+    actionBar.style.transform       = `scale(${inv})`;
+    actionBar.style.transformOrigin = 'bottom left'; // 左下基点でスケール → 幅・位置がズレない
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fixActionBar);
+    window.visualViewport.addEventListener('scroll', fixActionBar);
+    fixActionBar();
+  }
+
+  // ===== セーブ / 復元 =====
+  const SAVE_KEY = 'ms_save_v1';
+
+  function saveGame() {
+    if (state === 'ready') {
+      // まだ1手も打っていない場合は保存しない
+      const btn = document.getElementById('save-btn');
+      const orig = btn.textContent;
+      btn.textContent = '⚠️ ゲーム開始後に保存';
+      setTimeout(() => { btn.textContent = orig; }, 1800);
+      return;
+    }
+    const data = {
+      ROWS, COLS, MINES, currentDiff,
+      board:    board.map(row => row.slice()),
+      revealed: revealed.map(row => row.slice()),
+      flagged:  flagged.map(row => row.slice()),
+      state, firstClick, secs, flagCount,
+      chancesLeft, flagMode, currentChar,
+      hitR: hitR ?? -1, hitC: hitC ?? -1,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    const btn = document.getElementById('save-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✅ 保存済み!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  }
+
+  function restoreGame(data) {
+    ROWS = data.ROWS; COLS = data.COLS; MINES = data.MINES;
+    currentDiff = data.currentDiff;
+    board     = data.board.map(row => row.slice());
+    revealed  = data.revealed.map(row => row.slice());
+    flagged   = data.flagged.map(row => row.slice());
+    state     = data.state;
+    firstClick= data.firstClick;
+    secs      = data.secs;
+    flagCount = data.flagCount;
+    chancesLeft = data.chancesLeft ?? BOMB_CHANCES;
+    hitR      = data.hitR ?? -1;
+    hitC      = data.hitC ?? -1;
+    currentChar = data.currentChar || 'default';
+
+    // タイマーリセット
+    clearInterval(timerID); timerID = null;
+    ledT.textContent = fmtTime(secs);
+    ledM.textContent = p3(Math.max(0, MINES - flagCount));
+    confCvs.style.display = 'none';
+    winMsgEl.classList.remove('visible');
+    replayBtn.style.display = 'none';
+    replayMode = false;
+
+    // 難易度ボタン
+    document.querySelectorAll('.diff-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.diff === currentDiff));
+
+    // キャラクターボタン
+    document.querySelectorAll('.char-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.char === currentChar));
+
+    // 旗モードボタン
+    flagMode = data.flagMode;
+    const flagBtnEl = document.getElementById('flag-btn');
+    flagBtnEl.classList.toggle('active', flagMode);
+    flagBtnEl.textContent = flagMode ? '🚩 旗モード ON' : '🚩 旗モード';
+
+    // 表情
+    if (state === 'won')       updateSmiley('win');
+    else if (state === 'lost') updateSmiley('lose');
+    else                       updateSmiley('normal');
+
+    // ゲーム中ならタイマー再開
+    if (state === 'playing') {
+      timerID = setInterval(() => { secs++; ledT.textContent = fmtTime(secs); }, 1000);
+    }
+
+    // 終了状態の表示
+    if (state === 'won') {
+      replayBtn.style.display = 'inline-flex';
+      winMsgEl.textContent = `✨ クリア！ タイム: ${secs}秒 ✨`;
+      winMsgEl.classList.add('visible');
+    } else if (state === 'lost') {
+      replayBtn.style.display = 'inline-flex';
+    }
+
+    render();
+  }
+
+  // 保存ボタン
+  document.getElementById('save-btn').addEventListener('click', saveGame);
+
+  // 復元モーダル
+  const restoreModal = document.getElementById('restore-modal');
+  const savedRaw = localStorage.getItem(SAVE_KEY);
+
+  if (savedRaw) {
+    try {
+      const savedData = JSON.parse(savedRaw);
+      const diffNames = { beginner:'初級', intermediate:'中級', expert:'上級', ultra:'ULTRA', custom:'カスタム' };
+      const dt = new Date(savedData.savedAt);
+      const dateStr = `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('restore-info').innerHTML =
+        `<strong style="color:#f5c842">${diffNames[savedData.currentDiff]||savedData.currentDiff}</strong> &nbsp;|&nbsp; ` +
+        `経過 <strong style="color:#f5c842">${savedData.secs}秒</strong><br>` +
+        `<span style="font-size:11px;color:#7060a0">保存日時: ${dateStr}</span>`;
+      openModal(restoreModal);
+
+      document.getElementById('restore-yes').addEventListener('click', () => {
+        closeModal(restoreModal);
+        restoreGame(savedData);
+      });
+      document.getElementById('restore-no').addEventListener('click', () => {
+        localStorage.removeItem(SAVE_KEY);
+        closeModal(restoreModal);
+        init(9, 9, 10, 'beginner');
+      });
+    } catch(e) {
+      localStorage.removeItem(SAVE_KEY);
+      init(9, 9, 10, 'beginner');
+    }
+  } else {
+    init(9, 9, 10, 'beginner');
+  }
+</script>
+</body>
+</html>

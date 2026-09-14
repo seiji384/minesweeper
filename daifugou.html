@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>大富豪</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px 8px 80px;
+  font-family: Arial, sans-serif; overflow-x: hidden;
+}
+#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.window {
+  position: relative; z-index: 1;
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+  max-width: 460px; width: 100%; overflow: hidden;
+}
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
+  text-align: center; letter-spacing: 2px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
+  border-bottom: 2px solid #804000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.85), 0 -1px 0 rgba(112,90,255,0.3);
+  flex-wrap: wrap; justify-content: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.act-btn {
+  padding: 5px 14px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
+}
+.act-btn:active { transform: scale(0.93); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 10000;
+  justify-content: center; align-items: center; padding: 16px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 24px 64px rgba(0,0,0,0.9);
+  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+}
+.modal-title {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 8px 14px;
+  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
+.modal-body { padding: 14px; color: #c0b0e8; font-size: 13px; line-height: 1.6; }
+.led {
+  background: linear-gradient(160deg, #080518 0%, #040210 100%);
+  color: #ff44aa; font-family: 'Courier New', monospace;
+  font-size: 18px; font-weight: bold; padding: 3px 10px;
+  min-width: 54px; text-align: center; border-radius: 6px; border: 1px solid #4020a0;
+  text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+  display: inline-block;
+}
+.led-label { font-size: 9px; color: #6050a0; display: block; text-align: center; margin-top: 2px; }
+.status-panel {
+  background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
+  border: 1px solid #4030a0; border-radius: 10px;
+  padding: 6px 12px; margin: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+.led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.content { padding: 8px; }
+#confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
+
+/* Game-specific */
+.card {
+  width: 52px; height: 74px; border-radius: 8px;
+  background: white; border: 1px solid #ccc;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 3px; font-weight: 900; font-size: 15px;
+  box-shadow: 2px 4px 8px rgba(0,0,0,0.6); cursor: pointer;
+  transition: transform 0.1s, border 0.1s;
+  flex-shrink: 0;
+}
+.card.red { color: #cc2020; }
+.card.black { color: #111; }
+.card.selected { border: 2px solid #f5c842; transform: translateY(-8px); box-shadow: 0 0 12px rgba(245,200,66,0.8); }
+.hand-scroll {
+  display: flex; gap: 4px; padding: 8px 8px 12px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  min-height: 100px; align-items: flex-end;
+}
+.hand-scroll::-webkit-scrollbar { height: 4px; }
+.hand-scroll::-webkit-scrollbar-track { background: #08051a; }
+.hand-scroll::-webkit-scrollbar-thumb { background: #4030a0; border-radius: 2px; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="confetti"></canvas>
+
+<!-- Rules Modal -->
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📖 ルール</span>
+      <button class="modal-close" onclick="closeModal('rulesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong style="color:#f5c842">🃏 大富豪のルール</strong></p><br>
+      <p><strong style="color:#b898ff">カードの強さ（弱 → 強）</strong></p>
+      <p style="letter-spacing:1px">3 &lt; 4 &lt; 5 &lt; 6 &lt; 7 &lt; 8 &lt; 9 &lt; 10 &lt; J &lt; Q &lt; K &lt; A &lt; 2</p>
+      <p style="color:#7060c0;font-size:11px;margin-top:2px">※ スートは関係なし</p><br>
+      <p><strong style="color:#b898ff">基本ルール</strong></p>
+      <ul style="padding-left:16px">
+        <li>場のカードより強い・同じ枚数のカードを出す</li>
+        <li>出せない・出したくない場合はパス</li>
+        <li>全員がパスしたら場がリセットされ、最後に出した人が先手</li>
+        <li>先に手札を出し切った人から順に順位が決まる</li>
+      </ul><br>
+      <p><strong style="color:#b898ff">出せる組み合わせ</strong></p>
+      <ul style="padding-left:16px">
+        <li>シングル（1枚）</li>
+        <li>ペア（同じ数字 2枚）</li>
+        <li>トリプル（同じ数字 3枚）</li>
+        <li>フォー（同じ数字 4枚）</li>
+      </ul><br>
+      <p><strong style="color:#b898ff">🎴 8切り</strong></p>
+      <p>8（複数も可）を出すと場が即座にリセット。出した人がもう一度先手になる。</p><br>
+      <p><strong style="color:#b898ff">順位</strong></p>
+      <ul style="padding-left:16px">
+        <li>👑 大富豪：1番最初に上がった人</li>
+        <li>😊 富豪：2番目に上がった人</li>
+        <li>😢 大貧民：最後まで残った人</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 結果発表</span>
+      <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
+    </div>
+    <div class="modal-body" id="resultBody"></div>
+  </div>
+</div>
+
+<div class="window">
+  <div class="titlebar">
+    <span>🎴</span>
+    <span>大富豪 DAIFUGOU</span>
+    <span>🎴</span>
+  </div>
+  <div class="status-panel">
+    <div class="led-group">
+      <span class="led" id="handLed">17</span>
+      <span class="led-label">手札数</span>
+    </div>
+    <div class="led-group" style="flex:1;padding:0 8px">
+      <span id="turnText" style="font-size:11px;color:#8070c0;text-align:center;display:block">準備中...</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="roundLed">1</span>
+      <span class="led-label">ラウンド</span>
+    </div>
+  </div>
+  <div class="content">
+    <div id="cpu1Area"></div>
+    <div id="cpu2Area"></div>
+    <div id="fieldArea"></div>
+    <div id="logArea"></div>
+    <div id="playerHand"></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="act-btn" onclick="openModal('rulesModal')">📖 ルール</button>
+  <button class="act-btn" id="dasuBtn" onclick="playCards()">出す</button>
+  <button class="act-btn" id="passBtn" onclick="doPassHuman()">パス</button>
+  <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+</div>
+
+<script>
+// ==================== Stars ====================
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ==================== Visual Viewport fix + Confetti ====================
+const actionBar=document.querySelector('.action-bar');
+function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fixAB);window.visualViewport.addEventListener('scroll',fixAB);fixAB();}
+
+function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
+
+// ==================== Game Constants ====================
+const SUITS = ['♣','♦','♥','♠'];
+const SUIT_COLORS = {'♣':'black','♦':'red','♥':'red','♠':'black'};
+const VALUES = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
+const PNAMES = ['あなた','CPU1','CPU2'];
+const RTITLES = ['大富豪 👑','富豪 😊','大貧民 😢'];
+
+// ==================== Game State ====================
+let S = {};
+
+function createDeck() {
+  const d = [];
+  for (const suit of SUITS)
+    for (let i = 0; i < VALUES.length; i++)
+      d.push({suit, value: VALUES[i], rank: i, color: SUIT_COLORS[suit]});
+  return d;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function activePlayers() {
+  return [0,1,2].filter(i => !S.rankings.includes(i));
+}
+
+function nextActiveAfter(p) {
+  const active = activePlayers();
+  if (!active.length) return 0;
+  let n = (p + 1) % 3;
+  for (let i = 0; i < 3; i++) {
+    if (active.includes(n)) return n;
+    n = (n + 1) % 3;
+  }
+  return active[0];
+}
+
+// ==================== New Game ====================
+function newGame() {
+  closeModal('resultModal');
+  const deck = shuffle(createDeck());
+  const hands = [
+    [...deck.slice(0, 17)].sort((a,b) => a.rank - b.rank),
+    [...deck.slice(17, 34)].sort((a,b) => a.rank - b.rank),
+    [...deck.slice(34, 51)].sort((a,b) => a.rank - b.rank)
+  ];
+
+  let start = 0;
+  for (let i = 0; i < 3; i++) {
+    if (hands[i].some(c => c.value === '3' && c.suit === '♣')) { start = i; break; }
+  }
+
+  S = {
+    hands,
+    field: null,
+    currentPlayer: start,
+    passedPlayers: new Set(),
+    rankings: [],
+    gameOver: false,
+    log: [],
+    round: 1,
+    sel: [],
+    thinking: false
+  };
+
+  addLog('ゲーム開始！' + PNAMES[start] + 'から');
+  render();
+  if (start !== 0) { S.thinking = true; render(); setTimeout(cpuTurn, 800); }
+}
+
+function addLog(msg) {
+  S.log.unshift(msg);
+  if (S.log.length > 6) S.log.pop();
+}
+
+// ==================== Validation ====================
+function validSet(cards, field) {
+  if (!cards.length || cards.length > 4) return false;
+  const r = cards[0].rank;
+  if (!cards.every(c => c.rank === r)) return false;
+  if (!field) return true;
+  if (cards.length !== field.count) return false;
+  return r > field.rank;
+}
+
+// ==================== Human Actions ====================
+function toggleCard(idx) {
+  if (S.currentPlayer !== 0 || S.gameOver || S.thinking) return;
+  const pos = S.sel.indexOf(idx);
+  if (pos === -1) S.sel.push(idx);
+  else S.sel.splice(pos, 1);
+  renderHand();
+  renderButtons();
+}
+
+function playCards() {
+  if (S.currentPlayer !== 0 || S.gameOver || S.thinking) return;
+  if (!S.sel.length) { addLog('カードを選んでください'); render(); return; }
+  const indices = [...S.sel].sort((a,b) => a - b);
+  const cards = indices.map(i => S.hands[0][i]);
+  if (!validSet(cards, S.field)) {
+    addLog('❌ 無効：同じ枚数で場より強いカードを');
+    render(); return;
+  }
+  doPlay(0, cards, indices);
+}
+
+function doPassHuman() {
+  if (S.currentPlayer !== 0 || S.gameOver || S.thinking) return;
+  if (!S.field) { addLog('❌ 空き場ではパスできません'); render(); return; }
+  S.sel = [];
+  doPass(0);
+}
+
+// ==================== Core Play / Pass ====================
+function doPlay(p, cards, handIndices) {
+  // Remove from hand (high→low to preserve indices)
+  [...handIndices].sort((a,b) => b - a).forEach(i => S.hands[p].splice(i, 1));
+
+  const rank = cards[0].rank;
+  const is8 = cards.every(c => c.value === '8');
+
+  S.field = {cards, rank, count: cards.length, playedBy: p};
+  S.passedPlayers = new Set();
+  if (p === 0) S.sel = [];
+
+  const cs = cards.map(c => c.value + c.suit).join(' ');
+  addLog(PNAMES[p] + '：' + cs);
+
+  if (!S.hands[p].length) {
+    S.rankings.push(p);
+    addLog('🎉 ' + PNAMES[p] + ' が上がり！');
+  }
+
+  if (is8) {
+    addLog('🎴 8切り！場をリセット');
+    S.field = null;
+    S.passedPlayers = new Set();
+    if (checkGameOver()) return;
+    const active = activePlayers();
+    S.currentPlayer = active.includes(p) ? p : nextActiveAfter(p);
+    S.thinking = S.currentPlayer !== 0;
+    render();
+    if (S.currentPlayer !== 0 && !S.gameOver) setTimeout(cpuTurn, 800);
+    return;
+  }
+
+  if (checkGameOver()) return;
+  S.currentPlayer = nextActiveAfter(p);
+  S.thinking = S.currentPlayer !== 0;
+  render();
+  if (S.currentPlayer !== 0 && !S.gameOver) setTimeout(cpuTurn, 800);
+}
+
+function doPass(p) {
+  addLog(PNAMES[p] + '：パス');
+  S.passedPlayers.add(p);
+
+  if (S.field) {
+    const active = activePlayers();
+    const need = active.filter(x => x !== S.field.playedBy);
+    if (need.length && need.every(x => S.passedPlayers.has(x))) {
+      const last = S.field.playedBy;
+      addLog('全員パス → 場をリセット');
+      S.field = null;
+      S.passedPlayers = new Set();
+      if (checkGameOver()) return;
+      S.currentPlayer = activePlayers().includes(last) ? last : nextActiveAfter(last);
+      S.thinking = S.currentPlayer !== 0;
+      render();
+      if (S.currentPlayer !== 0 && !S.gameOver) setTimeout(cpuTurn, 800);
+      return;
+    }
+  }
+
+  if (checkGameOver()) return;
+  S.currentPlayer = nextActiveAfter(p);
+  S.thinking = S.currentPlayer !== 0;
+  render();
+  if (S.currentPlayer !== 0 && !S.gameOver) setTimeout(cpuTurn, 800);
+}
+
+function checkGameOver() {
+  const active = activePlayers();
+  if (active.length <= 1) {
+    if (active.length === 1 && !S.rankings.includes(active[0]))
+      S.rankings.push(active[0]);
+    S.gameOver = true;
+    S.thinking = false;
+    render();
+    setTimeout(showResult, 700);
+    return true;
+  }
+  return false;
+}
+
+// ==================== CPU AI ====================
+function cpuTurn() {
+  if (S.gameOver) return;
+  const p = S.currentPlayer;
+  if (p === 0) return;
+
+  const hand = S.hands[p];
+  const play = findBestPlay(hand, S.field);
+  S.thinking = false;
+
+  if (play) {
+    const indices = play.map(c => hand.indexOf(c));
+    doPlay(p, play, indices);
+  } else {
+    doPass(p);
+  }
+}
+
+function findBestPlay(hand, field) {
+  if (!field) {
+    // On empty field, play lowest single card
+    const s = [...hand].sort((a,b) => a.rank - b.rank);
+    return [s[0]];
+  }
+  const cnt = field.count, minR = field.rank;
+  const groups = {};
+  hand.forEach(c => { (groups[c.rank] = groups[c.rank] || []).push(c); });
+  const valid = [];
+  for (const [r, cs] of Object.entries(groups)) {
+    const rn = parseInt(r);
+    if (rn > minR && cs.length >= cnt)
+      valid.push({rank: rn, cards: cs.slice(0, cnt)});
+  }
+  if (!valid.length) return null;
+  valid.sort((a,b) => a.rank - b.rank);
+  return valid[0].cards;
+}
+
+// ==================== Result ====================
+function showResult() {
+  const html = `<div style="text-align:center;padding:10px">
+    ${S.rankings.map((p,i) => `<div style="margin:8px 0;padding:10px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid #302060">
+      <div style="font-size:24px">${i===0?'👑':i===1?'😊':'😢'}</div>
+      <div style="font-size:17px;color:#f5c842;font-weight:bold;margin:4px 0">${RTITLES[i]}</div>
+      <div style="font-size:14px;color:#c0b0e8">${PNAMES[p]}</div>
+    </div>`).join('')}
+  </div>
+  <div style="text-align:center;margin:14px 0">
+    <button class="act-btn" onclick="newGame()" style="font-size:14px;padding:10px 28px">🔄 もう一度プレイ</button>
+  </div>`;
+  document.getElementById('resultBody').innerHTML = html;
+  openModal('resultModal');
+  if (S.rankings[0] === 0) startConfetti();
+}
+
+// ==================== Rendering ====================
+function cardHTML(c, selected, clickIdx) {
+  const sel = selected ? ' selected' : '';
+  const click = clickIdx !== undefined ? `onclick="toggleCard(${clickIdx})"` : `style="cursor:default"`;
+  const vs = c.value === '10' ? 'font-size:12px' : '';
+  return `<div class="card ${c.color}${sel}" ${click}>
+    <span style="font-size:10px;align-self:flex-start;line-height:1">${c.suit}</span>
+    <span style="${vs}">${c.value}</span>
+    <span style="font-size:8px;align-self:flex-end;line-height:1">${c.suit}</span>
+  </div>`;
+}
+
+function render() {
+  renderStatus();
+  renderCPU();
+  renderField();
+  renderLog();
+  renderHand();
+  renderButtons();
+}
+
+function renderStatus() {
+  document.getElementById('handLed').textContent = S.hands[0].length;
+  document.getElementById('roundLed').textContent = S.round;
+  const el = document.getElementById('turnText');
+  if (S.gameOver) { el.textContent = 'ゲーム終了'; el.style.color = '#f5c842'; }
+  else if (S.currentPlayer === 0) { el.textContent = '▶ あなたの番'; el.style.color = '#60c0ff'; }
+  else { el.textContent = PNAMES[S.currentPlayer] + (S.thinking ? ' 考え中...' : ' の番'); el.style.color = '#9080d0'; }
+}
+
+function renderCPU() {
+  for (let i = 1; i <= 2; i++) {
+    const el = document.getElementById('cpu' + i + 'Area');
+    const isCur = S.currentPlayer === i;
+    const fin = S.rankings.includes(i);
+    const fr = S.rankings.indexOf(i);
+    const bc = isCur ? '#7060ff' : (fin ? '#5a3a00' : '#2a1a60');
+
+    let badge = '';
+    if (fin) badge = `<span style="background:#3a2000;color:#f5c842;padding:2px 8px;border-radius:10px;font-size:11px;border:1px solid #7a4500">${RTITLES[fr]}</span>`;
+    else if (S.thinking && isCur) badge = `<span style="background:#1a0e50;color:#b898ff;padding:2px 8px;border-radius:10px;font-size:11px;border:1px solid #5040b0">🤔 考え中...</span>`;
+    else if (isCur) badge = `<span style="background:#0e2040;color:#60c0ff;padding:2px 8px;border-radius:10px;font-size:11px;border:1px solid #205090">▶ 番</span>`;
+
+    const cnt = S.hands[i].length;
+    let backs = '';
+    const show = Math.min(cnt, 10);
+    for (let j = 0; j < show; j++) {
+      backs += `<div style="width:16px;height:24px;border-radius:3px;background:linear-gradient(135deg,#3a208a,#180860);border:1px solid #5040b0;display:inline-block;margin-left:${j>0?'-7px':'0'};box-shadow:1px 2px 4px rgba(0,0,0,0.6);vertical-align:bottom"></div>`;
+    }
+    if (cnt > 10) backs += `<span style="color:#6050a0;font-size:10px;margin-left:4px">+${cnt-10}</span>`;
+
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(160deg,#100a30,#080518);border:1px solid ${bc};border-radius:10px;margin-bottom:6px;transition:border 0.2s">
+      <span style="font-size:18px">🤖</span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:#c0b0e8;font-weight:bold;font-size:13px">CPU${i}</span>
+          <span style="color:#6050a0;font-size:11px">${cnt}枚</span>
+          ${badge}
+        </div>
+        <div style="display:flex;align-items:flex-end;min-height:26px">${backs}</div>
+      </div>
+    </div>`;
+  }
+}
+
+function renderField() {
+  const el = document.getElementById('fieldArea');
+  let inner = '';
+  if (!S.field) {
+    inner = `<div style="display:flex;align-items:center;justify-content:center;min-height:90px;color:#4030a0;font-size:15px;letter-spacing:2px">空き場</div>`;
+  } else {
+    const byName = PNAMES[S.field.playedBy];
+    inner = `<div style="text-align:center;color:#6050a0;font-size:11px;margin-bottom:6px">${byName} が出した（${S.field.count}枚出し）</div>
+    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+      ${S.field.cards.map(c => cardHTML(c, false, undefined)).join('')}
+    </div>`;
+  }
+  el.innerHTML = `<div style="background:linear-gradient(160deg,#0a0620,#060412);border:2px solid #4030a0;border-radius:12px;padding:10px;margin-bottom:8px;min-height:110px">
+    <div style="color:#7060ff;font-size:12px;font-weight:bold;letter-spacing:1px;margin-bottom:4px">場 FIELD</div>
+    ${inner}
+  </div>`;
+}
+
+function renderLog() {
+  const el = document.getElementById('logArea');
+  el.innerHTML = `<div style="background:linear-gradient(160deg,#0a0620,#060412);border:1px solid #302060;border-radius:8px;padding:6px 10px;margin-bottom:8px;max-height:72px;overflow-y:auto">
+    ${S.log.map((l,i) => `<div style="font-size:11px;color:${i===0?'#c0b0e8':'#5040a0'};padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l}</div>`).join('') || '<div style="font-size:11px;color:#4030a0">...</div>'}
+  </div>`;
+}
+
+function renderHand() {
+  const el = document.getElementById('playerHand');
+  const isMy = S.currentPlayer === 0 && !S.gameOver && !S.thinking;
+  const fin = S.rankings.includes(0);
+  const fr = S.rankings.indexOf(0);
+
+  let badge = '';
+  if (fin) badge = `<div style="text-align:center;color:#f5c842;font-size:14px;font-weight:bold;padding:4px 0">${RTITLES[fr]}</div>`;
+  else if (isMy) badge = `<div style="text-align:center;color:#60c0ff;font-size:11px;padding:3px 0">カードを選んで「出す」を押してください</div>`;
+
+  const h = S.hands[0];
+  let cardsHTML = h.length === 0
+    ? `<div style="color:#6050a0;font-size:13px;padding:24px;width:100%;text-align:center">手札なし</div>`
+    : h.map((c, i) => {
+        const sel = S.sel.includes(i);
+        const op = isMy ? '' : 'opacity:0.65;';
+        const vs = c.value === '10' ? 'font-size:12px' : '';
+        return `<div class="card ${c.color}${sel?' selected':''}" style="${op}flex-shrink:0" onclick="toggleCard(${i})">
+          <span style="font-size:10px;align-self:flex-start;line-height:1">${c.suit}</span>
+          <span style="${vs}">${c.value}</span>
+          <span style="font-size:8px;align-self:flex-end;line-height:1">${c.suit}</span>
+        </div>`;
+      }).join('');
+
+  el.innerHTML = `<div style="background:linear-gradient(160deg,#100a30,#080518);border:1px solid #4030a0;border-radius:10px;overflow:hidden">
+    <div style="padding:5px 10px;background:rgba(112,90,255,0.08);border-bottom:1px solid #302060;font-size:11px;color:#8070c0;display:flex;justify-content:space-between;align-items:center">
+      <span>あなたの手札</span>
+      <span>${h.length}枚${S.sel.length ? ' (' + S.sel.length + '枚選択中)' : ''}</span>
+    </div>
+    ${badge}
+    <div class="hand-scroll">${cardsHTML}</div>
+  </div>`;
+}
+
+function renderButtons() {
+  const isMy = S.currentPlayer === 0 && !S.gameOver && !S.thinking;
+  const db = document.getElementById('dasuBtn');
+  const pb = document.getElementById('passBtn');
+  const canPlay = isMy && S.sel.length > 0;
+  const canPass = isMy && !!S.field;
+  db.disabled = !canPlay; db.style.opacity = canPlay ? '1' : '0.4';
+  pb.disabled = !canPass; pb.style.opacity = canPass ? '1' : '0.4';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('visible'); }
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+// ==================== Start ====================
+newGame();
+</script>
+</body>
+</html>
