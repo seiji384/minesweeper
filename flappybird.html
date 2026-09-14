@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -12,7 +12,7 @@ body {
     radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
   display: flex; justify-content: center; align-items: flex-start;
-  min-height: 100vh; padding: 16px 8px 80px;
+  min-height: 100vh; padding: 4px 4px 80px;
   font-family: Arial, sans-serif; overflow-x: hidden;
 }
 #stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
@@ -87,6 +87,13 @@ body {
 .led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .content { padding: 8px 8px 4px; }
 
+.hs-table{width:100%;}
+.hs-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(80,60,180,0.1);border:1px solid rgba(80,60,180,0.2);border-radius:8px;margin:3px 0;}
+.hs-period{color:#a090d0;font-size:12px;font-weight:bold;min-width:50px;}
+.hs-record{color:#60ff90;font-weight:900;text-shadow:0 0 6px #60ff90;}
+.hs-val{color:#4038a0;}
+.hs-date{color:#7060a0;font-size:9px;margin-left:4px;}
+
 /* Canvas */
 #gameCanvas {
   display: block;
@@ -114,7 +121,9 @@ body {
 .hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
-</style></head>
+</style><!-- body-bg-override -->
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(10,120,200,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(5,90,170,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #042040 0%, #021428 100%) !important; }</style>
+</head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
 
@@ -227,6 +236,29 @@ if (window.visualViewport) {
 function openModal(id) { document.getElementById(id).classList.add('visible'); }
 function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
 
+function getDateKey(){return new Date().toISOString().slice(0,10);}
+function getWeekKey(){const d=new Date(),day=d.getDay()||7,mon=new Date(d);mon.setDate(d.getDate()-day+1);return mon.toISOString().slice(0,10);}
+function getMonthKey(){return new Date().toISOString().slice(0,7);}
+function fmtDate(s){const p=s.slice(5).split('-');return`${parseInt(p[0])}/${parseInt(p[1])}`;}
+function saveHiRec(key,val){
+  const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();
+  let d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');
+  if(!d.all||val>d.all.v)d.all={v:val,date:today};
+  if(!d.today||d.today.date!==today||val>d.today.v)d.today={v:val,date:today};
+  if(!d.week||d.week.key!==wk||val>d.week.v)d.week={v:val,key:wk,date:today};
+  if(!d.month||d.month.key!==mo||val>d.month.v)d.month={v:val,key:mo,date:today};
+  localStorage.setItem(key+'_rec',JSON.stringify(d));
+}
+function renderHiRec(key,unit){
+  const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();
+  const d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');
+  const fmt=e=>e?`<span class="hs-record">${e.v}${unit}</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';
+  const tV=d.today?.date===today?fmt(d.today):'<span class="hs-val">--</span>';
+  const wV=d.week?.key===wk?fmt(d.week):'<span class="hs-val">--</span>';
+  const mV=d.month?.key===mo?fmt(d.month):'<span class="hs-val">--</span>';
+  return`<div class="hs-table"><div class="hs-row"><span class="hs-period">本日</span>${tV}</div><div class="hs-row"><span class="hs-period">今週</span>${wV}</div><div class="hs-row"><span class="hs-period">今月</span>${mV}</div><div class="hs-row"><span class="hs-period">全期間</span>${fmt(d.all)}</div></div>`;
+}
+
 // Game
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -245,8 +277,9 @@ let animFrame;
 
 function setupCanvas() {
   const wrap = canvas.parentElement;
-  W = Math.min(wrap.clientWidth - 16, 444);
-  H = Math.round(W * 0.85);
+  W = Math.min(wrap.clientWidth - 8, 452);
+  const availH = Math.floor(window.innerHeight * 0.70);
+  H = Math.min(Math.max(400, availH), Math.round(W * 1.5));
   canvas.width = W;
   canvas.height = H;
 }
@@ -309,20 +342,26 @@ function updateLEDs() {
   document.getElementById('pipes-led').textContent = pipes.filter(p=>p.passed).length;
 }
 
-function getRandomGapY() {
-  const margin = 60;
-  const min = margin + PIPE_GAP / 2;
-  const max = H - GROUND_H - margin - PIPE_GAP / 2;
+function getRandomGapY(gapSize) {
+  const margin = 55;
+  const min = margin + gapSize / 2;
+  const max = H - GROUND_H - margin - gapSize / 2;
   return Math.random() * (max - min) + min;
 }
 
 function spawnPipe() {
-  const gapY = getRandomGapY();
-  pipes.push({
-    x: W + PIPE_WIDTH,
-    gapY: gapY,
-    passed: false
-  });
+  // Pipe types: normal, narrow (smaller gap), moving (oscillates vertically), wide (wider pipe body)
+  const pool = ['normal','normal','normal'];
+  if (score >= 5)  pool.push('narrow');
+  if (score >= 8)  pool.push('moving');
+  if (score >= 15) pool.push('narrow','moving','wide');
+  const type = pool[Math.floor(Math.random() * pool.length)];
+  const gapDelta = type === 'narrow' ? -28 : 0;
+  const gapSize = Math.max(90, PIPE_GAP + gapDelta);
+  const pipeW = type === 'wide' ? PIPE_WIDTH + 18 : PIPE_WIDTH;
+  const gapY = getRandomGapY(gapSize);
+  const moveVy = type === 'moving' ? (Math.random() < 0.5 ? 1.0 : -1.0) : 0;
+  pipes.push({ x: W + pipeW, gapY, gapSize, pipeW, type, moveVy, passed: false });
 }
 
 function gameLoop() {
@@ -359,12 +398,22 @@ function update() {
   // Move pipes
   pipes.forEach(p => { p.x -= pipeSpeed; });
 
+  // Moving pipes oscillate vertically
+  pipes.forEach(p => {
+    if (p.type === 'moving') {
+      p.gapY += p.moveVy;
+      const minG = 65 + p.gapSize / 2;
+      const maxG = H - GROUND_H - 65 - p.gapSize / 2;
+      if (p.gapY < minG || p.gapY > maxG) p.moveVy *= -1;
+    }
+  });
+
   // Remove off-screen pipes
-  pipes = pipes.filter(p => p.x + PIPE_WIDTH > -10);
+  pipes = pipes.filter(p => p.x + p.pipeW > -10);
 
   // Score
   pipes.forEach(p => {
-    if (!p.passed && p.x + PIPE_WIDTH < bird.x) {
+    if (!p.passed && p.x + p.pipeW < bird.x) {
       p.passed = true;
       score++;
       updateLEDs();
@@ -379,17 +428,11 @@ function update() {
   // Collision: pipes
   const bx = bird.x, by = bird.y, br = 10;
   for (const p of pipes) {
-    const px = p.x, pw = PIPE_WIDTH;
-    const topH = p.gapY - PIPE_GAP / 2;
-    const botY = p.gapY + PIPE_GAP / 2;
-    const botH = H - GROUND_H - botY;
-
-    // Check if bird overlaps pipe horizontally
+    const px = p.x, pw = p.pipeW, gs = p.gapSize;
+    const topH = p.gapY - gs / 2;
+    const botY = p.gapY + gs / 2;
     if (bx + br > px && bx - br < px + pw) {
-      // Check pipe bodies
-      if (by - br < topH || by + br > botY) {
-        endGame(); return;
-      }
+      if (by - br < topH || by + br > botY) { endGame(); return; }
     }
   }
 }
@@ -399,74 +442,110 @@ function endGame() {
   cancelAnimationFrame(animFrame);
   best = Math.max(best, score);
   localStorage.setItem('flappy_best', best);
+  saveHiRec('flappy', score);
   updateLEDs();
   draw();
 }
 
-function drawPipe(x, gapY) {
-  const topH = gapY - PIPE_GAP / 2;
-  const botY = gapY + PIPE_GAP / 2;
+function drawPipe(p) {
+  const x = p.x, gapY = p.gapY, gapSize = p.gapSize, pipeW = p.pipeW;
+  const topH = gapY - gapSize / 2;
+  const botY = gapY + gapSize / 2;
   const botH = H - GROUND_H - botY;
-  const capH = 14, capExtra = 6;
+  const capH = 14;
+
+  // Shadow color varies by type
+  const shadowCol = p.type === 'moving' ? '#ff80ff' : '#7060ff';
 
   // Pipe gradient
   function makePipeGrad(y, h) {
-    const g = ctx.createLinearGradient(x, y, x + PIPE_WIDTH, y);
-    g.addColorStop(0, '#2a1860');
-    g.addColorStop(0.3, '#4a30a0');
-    g.addColorStop(0.7, '#3a2080');
-    g.addColorStop(1, '#1a0840');
+    const g = ctx.createLinearGradient(x, y, x + pipeW, y);
+    if (p.type === 'wide') {
+      g.addColorStop(0, '#3a1840');
+      g.addColorStop(0.3, '#6a3060');
+      g.addColorStop(0.7, '#4a2050');
+      g.addColorStop(1, '#1a0830');
+    } else {
+      g.addColorStop(0, '#2a1860');
+      g.addColorStop(0.3, '#4a30a0');
+      g.addColorStop(0.7, '#3a2080');
+      g.addColorStop(1, '#1a0840');
+    }
     return g;
   }
 
   // Top pipe body
   if (topH > 0) {
     ctx.save();
-    ctx.shadowColor = '#7060ff';
+    ctx.shadowColor = shadowCol;
     ctx.shadowBlur = 10;
     ctx.fillStyle = makePipeGrad(0, topH);
     ctx.beginPath();
-    ctx.roundRect(x + 3, 0, PIPE_WIDTH - 6, topH - capH, [0, 0, 0, 0]);
+    ctx.roundRect(x + 3, 0, pipeW - 6, topH - capH, [0, 0, 0, 0]);
     ctx.fill();
 
     // Top pipe cap
     ctx.fillStyle = makePipeGrad(0, capH);
     ctx.beginPath();
-    ctx.roundRect(x, topH - capH, PIPE_WIDTH, capH, [0, 0, 4, 4]);
+    ctx.roundRect(x, topH - capH, pipeW, capH, [0, 0, 4, 4]);
     ctx.fill();
 
-    // Gold border
+    // Border (brighter for narrow)
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#f5c842';
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.5;
-    ctx.strokeRect(x, 0, PIPE_WIDTH, topH);
+    ctx.strokeStyle = p.type === 'narrow' ? '#ffcc00' : '#f5c842';
+    ctx.lineWidth = p.type === 'narrow' ? 2 : 1.5;
+    ctx.globalAlpha = p.type === 'narrow' ? 0.8 : 0.5;
+    ctx.strokeRect(x, 0, pipeW, topH);
     ctx.globalAlpha = 1;
+
+    // Narrow warning indicator
+    if (p.type === 'narrow') {
+      ctx.font = '13px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffcc00';
+      ctx.shadowColor = '#ffcc00';
+      ctx.shadowBlur = 6;
+      ctx.fillText('⚠', x + pipeW / 2, Math.max(14, topH - capH - 4));
+      ctx.shadowBlur = 0;
+    }
+
     ctx.restore();
   }
 
   // Bottom pipe body
   if (botH > 0) {
     ctx.save();
-    ctx.shadowColor = '#7060ff';
+    ctx.shadowColor = shadowCol;
     ctx.shadowBlur = 10;
     ctx.fillStyle = makePipeGrad(botY, botH);
     ctx.beginPath();
-    ctx.roundRect(x + 3, botY + capH, PIPE_WIDTH - 6, botH - capH, [0, 0, 0, 0]);
+    ctx.roundRect(x + 3, botY + capH, pipeW - 6, botH - capH, [0, 0, 0, 0]);
     ctx.fill();
 
     // Bottom pipe cap
     ctx.fillStyle = makePipeGrad(botY, capH);
     ctx.beginPath();
-    ctx.roundRect(x, botY, PIPE_WIDTH, capH, [4, 4, 0, 0]);
+    ctx.roundRect(x, botY, pipeW, capH, [4, 4, 0, 0]);
     ctx.fill();
 
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#f5c842';
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.5;
-    ctx.strokeRect(x, botY, PIPE_WIDTH, botH);
+    ctx.strokeStyle = p.type === 'narrow' ? '#ffcc00' : '#f5c842';
+    ctx.lineWidth = p.type === 'narrow' ? 2 : 1.5;
+    ctx.globalAlpha = p.type === 'narrow' ? 0.8 : 0.5;
+    ctx.strokeRect(x, botY, pipeW, botH);
     ctx.globalAlpha = 1;
+
+    // Narrow warning indicator on bottom cap
+    if (p.type === 'narrow') {
+      ctx.font = '13px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffcc00';
+      ctx.shadowColor = '#ffcc00';
+      ctx.shadowBlur = 6;
+      ctx.fillText('⚠', x + pipeW / 2, Math.min(H - GROUND_H - 4, botY + capH + 14));
+      ctx.shadowBlur = 0;
+    }
+
     ctx.restore();
   }
 }
@@ -502,7 +581,7 @@ function draw() {
   ctx.globalAlpha = 1;
 
   // Pipes
-  pipes.forEach(p => drawPipe(p.x, p.gapY));
+  pipes.forEach(p => drawPipe(p));
 
   // Ground
   const groundGrad = ctx.createLinearGradient(0, H - GROUND_H, 0, H);
@@ -660,12 +739,9 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function showHiScore() {
-  const b = parseInt(localStorage.getItem('flappy_best')||'0');
-  document.getElementById('hiscore-body').innerHTML = `
-    <p style="text-align:center;margin-bottom:10px;">🏆 最高スコア</p>
-    <p style="text-align:center;font-size:32px;color:#ff44aa;text-shadow:0 0 15px #ff44aa;font-family:'Courier New';">${b}</p>
-    <p style="text-align:center;margin-top:8px;color:#6050a0;font-size:11px;">フラッピーバード</p>
-  `;
+  document.getElementById('hiscore-body').innerHTML =
+    `<p style="text-align:center;margin-bottom:12px;color:#ffe870;font-weight:bold;">🏆 フラッピーバード ハイスコア</p>` +
+    renderHiRec('flappy', '点');
   openModal('hiscore-modal');
 }
 

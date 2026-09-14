@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -198,6 +198,12 @@ body {
   color: #8070b0;
 }
 .avg-display strong { color: #d0c0ff; font-size: 14px; }
+.hs-table{width:100%;}
+.hs-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(80,60,180,0.1);border:1px solid rgba(80,60,180,0.2);border-radius:8px;margin:3px 0;}
+.hs-period{color:#a090d0;font-size:12px;font-weight:bold;min-width:50px;}
+.hs-record{color:#60ff90;font-weight:900;text-shadow:0 0 6px #60ff90;}
+.hs-val{color:#4038a0;}
+.hs-date{color:#7060a0;font-size:9px;margin-left:4px;}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -214,7 +220,9 @@ body {
 .hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
-</style></head>
+</style><!-- body-bg-override -->
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(120,10,220,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(90,5,180,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #1e0860 0%, #120440 100%) !important; }</style>
+</head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
 
@@ -326,6 +334,14 @@ function startConfetti(){
   anim();
 }
 
+function getDateKey(){return new Date().toISOString().slice(0,10);}
+function getWeekKey(){const d=new Date(),day=d.getDay()||7,mon=new Date(d);mon.setDate(d.getDate()-day+1);return mon.toISOString().slice(0,10);}
+function getMonthKey(){return new Date().toISOString().slice(0,7);}
+function fmtDate(s){const p=s.slice(5).split('-');return`${parseInt(p[0])}/${parseInt(p[1])}`;}
+function saveHiRec(key,val){const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();let d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');if(!d.all||val>d.all.v)d.all={v:val,date:today};if(!d.today||d.today.date!==today||val>d.today.v)d.today={v:val,date:today};if(!d.week||d.week.key!==wk||val>d.week.v)d.week={v:val,key:wk,date:today};if(!d.month||d.month.key!==mo||val>d.month.v)d.month={v:val,key:mo,date:today};localStorage.setItem(key+'_rec',JSON.stringify(d));}
+function saveHiRecLow(key,val){const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();let d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');if(!d.all||val<d.all.v)d.all={v:val,date:today};if(!d.today||d.today.date!==today||val<d.today.v)d.today={v:val,date:today};if(!d.week||d.week.key!==wk||val<d.week.v)d.week={v:val,key:wk,date:today};if(!d.month||d.month.key!==mo||val<d.month.v)d.month={v:val,key:mo,date:today};localStorage.setItem(key+'_rec',JSON.stringify(d));}
+function renderHiRec(key,unit){const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();const d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');const fmt=e=>e?`<span class="hs-record">${e.v}${unit}</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';const tV=d.today?.date===today?fmt(d.today):'<span class="hs-val">--</span>';const wV=d.week?.key===wk?fmt(d.week):'<span class="hs-val">--</span>';const mV=d.month?.key===mo?fmt(d.month):'<span class="hs-val">--</span>';return`<div class="hs-table"><div class="hs-row"><span class="hs-period">本日</span>${tV}</div><div class="hs-row"><span class="hs-period">今週</span>${wV}</div><div class="hs-row"><span class="hs-period">今月</span>${mV}</div><div class="hs-row"><span class="hs-period">全期間</span>${fmt(d.all)}</div></div>`;}
+
 const HS_KEY = 'reaction_hs_v1';
 function loadHS() { try { return JSON.parse(localStorage.getItem(HS_KEY))||[]; } catch(e) { return []; } }
 function saveHS(score) {
@@ -344,21 +360,7 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{
 });
 
 function showHSModal() {
-  const hs = loadHS();
-  const body = document.getElementById('hs-body');
-  if (!hs.length) {
-    body.innerHTML = '<p style="text-align:center;color:#6050a0">まだ記録がありません</p>';
-  } else {
-    body.innerHTML = `<table style="width:100%;border-collapse:collapse">
-      <tr style="color:#6050a0;font-size:11px"><th style="padding:4px">順位</th><th>タイム</th><th>評価</th><th>日付</th></tr>
-      ${hs.map((h,i)=>`<tr style="border-top:1px solid #2010a0;color:#c0b0e8">
-        <td style="text-align:center;padding:5px;color:${i===0?'#ffe870':'#6050a0'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</td>
-        <td style="font-family:'Courier New';color:#ff44aa;text-shadow:0 0 6px #ff44aa;font-weight:bold">${h.score}ms</td>
-        <td style="color:#ffe870;font-size:11px">${getRank(h.score)}</td>
-        <td style="color:#6050a0;font-size:11px">${h.date}</td>
-      </tr>`).join('')}
-    </table>`;
-  }
+  document.getElementById('hs-body').innerHTML = renderHiRec('reaction','ms');
   showModal('hsModal');
 }
 
@@ -475,6 +477,7 @@ function handleTap() {
     attempts.push({ms: elapsed, foul: false});
     currentRound++;
     saveHS(elapsed);
+    saveHiRecLow('reaction', elapsed);
     const rank = getRank(elapsed);
     updateDots();
     renderHistory();

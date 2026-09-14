@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -191,6 +191,18 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
 }
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:10000;justify-content:center;align-items:center;padding:16px;}
+.modal-overlay.visible{display:flex;}
+.modal-box{background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);border:2px solid #7060ff;border-radius:16px;box-shadow:0 0 40px rgba(112,90,255,0.6),0 24px 64px rgba(0,0,0,0.9);max-width:360px;width:100%;max-height:88vh;overflow-y:auto;}
+.modal-title{background:linear-gradient(90deg,#a06008 0%,#f5c842 28%,#ffe870 50%,#f5c842 72%,#a06008 100%);color:#3a1a00;font-size:14px;font-weight:900;padding:8px 14px;text-align:center;letter-spacing:2px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#3a1a00;}
+.modal-body{padding:14px;color:#c0b0e8;font-size:13px;line-height:1.6;}
+.hs-table{width:100%;}
+.hs-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(80,60,180,0.1);border:1px solid rgba(80,60,180,0.2);border-radius:8px;margin:3px 0;}
+.hs-period{color:#a090d0;font-size:12px;font-weight:bold;min-width:50px;}
+.hs-record{color:#60ff90;font-weight:900;text-shadow:0 0 6px #60ff90;}
+.hs-val{color:#4038a0;}
+.hs-date{color:#7060a0;font-size:9px;margin-left:4px;}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -207,7 +219,9 @@ body {
 .hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
-</style></head>
+</style><!-- body-bg-override -->
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(20,50,180,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(10,30,160,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #060e40 0%, #040828 100%) !important; }</style>
+</head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
 
@@ -281,11 +295,35 @@ body{padding-top:44px!important;}
       <button class="btn ctrl-btn" id="btn-hold">HOLD</button>
       <button class="btn ctrl-btn" id="btn-drop">DROP</button>
       <button class="btn ctrl-btn" id="btn-pause">PAUSE</button>
+      <button class="btn ctrl-btn" onclick="showHiScore()">🏆</button>
     </div>
   </div>
 </div>
 
 <script>
+function getDateKey(){return new Date().toISOString().slice(0,10);}
+function getWeekKey(){const d=new Date(),day=d.getDay()||7,mon=new Date(d);mon.setDate(d.getDate()-day+1);return mon.toISOString().slice(0,10);}
+function getMonthKey(){return new Date().toISOString().slice(0,7);}
+function fmtDate(s){const p=s.slice(5).split('-');return`${parseInt(p[0])}/${parseInt(p[1])}`;}
+function saveHiRec(key,val){
+  const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();
+  let d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');
+  if(!d.all||val>d.all.v)d.all={v:val,date:today};
+  if(!d.today||d.today.date!==today||val>d.today.v)d.today={v:val,date:today};
+  if(!d.week||d.week.key!==wk||val>d.week.v)d.week={v:val,key:wk,date:today};
+  if(!d.month||d.month.key!==mo||val>d.month.v)d.month={v:val,key:mo,date:today};
+  localStorage.setItem(key+'_rec',JSON.stringify(d));
+}
+function renderHiRec(key,unit){
+  const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();
+  const d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');
+  const fmt=e=>e?`<span class="hs-record">${e.v}${unit}</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';
+  const tV=d.today?.date===today?fmt(d.today):'<span class="hs-val">--</span>';
+  const wV=d.week?.key===wk?fmt(d.week):'<span class="hs-val">--</span>';
+  const mV=d.month?.key===mo?fmt(d.month):'<span class="hs-val">--</span>';
+  return`<div class="hs-table"><div class="hs-row"><span class="hs-period">本日</span>${tV}</div><div class="hs-row"><span class="hs-period">今週</span>${wV}</div><div class="hs-row"><span class="hs-period">今月</span>${mV}</div><div class="hs-row"><span class="hs-period">全期間</span>${fmt(d.all)}</div></div>`;
+}
+
 // ===================== STARS =====================
 (function(){
   const c = document.getElementById('stars');
@@ -474,7 +512,7 @@ function clearLines(){
     score+=pts; lines+=cleared;
     const newLevel=Math.floor(lines/10)+1;
     if(newLevel>level){ level=newLevel; dropInterval=getDropInterval(level); }
-    if(score>hiScore){ hiScore=score; setHiScore(hiScore); launchConfetti(); }
+    if(score>hiScore){ hiScore=score; setHiScore(hiScore); saveHiRec('tetris',hiScore); launchConfetti(); }
     updateLEDs();
   }
 }
@@ -757,5 +795,24 @@ draw();
     upd();
   }
 })();
-</script></body>
+</script>
+
+<div class="modal-overlay" id="tetris-hs-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🏆 ハイスコア</span>
+      <button class="modal-close" onclick="document.getElementById('tetris-hs-modal').classList.remove('visible')">✕</button>
+    </div>
+    <div class="modal-body" id="tetris-hs-body"></div>
+  </div>
+</div>
+
+<script>
+function showHiScore(){
+  document.getElementById('tetris-hs-body').innerHTML=renderHiRec('tetris','点');
+  document.getElementById('tetris-hs-modal').classList.add('visible');
+}
+document.getElementById('tetris-hs-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');});
+</script>
+</body>
 </html>

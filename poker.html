@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -264,7 +264,9 @@ hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
 .hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
-</style></head>
+</style><!-- body-bg-override -->
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(150,15,20,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(120,8,15,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #28060a 0%, #180404 100%) !important; }</style>
+</head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
 

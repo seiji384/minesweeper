@@ -7,27 +7,21 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
 body {
-  background:
-    radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
-    radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+  background: linear-gradient(160deg, #ece8ff 0%, #fff5fb 50%, #e8f2ff 100%);
   display: flex; justify-content: center; align-items: flex-start;
-  min-height: 100vh; padding: 16px 8px 90px;
+  min-height: 100vh; padding: 12px 8px 90px;
   font-family: Arial, sans-serif; overflow-x: hidden;
 }
-#stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
 
 /* ── Main window ── */
 .window {
   position: relative; z-index: 1;
-  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
-  border: 2px solid #7060ff; border-radius: 18px;
+  background: #ffffff;
+  border: 1.5px solid #d4c8ff; border-radius: 18px;
   box-shadow:
-    0 0 40px rgba(112,90,255,0.5),
-    0 0 100px rgba(112,90,255,0.15),
-    0 8px 0 #08041a,
-    0 10px 40px rgba(0,0,0,0.9),
-    inset 0 1px 0 rgba(180,160,255,0.15);
+    0 0 0 1px rgba(180,160,255,0.2),
+    0 4px 20px rgba(100,80,200,0.14),
+    0 12px 48px rgba(0,0,0,0.07);
   max-width: 460px; width: 100%; overflow: hidden;
 }
 
@@ -37,30 +31,29 @@ body {
   color: #3a1a00; font-size: 15px; font-weight: 900; padding: 9px 14px;
   text-align: center; letter-spacing: 2px;
   text-shadow: 0 1px 0 rgba(255,255,200,0.9);
-  border-bottom: 2px solid #7a3800;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.7);
+  border-bottom: 2px solid #a06010;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.7);
   display: flex; justify-content: space-between; align-items: center;
 }
 
 /* ── Offline badge ── */
 .offline-badge {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: linear-gradient(90deg, rgba(0,180,80,0.12) 0%, rgba(0,200,100,0.08) 100%);
-  border: 1px solid rgba(0,200,100,0.3);
-  border-radius: 0; padding: 5px 14px;
-  font-size: 9px; color: #50d878; font-weight: bold; letter-spacing: 0.8px;
+  background: linear-gradient(90deg, rgba(0,160,70,0.08), rgba(0,200,100,0.05));
+  border: 1px solid rgba(0,160,70,0.25);
+  padding: 5px 14px; font-size: 9px; color: #1a9448; font-weight: bold; letter-spacing: 0.8px;
 }
 .offline-dot {
-  width: 6px; height: 6px; background: #40e878; border-radius: 50%;
-  box-shadow: 0 0 6px #40e878; animation: blink 2s ease-in-out infinite;
+  width: 6px; height: 6px; background: #22c060; border-radius: 50%;
+  box-shadow: 0 0 5px #22c060; animation: blink 2s ease-in-out infinite;
 }
 @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
 /* ── Category tabs ── */
 .cat-wrap {
   padding: 10px 10px 4px;
-  background: linear-gradient(180deg, rgba(20,10,50,0.8) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(80,60,180,0.25);
+  background: linear-gradient(180deg, #f8f5ff 0%, #ffffff 100%);
+  border-bottom: 1px solid #e8e0ff;
 }
 .cat-tabs {
   display: flex; gap: 5px;
@@ -72,24 +65,17 @@ body {
   flex-shrink: 0;
   padding: 6px 13px; font-size: 10px; font-weight: 900;
   border-radius: 20px; cursor: pointer; touch-action: manipulation;
-  background: linear-gradient(180deg, #2a1860 0%, #180c40 100%);
-  color: #6858a8; border: 1px solid #332070;
-  box-shadow: 0 3px 0 #08041a, 0 4px 10px rgba(0,0,0,0.5),
-              inset 0 1px 0 rgba(100,80,200,0.15);
+  background: #f0ecff; color: #6858c0; border: 1px solid #d8d0f0;
+  box-shadow: 0 2px 0 #d0c8e8, 0 3px 8px rgba(100,80,200,0.08);
   transition: transform 0.1s, box-shadow 0.1s; letter-spacing: 0.5px;
 }
 .cat-tab.active {
   background: linear-gradient(180deg, #8070ff 0%, #5040d0 100%);
-  color: #fff; border-color: #9080ff;
-  box-shadow: 0 3px 0 #1a0a60, 0 4px 14px rgba(112,90,255,0.6),
-              inset 0 1px 0 rgba(255,255,255,0.3);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  color: #fff; border-color: #7060e0;
+  box-shadow: 0 2px 0 #2a18a0, 0 3px 12px rgba(112,90,255,0.4);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
-.cat-tab:active {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 #08041a, 0 1px 5px rgba(0,0,0,0.4),
-              inset 0 2px 4px rgba(0,0,0,0.4);
-}
+.cat-tab:active { transform: translateY(2px); box-shadow: 0 0 0; }
 
 /* ── Content ── */
 .content { padding: 6px 6px 10px; }
@@ -98,81 +84,73 @@ body {
 .section-header {
   margin: 10px 4px 4px;
   padding: 6px 12px;
-  background: linear-gradient(90deg, rgba(112,90,255,0.18) 0%, rgba(112,90,255,0.04) 100%);
-  border-left: 3px solid #7060ff;
+  background: linear-gradient(90deg, rgba(112,90,255,0.08) 0%, transparent 100%);
+  border-left: 3px solid #8070ff;
   border-radius: 0 8px 8px 0;
   display: flex; align-items: center; gap: 8px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .section-icon { font-size: 13px; }
-.section-text {
-  color: #9080d0; font-size: 10px; font-weight: 900;
-  letter-spacing: 2px; text-transform: uppercase;
-  text-shadow: 0 0 8px rgba(150,120,255,0.4);
-}
-.section-count {
-  margin-left: auto; color: #4838a0; font-size: 9px; font-weight: bold;
-}
+.section-text { color: #7060c0; font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+.section-count { margin-left: auto; color: #a8a0c8; font-size: 9px; font-weight: bold; }
 
 /* ── Game grid ── */
-.game-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 8px; padding: 6px 4px;
-}
+.game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 6px 4px; }
 
-/* ── Game card (3D raised button look) ── */
+/* ── Game card base ── */
 .game-card {
-  background: linear-gradient(170deg, #271660 0%, #180e3e 50%, #0e0820 100%);
-  border: 1px solid #3a2890;
+  background: linear-gradient(160deg, #2a1a6a, #160e3c);
+  border: 1.5px solid #4030a0;
   border-radius: 14px; padding: 14px 8px 11px;
   text-align: center; cursor: pointer; text-decoration: none;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   box-shadow:
-    inset 0 1px 0 rgba(160,130,255,0.2),
-    inset 1px 0 0 rgba(120,100,200,0.08),
-    inset 0 -1px 0 rgba(0,0,0,0.5),
-    0 4px 0 #060310,
-    0 5px 16px rgba(0,0,0,0.7),
-    0 1px 0 rgba(80,60,160,0.4);
-  transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 3px 0 rgba(0,0,0,0.25),
+    0 5px 14px rgba(0,0,0,0.18);
+  transition: transform 0.1s, box-shadow 0.1s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-}
-.game-card:hover {
-  border-color: #5848c0;
-  box-shadow:
-    inset 0 1px 0 rgba(200,170,255,0.3),
-    inset 1px 0 0 rgba(150,120,230,0.12),
-    inset 0 -1px 0 rgba(0,0,0,0.5),
-    0 4px 0 #060310,
-    0 6px 22px rgba(90,70,200,0.4),
-    0 1px 0 rgba(100,80,200,0.5);
 }
 .game-card:active {
   transform: translateY(3px);
-  box-shadow:
-    inset 0 2px 6px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(80,60,160,0.1),
-    0 1px 0 #060310,
-    0 2px 8px rgba(0,0,0,0.5);
-  border-color: #4030a0;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.4), 0 1px 0 rgba(0,0,0,0.2);
 }
-.game-emoji {
-  font-size: 34px; line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.7));
-}
-.game-name {
-  color: #d8c8ff; font-size: 12px; font-weight: 900; letter-spacing: 0.3px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-}
-.game-desc { color: #5848a0; font-size: 9px; line-height: 1.4; }
+
+/* ── Per-card colors ── */
+.game-card[data-c="mine"]    { background: linear-gradient(160deg, #1e4d14, #0d2808); border-color: #2d7820; }
+.game-card[data-c="indigo"]  { background: linear-gradient(160deg, #16287a, #0a1850); border-color: #2a42b8; }
+.game-card[data-c="teal"]    { background: linear-gradient(160deg, #0c5252, #073232); border-color: #1898a0; }
+.game-card[data-c="amber"]   { background: linear-gradient(160deg, #8a4400, #5a2c00); border-color: #cc6800; }
+.game-card[data-c="gold"]    { background: linear-gradient(160deg, #6a5200, #443400); border-color: #a08000; }
+.game-card[data-c="brown"]   { background: linear-gradient(160deg, #6a3400, #422200); border-color: #a05200; }
+.game-card[data-c="violet"]  { background: linear-gradient(160deg, #480e72, #2d084a); border-color: #7022a8; }
+.game-card[data-c="cobalt"]  { background: linear-gradient(160deg, #102c8c, #081a5a); border-color: #1e4acc; }
+.game-card[data-c="sky"]     { background: linear-gradient(160deg, #0062a8, #003c6a); border-color: #0098e8; }
+.game-card[data-c="forest"]  { background: linear-gradient(160deg, #145618, #0d380e); border-color: #208020; }
+.game-card[data-c="earth"]   { background: linear-gradient(160deg, #6a3a08, #422404); border-color: #a05e0a; }
+.game-card[data-c="electric"]{ background: linear-gradient(160deg, #58009e, #380068); border-color: #8a22d8; }
+.game-card[data-c="crimson"] { background: linear-gradient(160deg, #9a1020, #621014); border-color: #d01828; }
+.game-card[data-c="slate"]   { background: linear-gradient(160deg, #222428, #141618); border-color: #484a50; }
+.game-card[data-c="dgn"]     { background: linear-gradient(160deg, #12401a, #0c2a12); border-color: #1e6a2a; }
+.game-card[data-c="rdyl"]    { background: linear-gradient(160deg, #981012, #621010); border-color: #d01a1a; }
+.game-card[data-c="navy"]    { background: linear-gradient(160deg, #101e6c, #0a1446); border-color: #1a32a8; }
+.game-card[data-c="plum"]    { background: linear-gradient(160deg, #5c106a, #3c0a46); border-color: #8a1aa8; }
+.game-card[data-c="casino"]  { background: linear-gradient(160deg, #06401a, #04280e); border-color: #0e6c2a; }
+.game-card[data-c="richgd"]  { background: linear-gradient(160deg, #6a4a00, #443200); border-color: #9a7400; }
+.game-card[data-c="darkred"] { background: linear-gradient(160deg, #6a0818, #440510); border-color: #9c1020; }
+.game-card[data-c="dart"]    { background: linear-gradient(160deg, #4a0808, #300505); border-color: #800c0c; }
+.game-card[data-c="lane"]    { background: linear-gradient(160deg, #08305c, #051e3c); border-color: #1052a8; }
+.game-card[data-c="hotpink"] { background: linear-gradient(160deg, #8c105c, #5a0838); border-color: #c01888; }
+.game-card[data-c="tealb"]   { background: linear-gradient(160deg, #084a62, #053040); border-color: #0e7a9a; }
+.game-card[data-c="rpg"]     { background: linear-gradient(160deg, #38066c, #22044a); border-color: #5c12a8; }
+
+.game-emoji { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6)); }
+.game-name  { color: #ffffff; font-size: 12px; font-weight: 900; letter-spacing: 0.3px; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+.game-desc  { color: rgba(255,255,255,0.55); font-size: 9px; line-height: 1.4; }
 .game-tag {
   font-size: 8px; padding: 2px 7px; border-radius: 8px; margin-top: 3px;
   font-weight: 900; letter-spacing: 0.5px;
+  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2);
 }
-.tag-vs  { background: rgba(255,70,70,0.18); color: #ff8888; border: 1px solid rgba(255,70,70,0.35); }
-.tag-solo{ background: rgba(60,140,255,0.18); color: #80b8ff; border: 1px solid rgba(60,140,255,0.35); }
-.tag-save{ background: rgba(60,220,100,0.15); color: #70e890; border: 1px solid rgba(60,220,100,0.35); }
-.tag-multi{ background: rgba(255,180,0,0.18); color: #ffd060; border: 1px solid rgba(255,180,0,0.35); }
 
 .hidden { display: none !important; }
 
@@ -180,37 +158,33 @@ body {
 .action-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
   display: flex; gap: 6px; padding: 8px 14px 12px;
-  background: linear-gradient(0deg, #04020e 0%, rgba(8,4,22,0.97) 100%);
-  border-top: 1px solid rgba(80,60,180,0.4);
-  box-shadow: 0 -6px 24px rgba(0,0,0,0.9), 0 -1px 0 rgba(112,90,255,0.25);
+  background: rgba(255,255,255,0.96);
+  border-top: 1px solid #ddd8ff;
+  box-shadow: 0 -4px 20px rgba(100,80,200,0.12), 0 -1px 0 rgba(180,160,255,0.3);
   flex-wrap: wrap; justify-content: center;
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 .act-btn {
   padding: 7px 18px; font-size: 11px; border-radius: 16px;
-  background: linear-gradient(180deg, #4a2890 0%, #28105e 100%);
-  color: #c0a0ff; border: 1px solid #6040b0;
-  box-shadow: 0 3px 0 #0c0428, 0 4px 12px rgba(0,0,0,0.6),
-              inset 0 1px 0 rgba(180,140,255,0.2);
-  cursor: pointer; font-weight: 900; transition: transform 0.1s, box-shadow 0.1s;
+  background: linear-gradient(180deg, #8070ff 0%, #5040d0 100%);
+  color: #fff; border: 1px solid #7060e0;
+  box-shadow: 0 3px 0 #2a18a0, 0 4px 10px rgba(100,80,200,0.25);
+  cursor: pointer; font-weight: 900; transition: transform 0.1s;
   touch-action: manipulation;
 }
-.act-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 #0c0428, 0 1px 6px rgba(0,0,0,0.4);
-}
+.act-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #2a18a0; }
 
 /* ── Modals ── */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.8); z-index: 10000;
+  background: rgba(0,0,0,0.75); z-index: 10000;
   justify-content: center; align-items: center; padding: 16px;
 }
 .modal-overlay.visible { display: flex; }
 .modal-box {
   background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
   border: 2px solid #7060ff; border-radius: 16px;
-  box-shadow: 0 0 40px rgba(112,90,255,0.6), 0 6px 0 #04020e, 0 20px 60px rgba(0,0,0,0.95);
+  box-shadow: 0 0 40px rgba(112,90,255,0.5), 0 20px 60px rgba(0,0,0,0.9);
   max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
 }
 .modal-title {
@@ -218,20 +192,15 @@ body {
   color: #3a1a00; font-size: 14px; font-weight: 900; padding: 9px 14px;
   text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
   display: flex; justify-content: space-between; align-items: center;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
 .modal-body { padding: 16px; color: #c0b0e8; font-size: 13px; line-height: 1.7; }
-.info-block {
-  background: rgba(0,180,80,0.1); border: 1px solid rgba(0,200,100,0.3);
-  border-radius: 10px; padding: 10px 12px; margin: 10px 0;
-}
+.info-block { background: rgba(0,180,80,0.1); border: 1px solid rgba(0,200,100,0.3); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
 .info-block-title { color: #50d878; font-weight: 900; font-size: 12px; margin-bottom: 4px; }
 .info-block-body { color: #90c8a0; font-size: 11px; }
 </style>
 </head>
 <body>
-<canvas id="stars"></canvas>
 
 <div class="window">
   <div class="titlebar">
@@ -267,53 +236,53 @@ body {
       <span class="section-count" id="cnt-puzzle"></span>
     </div>
     <div class="game-grid" id="grid-puzzle">
-      <a class="game-card" href="minesweeper.html" data-cat="puzzle">
+      <a class="game-card" href="minesweeper.html" data-cat="puzzle" data-c="mine">
         <div class="game-emoji">💣</div>
         <div class="game-name">マインスイーパー</div>
         <div class="game-desc">地雷を避けて<br>全マスを開け</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
-      <a class="game-card" href="sudoku.html" data-cat="puzzle">
+      <a class="game-card" href="sudoku.html" data-cat="puzzle" data-c="indigo">
         <div class="game-emoji">🔢</div>
         <div class="game-name">数独</div>
         <div class="game-desc">1〜9を重ならず<br>埋めるパズル</div>
-        <div class="game-tag tag-solo">🎯 ソロ</div>
+        <div class="game-tag">🎯 ソロ</div>
       </a>
-      <a class="game-card" href="puzzle15.html" data-cat="puzzle">
+      <a class="game-card" href="puzzle15.html" data-cat="puzzle" data-c="teal">
         <div class="game-emoji">🔲</div>
         <div class="game-name">15パズル</div>
         <div class="game-desc">スライドして<br>数字を並べろ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
-      <a class="game-card" href="2048.html" data-cat="puzzle">
+      <a class="game-card" href="2048.html" data-cat="puzzle" data-c="amber">
         <div class="game-emoji">✨</div>
         <div class="game-name">2048</div>
         <div class="game-desc">タイルを合わせて<br>2048を目指せ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
-      <a class="game-card" href="lightsout.html" data-cat="puzzle">
+      <a class="game-card" href="lightsout.html" data-cat="puzzle" data-c="gold">
         <div class="game-emoji">💡</div>
         <div class="game-name">ライツアウト</div>
         <div class="game-desc">全ての電球を<br>消せ</div>
-        <div class="game-tag tag-solo">🎯 ソロ</div>
+        <div class="game-tag">🎯 ソロ</div>
       </a>
-      <a class="game-card" href="sokoban.html" data-cat="puzzle">
+      <a class="game-card" href="sokoban.html" data-cat="puzzle" data-c="brown">
         <div class="game-emoji">📦</div>
         <div class="game-name">倉庫番</div>
         <div class="game-desc">箱を押して<br>所定位置へ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
-      <a class="game-card" href="mastermind.html" data-cat="puzzle">
+      <a class="game-card" href="mastermind.html" data-cat="puzzle" data-c="violet">
         <div class="game-emoji">🔍</div>
         <div class="game-name">数字当て</div>
         <div class="game-desc">ヒントを読んで<br>4桁を推理せよ</div>
-        <div class="game-tag tag-solo">🎯 ソロ</div>
+        <div class="game-tag">🎯 ソロ</div>
       </a>
-      <a class="game-card" href="tetris.html" data-cat="puzzle">
+      <a class="game-card" href="tetris.html" data-cat="puzzle" data-c="cobalt">
         <div class="game-emoji">🟦</div>
         <div class="game-name">テトリス</div>
         <div class="game-desc">ブロックを積んで<br>ラインを消せ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
     </div>
 
@@ -324,35 +293,35 @@ body {
       <span class="section-count" id="cnt-action"></span>
     </div>
     <div class="game-grid" id="grid-action">
-      <a class="game-card" href="flappybird.html" data-cat="action">
+      <a class="game-card" href="flappybird.html" data-cat="action" data-c="sky">
         <div class="game-emoji">🐦</div>
         <div class="game-name">フラッピーバード</div>
         <div class="game-desc">障害物を<br>くぐり抜けろ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
-      <a class="game-card" href="snake.html" data-cat="action">
+      <a class="game-card" href="snake.html" data-cat="action" data-c="forest">
         <div class="game-emoji">🐍</div>
         <div class="game-name">スネーク</div>
         <div class="game-desc">蛇を操って<br>餌を食べろ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
-      <a class="game-card" href="whackamole.html" data-cat="action">
+      <a class="game-card" href="whackamole.html" data-cat="action" data-c="earth">
         <div class="game-emoji">🔨</div>
         <div class="game-name">モグラ叩き</div>
         <div class="game-desc">出てくるモグラを<br>素早く叩け</div>
-        <div class="game-tag tag-solo">🎯 ソロ</div>
+        <div class="game-tag">🎯 ソロ</div>
       </a>
-      <a class="game-card" href="reaction.html" data-cat="action">
+      <a class="game-card" href="reaction.html" data-cat="action" data-c="electric">
         <div class="game-emoji">⚡</div>
         <div class="game-name">反応速度テスト</div>
         <div class="game-desc">光ったら<br>即タップ</div>
-        <div class="game-tag tag-solo">🎯 ソロ</div>
+        <div class="game-tag">🎯 ソロ</div>
       </a>
-      <a class="game-card" href="breakout.html" data-cat="action">
+      <a class="game-card" href="breakout.html" data-cat="action" data-c="crimson">
         <div class="game-emoji">🎾</div>
         <div class="game-name">ブロック崩し</div>
         <div class="game-desc">ボールでブロックを<br>全部壊せ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
     </div>
 
@@ -363,29 +332,29 @@ body {
       <span class="section-count" id="cnt-board"></span>
     </div>
     <div class="game-grid" id="grid-board">
-      <a class="game-card" href="gomoku.html" data-cat="board">
+      <a class="game-card" href="gomoku.html" data-cat="board" data-c="slate">
         <div class="game-emoji">⚫</div>
         <div class="game-name">五目並べ</div>
         <div class="game-desc">5つ先に並べた<br>方の勝ち</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
-      <a class="game-card" href="reversi.html" data-cat="board">
+      <a class="game-card" href="reversi.html" data-cat="board" data-c="dgn">
         <div class="game-emoji">⭕</div>
         <div class="game-name">リバーシ</div>
         <div class="game-desc">石を挟んで<br>ひっくり返せ</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
-      <a class="game-card" href="connect4.html" data-cat="board">
+      <a class="game-card" href="connect4.html" data-cat="board" data-c="rdyl">
         <div class="game-emoji">🔴</div>
         <div class="game-name">4目並べ</div>
         <div class="game-desc">縦横斜めに<br>4つ並べろ</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
-      <a class="game-card" href="dotsboxes.html" data-cat="board">
+      <a class="game-card" href="dotsboxes.html" data-cat="board" data-c="navy">
         <div class="game-emoji">🟦</div>
         <div class="game-name">ドット＆ボックス</div>
         <div class="game-desc">線を引いて<br>箱を多く作れ</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
     </div>
 
@@ -396,29 +365,29 @@ body {
       <span class="section-count" id="cnt-card"></span>
     </div>
     <div class="game-grid" id="grid-card">
-      <a class="game-card" href="memory.html" data-cat="card">
+      <a class="game-card" href="memory.html" data-cat="card" data-c="plum">
         <div class="game-emoji">🎴</div>
         <div class="game-name">神経衰弱</div>
         <div class="game-desc">同じ絵柄を探して<br>ペアを作れ</div>
-        <div class="game-tag tag-solo">🎯 ソロ</div>
+        <div class="game-tag">🎯 ソロ</div>
       </a>
-      <a class="game-card" href="blackjack.html" data-cat="card">
+      <a class="game-card" href="blackjack.html" data-cat="card" data-c="casino">
         <div class="game-emoji">🃏</div>
         <div class="game-name">ブラックジャック</div>
         <div class="game-desc">21を超えずに<br>ディーラーに勝て</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
-      <a class="game-card" href="daifugou.html" data-cat="card">
+      <a class="game-card" href="daifugou.html" data-cat="card" data-c="richgd">
         <div class="game-emoji">👑</div>
         <div class="game-name">大富豪</div>
         <div class="game-desc">手札を全て出して<br>大富豪になれ</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
-      <a class="game-card" href="poker.html" data-cat="card">
+      <a class="game-card" href="poker.html" data-cat="card" data-c="darkred">
         <div class="game-emoji">♠️</div>
         <div class="game-name">ポーカー</div>
         <div class="game-desc">役を作って<br>ディーラーに勝て</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
     </div>
 
@@ -429,17 +398,17 @@ body {
       <span class="section-count" id="cnt-sports"></span>
     </div>
     <div class="game-grid" id="grid-sports">
-      <a class="game-card" href="darts.html" data-cat="sports">
+      <a class="game-card" href="darts.html" data-cat="sports" data-c="dart">
         <div class="game-emoji">🎯</div>
         <div class="game-name">ダーツ</div>
         <div class="game-desc">501点を先に<br>ゼロにしろ</div>
-        <div class="game-tag tag-vs">🤖 VS CPU</div>
+        <div class="game-tag">🤖 VS CPU</div>
       </a>
-      <a class="game-card" href="bowling.html" data-cat="sports">
+      <a class="game-card" href="bowling.html" data-cat="sports" data-c="lane">
         <div class="game-emoji">🎳</div>
         <div class="game-name">ボウリング</div>
         <div class="game-desc">10フレームで<br>高スコアを狙え</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
     </div>
 
@@ -450,17 +419,17 @@ body {
       <span class="section-count" id="cnt-rhythm"></span>
     </div>
     <div class="game-grid" id="grid-rhythm">
-      <a class="game-card" href="rhythm.html" data-cat="rhythm">
+      <a class="game-card" href="rhythm.html" data-cat="rhythm" data-c="hotpink">
         <div class="game-emoji">🥁</div>
         <div class="game-name">リズム天国</div>
         <div class="game-desc">リズムに乗って<br>タップせよ</div>
-        <div class="game-tag tag-multi">🎵 7種類</div>
+        <div class="game-tag">🎵 7種類</div>
       </a>
-      <a class="game-card" href="simon.html" data-cat="rhythm">
+      <a class="game-card" href="simon.html" data-cat="rhythm" data-c="tealb">
         <div class="game-emoji">🎵</div>
         <div class="game-name">サイモン</div>
         <div class="game-desc">色の順番を覚えて<br>繰り返せ</div>
-        <div class="game-tag tag-save">💾 記録保存</div>
+        <div class="game-tag">💾 記録保存</div>
       </a>
     </div>
 
@@ -471,11 +440,11 @@ body {
       <span class="section-count" id="cnt-rpg"></span>
     </div>
     <div class="game-grid" id="grid-rpg">
-      <a class="game-card" href="rpg.html" data-cat="rpg">
+      <a class="game-card" href="rpg.html" data-cat="rpg" data-c="rpg">
         <div class="game-emoji">⚔️</div>
         <div class="game-name">ミニRPG</div>
         <div class="game-desc">勇者と仲間で<br>魔王を倒せ</div>
-        <div class="game-tag tag-save">💾 自動セーブ</div>
+        <div class="game-tag">💾 自動セーブ</div>
       </a>
     </div>
 
@@ -496,12 +465,10 @@ body {
     <div class="modal-body">
       <p><strong style="color:#ffe870">🎮 ミニゲーム集へようこそ！</strong></p>
       <p style="margin-top:6px">全 <strong style="color:#d0c0ff">26種類</strong> のミニゲームが収録されています。</p>
-
       <div class="info-block" style="margin-top:12px">
         <div class="info-block-title">✈ オフライン完全対応</div>
         <div class="info-block-body">Wi-Fiなし・圏外・機内モードでも全ゲームが遊べます。外部サーバーへの接続は一切不要。長距離フライト中でも安心です。</div>
       </div>
-
       <p style="margin-top:4px"><strong style="color:#ffe870">特徴：</strong></p>
       <ul style="margin-left:16px; margin-top:6px; color:#b0a0d8;">
         <li>広告なし・完全無料</li>
@@ -521,66 +488,21 @@ body {
 </div>
 
 <script>
-/* ── Stars ── */
-(function(){
-  const c=document.getElementById('stars'),ctx=c.getContext('2d');
-  let stars=[];
-  function resize(){
-    c.width=window.innerWidth; c.height=window.innerHeight;
-    stars=[];
-    for(let i=0;i<130;i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.6+0.3, a:Math.random(), da:(Math.random()-0.5)*0.007});
-  }
-  function draw(){
-    ctx.clearRect(0,0,c.width,c.height);
-    stars.forEach(s=>{
-      s.a=Math.max(0.1,Math.min(1,s.a+s.da));
-      if(s.a<=0.1||s.a>=1) s.da*=-1;
-      ctx.globalAlpha=s.a; ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.28); ctx.fill();
-    });
-    ctx.globalAlpha=1; requestAnimationFrame(draw);
-  }
-  window.addEventListener('resize',resize); resize(); draw();
-})();
-
-/* ── Category filter ── */
-const catMap = {
-  puzzle: 'sec-puzzle',
-  action: 'sec-action',
-  board:  'sec-board',
-  card:   'sec-card',
-  sports: 'sec-sports',
-  rhythm: 'sec-rhythm'
-};
-const gridMap = {
-  puzzle: 'grid-puzzle',
-  action: 'grid-action',
-  board:  'grid-board',
-  card:   'grid-card',
-  sports: 'grid-sports',
-  rhythm: 'grid-rhythm'
-};
-
 function filterCat(btn, cat) {
   document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-
-  const allCards    = document.querySelectorAll('.game-card');
-  const allHeaders  = document.querySelectorAll('.section-header');
-  const allGrids    = document.querySelectorAll('.game-grid');
-
+  const allCards   = document.querySelectorAll('.game-card');
+  const allHeaders = document.querySelectorAll('.section-header');
+  const allGrids   = document.querySelectorAll('.game-grid');
   if (cat === 'all') {
-    allCards.forEach(c  => c.classList.remove('hidden'));
+    allCards.forEach(c   => c.classList.remove('hidden'));
     allHeaders.forEach(h => h.classList.remove('hidden'));
-    allGrids.forEach(g  => g.classList.remove('hidden'));
+    allGrids.forEach(g   => g.classList.remove('hidden'));
     return;
   }
-
-  /* hide everything, then reveal matching */
-  allCards.forEach(c  => c.classList.add('hidden'));
+  allCards.forEach(c   => c.classList.add('hidden'));
   allHeaders.forEach(h => h.classList.add('hidden'));
-  allGrids.forEach(g  => g.classList.add('hidden'));
-
+  allGrids.forEach(g   => g.classList.add('hidden'));
   document.querySelectorAll(`.game-card[data-cat="${cat}"]`).forEach(card => {
     card.classList.remove('hidden');
     const grid = card.closest('.game-grid');
@@ -594,17 +516,14 @@ function filterCat(btn, cat) {
   });
 }
 
-/* ── Game counts per section ── */
 (function updateCounts(){
-  const cats = ['puzzle','action','board','card','sports','rhythm','rpg'];
-  cats.forEach(cat => {
+  ['puzzle','action','board','card','sports','rhythm','rpg'].forEach(cat => {
     const n = document.querySelectorAll(`.game-card[data-cat="${cat}"]`).length;
     const el = document.getElementById('cnt-' + cat);
     if (el) el.textContent = n + ' ゲーム';
   });
 })();
 
-/* ── Modal close on backdrop ── */
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if(e.target === el) el.classList.remove('visible'); });
 });
