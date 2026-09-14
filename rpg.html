@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ミニRPG ～勇者と仲間たち～</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: radial-gradient(ellipse at center, #120830 0%, #050210 100%);
+  min-height: 100vh;
+  font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+  color: #ddd;
+  overflow-x: hidden;
+}
+
+#starCanvas {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+
+#confettiCanvas {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 999; display: none;
+}
+
+#app {
+  position: relative; z-index: 1;
+  max-width: 480px; margin: 0 auto;
+  padding-bottom: 70px; padding-top: 8px;
+}
+
+.window {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff;
+  border-radius: 16px;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 60px rgba(80,40,200,0.2);
+  margin: 8px; overflow: hidden;
+}
+
+.titlebar {
+  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  color: #3a1a00; font-weight: 900; font-size: 14px;
+  padding: 6px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  letter-spacing: 1px;
+}
+.titlebar a { text-decoration: none; font-size: 16px; }
+.titlebar .tc { flex: 1; text-align: center; }
+.titlebar .side { min-width: 24px; }
+
+.content { padding: 12px; }
+
+.led {
+  background: #0a0018; color: #ff60c0;
+  border: 1px solid #ff40a0; border-radius: 6px;
+  font-family: monospace; font-size: 16px;
+  padding: 3px 8px;
+  box-shadow: 0 0 10px rgba(255,80,160,0.5);
+  letter-spacing: 2px; display: inline-block;
+}
+
+.btn {
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #b898ff; border: 1px solid #5a3aaa;
+  border-radius: 10px; padding: 8px 14px;
+  font-weight: bold; font-size: 14px;
+  cursor: pointer; transition: filter 0.15s;
+  font-family: inherit;
+}
+.btn:hover { filter: brightness(1.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:hover { filter: none; }
+
+.btn-danger {
+  background: linear-gradient(160deg, #801020 0%, #5a0a10 100%);
+  color: #ffaaaa; border-color: #aa2030;
+}
+.btn-success {
+  background: linear-gradient(160deg, #206040 0%, #104020 100%);
+  color: #88ffbb; border-color: #30aa60;
+}
+.btn-gold {
+  background: linear-gradient(160deg, #806020 0%, #5a4010 100%);
+  color: #ffe870; border-color: #aa8020;
+}
+
+.action-bar {
+  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
+  border-top: 1px solid #4030a0;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 8px 12px 10px;
+  display: flex; gap: 8px; justify-content: center;
+  z-index: 100;
+}
+
+.hp-bar-wrap {
+  background: #0a0018; border-radius: 4px;
+  overflow: hidden; border: 1px solid #1a0a30;
+}
+.hp-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.hp-green { background: linear-gradient(90deg, #00bb44, #00ff66); }
+.hp-yellow { background: linear-gradient(90deg, #aaaa00, #ffff00); }
+.hp-red { background: linear-gradient(90deg, #aa0000, #ff2200); }
+
+.mp-bar-wrap {
+  background: #0a0018; border-radius: 4px;
+  overflow: hidden; border: 1px solid #1a0a30;
+}
+.mp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0044bb, #0088ff);
+  border-radius: 4px; transition: width 0.3s;
+}
+
+#battle-log {
+  background: #05010f; border: 1px solid #3a2080;
+  border-radius: 8px; padding: 8px;
+  min-height: 72px; max-height: 100px;
+  font-size: 13px; color: #ccc;
+  line-height: 1.6; overflow-y: auto;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.game-title {
+  font-size: 26px; font-weight: 900; color: #ffe870;
+  text-shadow: 0 0 20px rgba(255,200,50,0.8), 0 0 40px rgba(255,150,0,0.4);
+  margin-bottom: 6px; letter-spacing: 3px;
+}
+.game-subtitle { font-size: 14px; color: #b898ff; margin-bottom: 24px; }
+
+.title-art {
+  font-size: 56px; margin: 16px 0;
+  animation: floatY 3s ease-in-out infinite;
+  display: block;
+}
+@keyframes floatY {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.village-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin: 10px 0;
+}
+.village-card {
+  background: linear-gradient(160deg, #1a0a40 0%, #0d0525 100%);
+  border: 1px solid #5040a0; border-radius: 12px;
+  padding: 14px 10px; text-align: center;
+  cursor: pointer; transition: filter 0.15s, border-color 0.15s;
+  font-size: 13px; color: #b898ff;
+}
+.village-card:hover { filter: brightness(1.3); border-color: #9070ff; }
+.village-card .ce { font-size: 26px; display: block; margin-bottom: 5px; }
+.village-card .cn { font-weight: bold; font-size: 14px; }
+
+.hero-panel {
+  background: #05010f; border: 1px solid #3a2080;
+  border-radius: 10px; padding: 10px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-emoji { font-size: 30px; }
+.hero-info { flex: 1; }
+
+.enemy-zone {
+  min-height: 90px;
+  display: flex; gap: 8px;
+  justify-content: center; align-items: flex-end;
+  padding: 8px 0;
+}
+.enemy-card {
+  text-align: center; flex: 1; max-width: 130px;
+}
+.enemy-emoji { font-size: 38px; display: block; }
+.enemy-name { font-size: 11px; color: #b898ff; margin: 2px 0; }
+
+.ally-zone { margin: 6px 0; }
+.ally-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 5px; background: #05010f;
+  border-radius: 8px; padding: 6px 8px;
+  border: 1px solid #2a1860;
+}
+.ally-emoji { font-size: 18px; min-width: 24px; }
+.ally-info { flex: 1; }
+.ally-name { font-size: 12px; color: #ddd; margin-bottom: 2px; }
+
+.battle-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.skill-list, .item-list { display: flex; flex-direction: column; gap: 6px; }
+
+.monster-entry {
+  background: #05010f; border: 1px solid #2a1060;
+  border-radius: 8px; padding: 10px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.monster-entry.caught { border-color: #5040a0; background: #0a0520; }
+.monster-entry.uncaught { opacity: 0.45; }
+
+.shop-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #05010f; border-radius: 8px;
+  padding: 8px 10px; border: 1px solid #2a1860; margin-bottom: 6px;
+}
+
+.party-card {
+  background: #05010f; border: 1px solid #2a1860;
+  border-radius: 10px; padding: 12px; margin-bottom: 8px;
+}
+
+.area-card {
+  background: linear-gradient(160deg, #1a0a40 0%, #0d0525 100%);
+  border: 1px solid #5040a0; border-radius: 12px;
+  padding: 12px; margin-bottom: 8px;
+  cursor: pointer; transition: filter 0.15s;
+}
+.area-card:hover { filter: brightness(1.3); }
+.area-card.locked { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+.overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.75); z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+}
+.overlay-box {
+  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  border: 2px solid #7060ff; border-radius: 16px;
+  padding: 22px; max-width: 320px; width: 90%;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(112,90,255,0.55);
+}
+
+.hidden { display: none !important; }
+.gold-display { color: #ffe870; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+hr.sep { border: none; border-top: 1px solid #2a1860; margin: 10px 0; }
+.label { color: #8070c0; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+.tg { color: #ffe870; } .tp { color: #ff60c0; } .tb { color: #60b0ff; }
+.tgr { color: #60ff90; } .tr { color: #ff6060; } .tpu { color: #b898ff; }
+
+.ending-title {
+  font-size: 26px; color: #ffe870;
+  text-shadow: 0 0 20px gold; margin: 16px 0;
+}
+
+#battle-action-panel { padding: 8px; }
+</style>
+<style id="home-nav-css">
+#home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+#home-top-btn{padding:5px 16px;font-size:11px;border-radius:14px;background:linear-gradient(160deg,#3a2080 0%,#22105a 100%);color:#b898ff;border:1px solid #5a3aaa;cursor:pointer;font-weight:bold;touch-action:manipulation;box-shadow:0 2px 0 #08041a,0 3px 8px rgba(0,0,0,0.5);letter-spacing:0.5px;}
+#home-top-btn:active{transform:translateY(2px);box-shadow:0 0 0 #08041a,0 1px 4px rgba(0,0,0,0.4);}
+#home-confirm-overlay{display:none;position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,0.78);justify-content:center;align-items:center;padding:16px;}
+#home-confirm-overlay.visible{display:flex;}
+#home-confirm-box{background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);border:2px solid #7060ff;border-radius:14px;padding:20px 18px;max-width:300px;width:100%;box-shadow:0 0 30px rgba(112,90,255,0.5),0 20px 50px rgba(0,0,0,0.9);text-align:center;}
+.hcb-title{color:#d0c0ff;font-weight:900;font-size:14px;margin-bottom:8px;}
+.hcb-msg{color:#8070b0;font-size:11px;line-height:1.6;margin-bottom:16px;}
+.hcb-btns{display:flex;gap:8px;justify-content:center;}
+.hcb-ok{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#3a2080,#22105a);color:#b898ff;border:1px solid #5a3aaa;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 0 #08041a;}
+.hcb-ok:active{transform:translateY(2px);}
+.hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
+.hcb-cancel:active{transform:translateY(2px);}
+body{padding-top:44px!important;}
+</style></head>
+<body>
+<div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
+
+<canvas id="starCanvas"></canvas>
+<canvas id="confettiCanvas"></canvas>
+
+<div id="app">
+
+<!-- TITLE -->
+<div id="title-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <a href="index.html" class="side">🏠</a>
+      <span class="tc">ミニRPG</span>
+      <span class="side"></span>
+    </div>
+    <div class="content" style="text-align:center;padding:24px 16px">
+      <div class="game-title">ミニRPG</div>
+      <div class="game-subtitle">～勇者と仲間たち～</div>
+      <span class="title-art">🗡️✨🐉</span>
+      <div style="font-size:12px;color:#5040a0;margin-bottom:20px">Pokémon × Dragon Quest × Final Fantasy</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="btn btn-gold" style="width:100%;padding:14px;font-size:16px" onclick="startNewGame()">⚔️ はじめから</button>
+        <button class="btn" style="width:100%;padding:14px;font-size:16px" id="continue-btn" onclick="continueGame()">📖 つづきから</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VILLAGE -->
+<div id="village-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <a href="index.html" class="side" onclick="confirmHome(event)">🏠</a>
+      <span class="tc">むらのひろば</span>
+      <span class="side"></span>
+    </div>
+    <div class="content">
+      <div id="village-hero-panel"></div>
+      <div class="village-grid">
+        <div class="village-card" onclick="showScreen('area-select-screen')">
+          <span class="ce">🗡️</span><div class="cn">ぼうけんへ</div>
+          <div style="font-size:11px;color:#8070c0;margin-top:3px">モンスターと戦う</div>
+        </div>
+        <div class="village-card" onclick="showScreen('shop-screen')">
+          <span class="ce">🛒</span><div class="cn">ショップ</div>
+          <div style="font-size:11px;color:#8070c0;margin-top:3px">アイテムを買う</div>
+        </div>
+        <div class="village-card" onclick="goToInn()">
+          <span class="ce">🏨</span><div class="cn">やどや</div>
+          <div style="font-size:11px;color:#8070c0;margin-top:3px">HP/MP回復(50G)</div>
+        </div>
+        <div class="village-card" onclick="showScreen('party-screen')">
+          <span class="ce">👥</span><div class="cn">パーティ</div>
+          <div style="font-size:11px;color:#8070c0;margin-top:3px">仲間を確認する</div>
+        </div>
+      </div>
+      <div class="village-card" style="margin-top:0" onclick="showScreen('encyclopedia-screen')">
+        <span class="ce">📖</span><div class="cn">図鑑</div>
+        <div style="font-size:11px;color:#8070c0;margin-top:3px">捕まえたモンスターを見る</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AREA SELECT -->
+<div id="area-select-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <span class="side" onclick="showScreen('village-screen')" style="cursor:pointer">◀</span>
+      <span class="tc">エリア選択</span>
+      <span class="side"></span>
+    </div>
+    <div class="content" id="area-list"></div>
+  </div>
+</div>
+
+<!-- BATTLE -->
+<div id="battle-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <span class="side"></span>
+      <span class="tc" id="battle-area-title">バトル</span>
+      <span class="side"></span>
+    </div>
+    <div class="content">
+      <div class="enemy-zone" id="enemy-zone"></div>
+      <div id="battle-log"></div>
+      <div class="ally-zone" id="ally-zone"></div>
+    </div>
+  </div>
+  <div id="battle-action-panel"></div>
+</div>
+
+<!-- SHOP -->
+<div id="shop-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <span class="side" onclick="showScreen('village-screen')" style="cursor:pointer">◀</span>
+      <span class="tc">ショップ</span>
+      <span class="side"></span>
+    </div>
+    <div class="content" id="shop-content"></div>
+  </div>
+</div>
+
+<!-- PARTY -->
+<div id="party-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <span class="side" onclick="showScreen('village-screen')" style="cursor:pointer">◀</span>
+      <span class="tc">パーティ</span>
+      <span class="side"></span>
+    </div>
+    <div class="content" id="party-content"></div>
+  </div>
+</div>
+
+<!-- ENCYCLOPEDIA -->
+<div id="encyclopedia-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <span class="side" onclick="showScreen('village-screen')" style="cursor:pointer">◀</span>
+      <span class="tc">モンスター図鑑</span>
+      <span class="side"></span>
+    </div>
+    <div class="content" id="encyclopedia-content"></div>
+  </div>
+</div>
+
+<!-- ENDING -->
+<div id="ending-screen" class="screen">
+  <div class="window">
+    <div class="titlebar">
+      <span class="side"></span>
+      <span class="tc">ゲームクリア！</span>
+      <span class="side"></span>
+    </div>
+    <div class="content" id="ending-content" style="text-align:center"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<div class="action-bar" id="action-bar">
+  <button class="btn" onclick="showScreen('village-screen')">🏠 村へ</button>
+  <button class="btn btn-danger" onclick="confirmReset()">🔄 リセット</button>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="overlay-box" id="overlay-box"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const MONSTER_TYPES = [
+  { id:0, emoji:'🟢', name:'スライム',       type:'水', baseHp:50,  baseAtk:8,  baseDef:5,  baseSpd:8,
+    skills:[{name:'みずしぶき',effect:'dmg',power:30},{name:'かいふく',effect:'heal',power:30}], catchRate:1.0 },
+  { id:1, emoji:'🦇', name:'コウモリ',       type:'風', baseHp:40,  baseAtk:12, baseDef:4,  baseSpd:16,
+    skills:[{name:'こうそく',effect:'dmg',power:24}], catchRate:1.0 },
+  { id:2, emoji:'🟤', name:'ゴブリン',       type:'地', baseHp:70,  baseAtk:18, baseDef:8,  baseSpd:10,
+    skills:[{name:'パワーアタック',effect:'dmg',power:0,atkMult:1.5}], catchRate:1.0 },
+  { id:3, emoji:'🌿', name:'モリビト',       type:'草', baseHp:60,  baseAtk:10, baseDef:12, baseSpd:9,
+    skills:[{name:'ヒーリング',effect:'heal',power:40},{name:'どくけむり',effect:'dmg',power:20,status:'poison'}], catchRate:0.8 },
+  { id:4, emoji:'🪨', name:'ゴーレム',       type:'岩', baseHp:120, baseAtk:22, baseDef:25, baseSpd:5,
+    skills:[{name:'いわなげ',effect:'dmg',power:60}], catchRate:0.8 },
+  { id:5, emoji:'🔥', name:'ファイアバット',  type:'火', baseHp:80,  baseAtk:20, baseDef:10, baseSpd:14,
+    skills:[{name:'かえん',effect:'dmg',power:70}], catchRate:0.8 },
+  { id:6, emoji:'🌊', name:'ウォータードラ', type:'水', baseHp:90,  baseAtk:18, baseDef:15, baseSpd:11,
+    skills:[{name:'アイスブレス',effect:'dmg',power:80,status:'slow'}], catchRate:0.5 },
+  { id:7, emoji:'⚡', name:'サンダーバード', type:'風', baseHp:100, baseAtk:25, baseDef:12, baseSpd:18,
+    skills:[{name:'いかずち',effect:'dmg',power:90,status:'paralysis'}], catchRate:0.5 },
+  { id:8, emoji:'🐉', name:'ミニドラゴン',   type:'火', baseHp:130, baseAtk:30, baseDef:20, baseSpd:13,
+    skills:[{name:'ドラゴンブレス',effect:'dmg',power:100}], catchRate:0.5 },
+  { id:9, emoji:'🌙', name:'ムーンフェアリ', type:'光', baseHp:70,  baseAtk:15, baseDef:15, baseSpd:15,
+    skills:[{name:'ムーンヒール',effect:'heal',power:60},{name:'ほし光',effect:'dmg',power:50}], catchRate:0.5 },
+];
+
+const AREAS = [
+  { id:0, name:'みどりのもり', emoji:'🌳', sub:'Green Forest', rec:'1-5', enemies:[0,1,2,3],
+    boss:{ emoji:'👹', name:'大ゴブリン', hp:200, atk:25, def:15, spd:12,
+           skills:[{name:'パワースラッシュ',effect:'dmg',power:0,atkMult:1.5},{name:'こうげき',effect:'dmg',power:0}],
+           exp:150, gold:200, unlocks:1 } },
+  { id:1, name:'いわのどうくつ', emoji:'🪨', sub:'Rock Cave', rec:'6-10', enemies:[4,1,2],
+    boss:{ emoji:'🗿', name:'ゴーレムキング', hp:350, atk:38, def:35, spd:6,
+           skills:[{name:'メガクラッシュ',effect:'dmg',power:80},{name:'いわなだれ',effect:'dmgAll',power:40}],
+           exp:300, gold:400, unlocks:2 } },
+  { id:2, name:'ほのおのやま', emoji:'🌋', sub:'Fire Mountain', rec:'11-15', enemies:[5,6,8],
+    boss:{ emoji:'🐲', name:'ドラゴンロード', hp:500, atk:55, def:30, spd:16,
+           skills:[{name:'インフェルノ',effect:'dmg',power:120},{name:'テイルスイング',effect:'dmgAll',power:60}],
+           exp:500, gold:700, unlocks:3 } },
+  { id:3, name:'まおうのとりで', emoji:'🏰', sub:'Demon Fortress', rec:'16-20', enemies:[7,9,8],
+    boss:{ emoji:'🦹', name:'ダークナイト', hp:600, atk:65, def:40, spd:20,
+           skills:[{name:'ダークブレード',effect:'dmg',power:0,atkMult:1.6},{name:'こうげき',effect:'dmg',power:0}],
+           exp:600, gold:800, unlocks:4 } },
+];
+
+const FINAL_BOSS = {
+  emoji:'😈', name:'魔王ゾルダ', hp:1000, atk:80, def:50, spd:20,
+  skills:[
+    {name:'デスレイ',effect:'dmg',power:130},
+    {name:'メガフレア',effect:'dmgAll',power:80},
+    {name:'ダークカース',effect:'dmg',power:100,status:'poison'},
+    {name:'闇の波動',effect:'dmgAll',power:60,status:'paralysis'},
+  ],
+  exp:1000, gold:2000
+};
+
+const HERO_SKILLS = [
+  { name:'こうげき',        lv:1,  mp:0,  effect:'physical' },
+  { name:'ヒール',          lv:3,  mp:8,  effect:'heal',         power:60,  target:'ally' },
+  { name:'ファイア',        lv:5,  mp:12, effect:'magic',        power:80,  target:'enemy' },
+  { name:'ぜんたいこうげき', lv:8,  mp:18, effect:'magicAll',    power:50,  target:'allEnemy' },
+  { name:'グレートヒール',  lv:12, mp:28, effect:'healFull',               target:'ally' },
+  { name:'ライトニング',    lv:16, mp:35, effect:'magicIgnoreDef',power:150, target:'enemy' },
+];
+
+const ITEMS = [
+  { id:'potion',      name:'ポーション',     emoji:'🧪', effect:'heal80',  price:50 },
+  { id:'hiPotion',    name:'ハイポーション',  emoji:'💊', effect:'heal250', price:200 },
+  { id:'elixir',      name:'エリクサー',     emoji:'✨', effect:'healAll', price:500 },
+  { id:'monsterBall', name:'モンスターボール', emoji:'🔮', effect:'catch',   price:100 },
+];
+
+const EQUIPMENT = [
+  { id:'broadSword',   name:'ブロードソード',  type:'weapon', atk:15, def:0,  price:300,  emoji:'🗡️' },
+  { id:'ironSword',    name:'アイアンソード',   type:'weapon', atk:30, def:0,  price:800,  emoji:'⚔️' },
+  { id:'dragonSword',  name:'ドラゴンソード',   type:'weapon', atk:55, def:0,  price:2200, emoji:'🔱' },
+  { id:'leatherArmor', name:'レザーアーマー',   type:'armor',  atk:0,  def:12, price:250,  emoji:'🥋' },
+  { id:'chainMail',    name:'チェーンメイル',   type:'armor',  atk:0,  def:28, price:700,  emoji:'🛡️' },
+  { id:'dragonScale',  name:'ドラゴンスケイル', type:'armor',  atk:0,  def:50, price:2000, emoji:'🐲' },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let G = {};
+let BT = {}; // battle state
+let battleOver = false;
+let battleBusy = false;
+let _pendingSkill = null;
+let _pendingItem = null;
+
+function defaultState() {
+  return {
+    hero: {
+      name:'ユウキ', emoji:'🧙',
+      hp:100, maxHp:100, mp:30, maxMp:30,
+      baseAtk:15, baseDef:10, spd:12,
+      lv:1, exp:0,
+      weapon:null, armor:null, status:[],
+    },
+    party: [],
+    caughtMonsters: [],
+    inventory: { potion:2, hiPotion:0, elixir:0, monsterBall:3 },
+    gold: 200,
+    unlockedAreas: 1,
+    defeatedFinalBoss: false,
+    totalBattles: 0,
+  };
+}
+
+function save() { localStorage.setItem('rpg_save', JSON.stringify(G)); }
+function load() {
+  const s = localStorage.getItem('rpg_save');
+  if (s) { try { G = JSON.parse(s); return true; } catch(e){} }
+  return false;
+}
+
+function heroAtk() {
+  let a = G.hero.baseAtk;
+  if (G.hero.weapon) { const e = EQUIPMENT.find(x=>x.id===G.hero.weapon); if(e) a+=e.atk; }
+  return a;
+}
+function heroDef() {
+  let d = G.hero.baseDef;
+  if (G.hero.armor) { const e = EQUIPMENT.find(x=>x.id===G.hero.armor); if(e) d+=e.def; }
+  return d;
+}
+
+// ============================================================
+// STARS
+// ============================================================
+const SC = document.getElementById('starCanvas');
+const SX = SC.getContext('2d');
+let stars = [];
+function initStars() {
+  SC.width = window.innerWidth; SC.height = window.innerHeight;
+  stars = Array.from({length:150}, () => ({
+    x: Math.random()*SC.width, y: Math.random()*SC.height,
+    r: Math.random()*1.5+0.3, a: Math.random(),
+    da: (Math.random()*0.01+0.002)*(Math.random()<0.5?1:-1)
+  }));
+}
+function drawStars() {
+  SX.clearRect(0,0,SC.width,SC.height);
+  for (const s of stars) {
+    s.a += s.da;
+    if (s.a<=0||s.a>=1) s.da*=-1;
+    SX.beginPath(); SX.arc(s.x,s.y,s.r,0,Math.PI*2);
+    SX.fillStyle = `rgba(255,255,255,${s.a})`; SX.fill();
+  }
+  requestAnimationFrame(drawStars);
+}
+
+// ============================================================
+// CONFETTI
+// ============================================================
+const CC = document.getElementById('confettiCanvas');
+const CX = CC.getContext('2d');
+let confetti = [], confettiOn = false;
+function startConfetti() {
+  CC.width = window.innerWidth; CC.height = window.innerHeight;
+  CC.style.display = 'block'; confettiOn = true;
+  confetti = Array.from({length:120}, () => ({
+    x: Math.random()*CC.width, y: Math.random()*CC.height - CC.height,
+    w: Math.random()*10+5, h: Math.random()*6+3,
+    color: ['#ff60c0','#ffe870','#b898ff','#60ff90','#60b0ff'][Math.floor(Math.random()*5)],
+    vy: Math.random()*3+1, vx: (Math.random()-0.5)*2,
+    rot: Math.random()*Math.PI*2, vrot: (Math.random()-0.5)*0.1,
+  }));
+  animateConfetti();
+  setTimeout(stopConfetti, 5000);
+}
+function animateConfetti() {
+  if (!confettiOn) return;
+  CX.clearRect(0,0,CC.width,CC.height);
+  for (const p of confetti) {
+    p.x+=p.vx; p.y+=p.vy; p.rot+=p.vrot;
+    if (p.y > CC.height) { p.y=-10; p.x=Math.random()*CC.width; }
+    CX.save(); CX.translate(p.x,p.y); CX.rotate(p.rot);
+    CX.fillStyle=p.color; CX.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+    CX.restore();
+  }
+  requestAnimationFrame(animateConfetti);
+}
+function stopConfetti() { confettiOn=false; CC.style.display='none'; }
+
+// ============================================================
+// SCREENS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const ab = document.getElementById('action-bar');
+  ab.style.display = (id==='battle-screen') ? 'none' : 'flex';
+  if (id==='village-screen') renderVillage();
+  if (id==='area-select-screen') renderAreaSelect();
+  if (id==='shop-screen') renderShop();
+  if (id==='party-screen') renderParty();
+  if (id==='encyclopedia-screen') renderEncyclopedia();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function ri(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
+function hpClass(p) { return p>0.5?'hp-green':p>0.25?'hp-yellow':'hp-red'; }
+function hpBar(hp,max,h='9px') {
+  const p=Math.max(0,hp/max);
+  return `<div class="hp-bar-wrap" style="height:${h}"><div class="hp-bar ${hpClass(p)}" style="width:${Math.round(p*100)}%"></div></div>`;
+}
+function mpBar(mp,max) {
+  const p=Math.max(0,mp/max);
+  return `<div class="mp-bar-wrap" style="height:6px"><div class="mp-bar" style="width:${Math.round(p*100)}%"></div></div>`;
+}
+const STATUS_ICON = { poison:'☠️', paralysis:'⚡', slow:'🐌' };
+function stIcons(arr) { return (arr||[]).map(s=>STATUS_ICON[s]||'').join(''); }
+
+function showOverlay(html) {
+  document.getElementById('overlay-box').innerHTML = html;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+function hideOverlay() { document.getElementById('overlay').classList.add('hidden'); }
+
+function confirmHome(e) {
+  e.preventDefault();
+  showOverlay(`<div style="font-size:16px;margin-bottom:12px">🏠 ホームへ戻る</div>
+    <p style="margin-bottom:16px">ホームへ戻りますか？（データは自動保存済みです）</p>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn" onclick="location.href='index.html'">はい</button>
+      <button class="btn btn-danger" onclick="hideOverlay()">キャンセル</button>
+    </div>`);
+}
+function confirmReset() {
+  showOverlay(`<div style="font-size:16px;margin-bottom:12px">⚠️ データリセット</div>
+    <p style="margin-bottom:16px">セーブデータを全て削除しますか？<br>この操作は元に戻せません。</p>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn btn-danger" onclick="doReset()">リセット</button>
+      <button class="btn" onclick="hideOverlay()">キャンセル</button>
+    </div>`);
+}
+function doReset() {
+  localStorage.removeItem('rpg_save');
+  hideOverlay();
+  renderTitle();
+}
+
+// ============================================================
+// TITLE
+// ============================================================
+function renderTitle() {
+  const hasSave = !!localStorage.getItem('rpg_save');
+  document.getElementById('continue-btn').disabled = !hasSave;
+  showScreen('title-screen');
+}
+function startNewGame() {
+  if (localStorage.getItem('rpg_save')) {
+    showOverlay(`<div style="font-size:18px;margin-bottom:12px">⚠️ 注意</div>
+      <p style="margin-bottom:16px">セーブデータが消えます。本当に始めますか？</p>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-danger" onclick="doNewGame()">はい</button>
+        <button class="btn" onclick="hideOverlay()">キャンセル</button>
+      </div>`);
+  } else doNewGame();
+}
+function doNewGame() { hideOverlay(); G = defaultState(); save(); showScreen('village-screen'); }
+function continueGame() { if (load()) showScreen('village-screen'); }
+
+// ============================================================
+// VILLAGE
+// ============================================================
+function renderVillage() {
+  const h = G.hero;
+  const en = h.lv * 50;
+  document.getElementById('village-hero-panel').innerHTML = `
+    <div class="hero-panel">
+      <div class="hero-emoji">${h.emoji}</div>
+      <div class="hero-info">
+        <div style="font-weight:bold;color:#ffe870">${h.name} <span class="tpu" style="font-size:12px">LV${h.lv}</span></div>
+        <div style="font-size:12px;margin:2px 0">HP <span class="led" style="font-size:11px">${h.hp}/${h.maxHp}</span></div>
+        ${hpBar(h.hp,h.maxHp,'7px')}
+        <div style="font-size:12px;margin:2px 0">MP <span class="led" style="font-size:11px;color:#60b0ff;border-color:#4090ff">${h.mp}/${h.maxMp}</span></div>
+        ${mpBar(h.mp,h.maxMp)}
+      </div>
+      <div style="text-align:right;font-size:12px">
+        <div class="tg" style="font-weight:bold">💰${G.gold}G</div>
+        <div style="color:#8070c0;margin-top:4px">EXP ${h.exp}/${en}</div>
+        <div style="color:#5040a0">仲間 ${G.party.length}/2</div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// INN
+// ============================================================
+function goToInn() {
+  if (G.gold < 50) {
+    showOverlay(`<div style="font-size:16px;margin-bottom:12px">💰 お金が足りません</div>
+      <p style="margin-bottom:16px">やどやは50Gが必要です。</p>
+      <button class="btn" onclick="hideOverlay()">閉じる</button>`);
+    return;
+  }
+  showOverlay(`<div style="font-size:16px;margin-bottom:12px">🏨 やどや</div>
+    <p style="margin-bottom:8px">50Gでパーティ全員のHP・MPを全回復します。</p>
+    <p class="tg" style="margin-bottom:16px;font-size:14px">所持金: ${G.gold}G</p>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn btn-success" onclick="doInn()">泊まる (50G)</button>
+      <button class="btn" onclick="hideOverlay()">やめる</button>
+    </div>`);
+}
+function doInn() {
+  G.gold -= 50;
+  G.hero.hp = G.hero.maxHp; G.hero.mp = G.hero.maxMp; G.hero.status = [];
+  for (const m of G.party) { m.hp = m.maxHp; m.status = []; }
+  save(); hideOverlay(); renderVillage();
+  showOverlay(`<div style="font-size:30px;margin-bottom:10px">😴✨</div>
+    <p style="margin-bottom:16px">ゆっくり休んで体力が全回復した！</p>
+    <button class="btn btn-success" onclick="hideOverlay()">OK</button>`);
+}
+
+// ============================================================
+// AREA SELECT
+// ============================================================
+function renderAreaSelect() {
+  let h = '<div style="color:#8070c0;font-size:12px;margin-bottom:8px">エリアを選択してください</div>';
+  for (const a of AREAS) {
+    const lk = a.id >= G.unlockedAreas;
+    h += `<div class="area-card ${lk?'locked':''}" ${lk?'':('onclick="enterArea('+a.id+')"')}>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">${a.emoji}</span>
+        <div>
+          <div style="font-weight:bold;color:#ffe870">${a.name}</div>
+          <div style="font-size:12px;color:#8070c0">${a.sub}</div>
+          <div style="font-size:12px;color:#b898ff">推奨LV: ${a.rec} ${lk?'🔒':'✅'}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  const fbLk = G.unlockedAreas < 4;
+  h += `<div class="area-card ${fbLk?'locked':''}" ${fbLk?'':'onclick="enterFinalBoss()"'} style="border-color:${fbLk?'#5040a0':'#ff4060'}">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:26px">😈</span>
+      <div>
+        <div style="font-weight:bold;color:#ff6060">魔王ゾルダ 【最終決戦】</div>
+        <div style="font-size:12px;color:#8070c0">Demon King Zolda</div>
+        <div style="font-size:12px;color:#ff60c0">推奨LV: 20 ${fbLk?'🔒':'👑'}</div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('area-list').innerHTML = h;
+}
+
+function enterArea(areaId) { startBattle(AREAS[areaId], false, false); }
+function enterFinalBoss() { startBattle(null, false, true); }
+
+// ============================================================
+// BATTLE: SETUP
+// ============================================================
+function mkEnemy(typeId, scaleLv) {
+  const t = MONSTER_TYPES[typeId];
+  const sc = 1 + (scaleLv-1)*0.12;
+  return {
+    typeId, emoji:t.emoji, name:t.name, type:t.type,
+    hp: Math.round(t.baseHp*sc), maxHp: Math.round(t.baseHp*sc),
+    atk: Math.round(t.baseAtk*sc), def: Math.round(t.baseDef*sc), spd:t.baseSpd,
+    skills: t.skills, exp: Math.round(20*sc), gold: Math.round(15*sc),
+    status:[], isBoss:false, catchable:true,
+  };
+}
+function mkBoss(data) {
+  return { ...data, maxHp:data.hp, status:[], isBoss:true, catchable:false, typeId:-1 };
+}
+function mkPartyMon(typeId, lv) {
+  const t = MONSTER_TYPES[typeId];
+  const sc = 1 + (lv-1)*0.12;
+  return {
+    typeId, emoji:t.emoji, name:t.name, type:t.type,
+    hp:Math.round(t.baseHp*sc), maxHp:Math.round(t.baseHp*sc),
+    atk:Math.round(t.baseAtk*sc), def:Math.round(t.baseDef*sc), spd:t.baseSpd,
+    skills:t.skills, lv:lv, exp:0, status:[],
+  };
+}
+
+function startBattle(area, isBoss, isFB) {
+  battleOver = false; battleBusy = false;
+  _pendingSkill = null; _pendingItem = null;
+  document.getElementById('battle-log').innerHTML = '';
+
+  let enemies = [];
+  if (isFB) {
+    enemies = [{ ...FINAL_BOSS, maxHp:FINAL_BOSS.hp, hp:FINAL_BOSS.hp, status:[], isBoss:true, catchable:false, phase:1 }];
+    document.getElementById('battle-area-title').textContent = '最終決戦 ～魔王ゾルダ～';
+  } else if (isBoss) {
+    enemies = [mkBoss(area.boss)];
+    document.getElementById('battle-area-title').textContent = area.name + ' ボス戦';
+  } else {
+    const num = Math.floor(Math.random()*2)+1;
+    const scaleLv = Math.max(1, G.hero.lv - 1 + area.id * 3);
+    for (let i=0;i<num;i++) {
+      enemies.push(mkEnemy(area.enemies[Math.floor(Math.random()*area.enemies.length)], scaleLv));
+    }
+    document.getElementById('battle-area-title').textContent = area.name;
+  }
+
+  const allies = [
+    { ...G.hero, isHero:true, atk:heroAtk(), def:heroDef(), status:[...(G.hero.status||[])] },
+    ...G.party.map(m => ({ ...m, status:[...(m.status||[])] }))
+  ];
+
+  BT = { enemies, allies, turnOrder:[], currentTurn:0,
+         area, isBoss, isFB, isNormal:!isBoss&&!isFB, roundCount:0 };
+  buildTurnOrder();
+  showScreen('battle-screen');
+  renderBattle();
+  logMsg('バトル開始！');
+  setTimeout(advanceTurn, 700);
+}
+
+function buildTurnOrder() {
+  const units = [];
+  BT.allies.forEach((a,i)=>{ if(a.hp>0) units.push({t:'a',i,spd:a.status.includes('slow')?Math.floor(a.spd/2):a.spd}); });
+  BT.enemies.forEach((e,i)=>{ if(e.hp>0) units.push({t:'e',i,spd:e.status.includes('slow')?Math.floor(e.spd/2):e.spd}); });
+  units.sort((a,b)=>b.spd-a.spd);
+  BT.turnOrder = units; BT.currentTurn = 0;
+}
+
+// ============================================================
+// BATTLE: TURN ENGINE
+// ============================================================
+function advanceTurn() {
+  if (battleOver || battleBusy) return;
+
+  const ae = BT.enemies.filter(e=>e.hp>0);
+  const aa = BT.allies.filter(a=>a.hp>0);
+  if (ae.length===0) { battleBusy=true; setTimeout(endVictory,600); return; }
+  if (aa.length===0) { battleBusy=true; setTimeout(endDefeat,600); return; }
+
+  if (BT.currentTurn >= BT.turnOrder.length) {
+    // New round: apply status, rebuild order
+    applyStatusTick();
+    buildTurnOrder();
+    BT.roundCount = (BT.roundCount||0)+1;
+    // Re-check win/loss after status
+    const ae2 = BT.enemies.filter(e=>e.hp>0);
+    const aa2 = BT.allies.filter(a=>a.hp>0);
+    if (ae2.length===0) { battleBusy=true; setTimeout(endVictory,600); return; }
+    if (aa2.length===0) { battleBusy=true; setTimeout(endDefeat,600); return; }
+  }
+
+  // Find next alive unit
+  let found = false;
+  while (BT.currentTurn < BT.turnOrder.length && !found) {
+    const u = BT.turnOrder[BT.currentTurn];
+    const obj = u.t==='a' ? BT.allies[u.i] : BT.enemies[u.i];
+    BT.currentTurn++;
+    if (obj.hp <= 0) continue;
+    found = true;
+
+    if (u.t==='a' && u.i===0) {
+      // Hero: show actions
+      showPlayerActions('main');
+    } else if (u.t==='a') {
+      // Monster ally auto
+      battleBusy = true;
+      setTimeout(()=>{ allyAuto(u.i); battleBusy=false; }, 600);
+    } else {
+      // Enemy
+      battleBusy = true;
+      setTimeout(()=>{ enemyAct(u.i); battleBusy=false; }, 700);
+    }
+  }
+  if (!found) setTimeout(advanceTurn, 100);
+}
+
+function applyStatusTick() {
+  const all = [...BT.allies, ...BT.enemies];
+  const msgs = [];
+  for (const u of all) {
+    if (!u.status) u.status=[];
+    if (u.hp>0 && u.status.includes('poison')) {
+      u.hp = Math.max(0, u.hp-10);
+      if (u.isHero) G.hero.hp = u.hp;
+      msgs.push(`${u.name}は毒のダメージ！(-10)`);
+    }
+  }
+  if (msgs.length) {
+    renderBattle();
+    msgs.forEach((m,i) => setTimeout(()=>logMsg(m), i*300));
+  }
+}
+
+// ============================================================
+// BATTLE: RENDERING
+// ============================================================
+function renderBattle() {
+  // Enemies
+  let eh = '';
+  for (let i=0;i<BT.enemies.length;i++) {
+    const e = BT.enemies[i];
+    const dead = e.hp<=0;
+    eh += `<div class="enemy-card" style="opacity:${dead?0.25:1}">
+      <span class="enemy-emoji">${e.emoji}</span>
+      <div class="enemy-name">${e.name}${stIcons(e.status)}</div>
+      <div class="enemy-name">${e.hp}/${e.maxHp}</div>
+      ${hpBar(e.hp,e.maxHp,'8px')}
+    </div>`;
+  }
+  document.getElementById('enemy-zone').innerHTML = eh;
+
+  // Allies
+  let ah = '';
+  for (let i=0;i<BT.allies.length;i++) {
+    const a = BT.allies[i];
+    const dead = a.hp<=0;
+    ah += `<div class="ally-row" style="opacity:${dead?0.25:1}">
+      <div class="ally-emoji">${a.emoji}</div>
+      <div class="ally-info">
+        <div class="ally-name">${a.name}${i===0?` LV${a.lv}`:''} ${stIcons(a.status)}</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#ccc;margin-bottom:2px">
+          <span>HP</span><span class="led" style="font-size:11px;padding:1px 5px">${a.hp}/${a.maxHp}</span>
+          ${i===0?`<span class="tb">MP</span><span class="led" style="font-size:11px;padding:1px 5px;color:#60b0ff;border-color:#4090ff">${a.mp}/${a.maxMp}</span>`:''}
+        </div>
+        ${hpBar(a.hp,a.maxHp,'6px')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('ally-zone').innerHTML = ah;
+}
+
+// ============================================================
+// BATTLE: PLAYER ACTIONS
+// ============================================================
+function showPlayerActions(mode, ctx) {
+  const panel = document.getElementById('battle-action-panel');
+  if (mode==='main') {
+    const ae = BT.enemies.filter(e=>e.hp>0);
+    const canCatch = ae.length===1 && !ae[0].isBoss && G.inventory.monsterBall>0 &&
+                     G.party.length < 2;
+    panel.innerHTML = `<div class="battle-actions" style="padding:0 8px 8px">
+      <button class="btn" onclick="heroAttack()">⚔️ こうげき</button>
+      <button class="btn" onclick="showPlayerActions('skill')">✨ スキル</button>
+      <button class="btn" onclick="showPlayerActions('item')">🧪 アイテム</button>
+      <button class="btn" ${canCatch?'':'disabled'} onclick="attemptCapture()">🔮 つかまえる<br><span style="font-size:10px">ボール:${G.inventory.monsterBall}</span></button>
+      <button class="btn btn-danger" style="grid-column:1/-1" onclick="attemptEscape()">🏃 にげる</button>
+    </div>`;
+  } else if (mode==='skill') {
+    let h = '<div class="skill-list" style="padding:0 8px 4px">';
+    for (const sk of HERO_SKILLS) {
+      if (sk.lv > G.hero.lv) continue;
+      const noMp = BT.allies[0].mp < sk.mp;
+      h += `<button class="btn" ${noMp?'disabled':''} onclick="heroSkill('${sk.name}')">
+        ${sk.name} <span class="tb" style="font-size:11px">MP:${sk.mp}</span>
+      </button>`;
+    }
+    h += `</div><div style="padding:0 8px 8px">
+      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
+    panel.innerHTML = h;
+  } else if (mode==='item') {
+    const itemDefs = [{id:'potion',n:'ポーション'},{id:'hiPotion',n:'ハイポーション'},{id:'elixir',n:'エリクサー'}];
+    let h = '<div class="item-list" style="padding:0 8px 4px">';
+    let hasAny = false;
+    for (const it of itemDefs) {
+      const cnt = G.inventory[it.id]||0;
+      if (!cnt) continue;
+      hasAny = true;
+      h += `<button class="btn" onclick="useItem('${it.id}')">${it.n} <span style="font-size:11px;color:#8070c0">(${cnt}個)</span></button>`;
+    }
+    if (!hasAny) h += '<p style="color:#8070c0;font-size:13px;padding:4px">アイテムがありません</p>';
+    h += `</div><div style="padding:0 8px 8px">
+      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
+    panel.innerHTML = h;
+  } else if (mode==='selectAlly') {
+    let h = '<div class="skill-list" style="padding:0 8px 4px">';
+    for (let i=0;i<BT.allies.length;i++) {
+      const a = BT.allies[i];
+      if (a.hp<=0) continue;
+      h += `<button class="btn" onclick="${ctx.cb}(${i})">${a.emoji}${a.name} HP ${a.hp}/${a.maxHp}</button>`;
+    }
+    h += `</div><div style="padding:0 8px 8px">
+      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
+    panel.innerHTML = h;
+  } else if (mode==='selectEnemy') {
+    let h = '<div class="skill-list" style="padding:0 8px 4px">';
+    for (let i=0;i<BT.enemies.length;i++) {
+      const e = BT.enemies[i];
+      if (e.hp<=0) continue;
+      h += `<button class="btn" onclick="${ctx.cb}(${i})">${e.emoji}${e.name} HP ${e.hp}/${e.maxHp}</button>`;
+    }
+    h += `</div><div style="padding:0 8px 8px">
+      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
+    panel.innerHTML = h;
+  }
+}
+
+function clearActions() { document.getElementById('battle-action-panel').innerHTML=''; }
+
+// ── Hero: basic attack ──
+function heroAttack() {
+  const ae = BT.enemies.filter(e=>e.hp>0);
+  if (ae.length===1) doHeroAttack(BT.enemies.indexOf(ae[0]));
+  else showPlayerActions('selectEnemy',{cb:'doHeroAttack'});
+}
+function doHeroAttack(ei) {
+  clearActions();
+  const h=BT.allies[0], e=BT.enemies[ei];
+  const dmg = Math.max(1, h.atk - Math.floor(e.def/2) + ri(-3,3));
+  e.hp = Math.max(0,e.hp-dmg);
+  logMsg(`${h.name}の攻撃！ ${e.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+}
+
+// ── Hero: skills ──
+function heroSkill(name) {
+  const sk = HERO_SKILLS.find(s=>s.name===name);
+  if (!sk) return;
+  _pendingSkill = name;
+  if (sk.effect==='physical') { heroAttack(); return; }
+  if (sk.target==='ally' || sk.effect==='heal' || sk.effect==='healFull')
+    showPlayerActions('selectAlly',{cb:'execHealSkill'});
+  else if (sk.effect==='magicAll')
+    execMagicAll();
+  else {
+    const ae = BT.enemies.filter(e=>e.hp>0);
+    if (ae.length===1) execMagicSingle(BT.enemies.indexOf(ae[0]));
+    else showPlayerActions('selectEnemy',{cb:'execMagicSingle'});
+  }
+}
+
+function execHealSkill(ai) {
+  clearActions();
+  const sk = HERO_SKILLS.find(s=>s.name===_pendingSkill);
+  const hero=BT.allies[0]; const tgt=BT.allies[ai];
+  hero.mp -= sk.mp; G.hero.mp = hero.mp;
+  let msg;
+  if (sk.effect==='healFull') {
+    tgt.hp = tgt.maxHp;
+    if (tgt.isHero) G.hero.hp = tgt.hp;
+    msg = `${hero.name}の${sk.name}！ ${tgt.name}のHPが全回復！`;
+  } else {
+    const heal = sk.power||60;
+    tgt.hp = Math.min(tgt.maxHp, tgt.hp+heal);
+    if (tgt.isHero) G.hero.hp = tgt.hp;
+    msg = `${hero.name}の${sk.name}！ ${tgt.name}のHPが${heal}回復！`;
+  }
+  logMsg(msg, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+}
+
+function execMagicSingle(ei) {
+  clearActions();
+  const sk = HERO_SKILLS.find(s=>s.name===_pendingSkill);
+  const hero=BT.allies[0]; const e=BT.enemies[ei];
+  hero.mp -= sk.mp; G.hero.mp = hero.mp;
+  let dmg = (sk.power||0) + ri(-5,5);
+  if (sk.effect!=='magicIgnoreDef') dmg = Math.max(1, dmg - Math.floor(e.def/4));
+  dmg = Math.max(1,dmg);
+  e.hp = Math.max(0, e.hp-dmg);
+  logMsg(`${hero.name}の${sk.name}！ ${e.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+}
+
+function execMagicAll() {
+  clearActions();
+  const sk = HERO_SKILLS.find(s=>s.name===_pendingSkill);
+  const hero=BT.allies[0];
+  hero.mp -= sk.mp; G.hero.mp = hero.mp;
+  const msgs=[`${hero.name}の${sk.name}！`];
+  for (const e of BT.enemies) {
+    if (e.hp<=0) continue;
+    const dmg = Math.max(1,(sk.power||50)+ri(-5,5));
+    e.hp = Math.max(0,e.hp-dmg);
+    msgs.push(`${e.name}に${dmg}ダメージ！`);
+  }
+  seqLog(msgs, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+}
+
+// ── Hero: items ──
+function useItem(itemId) { _pendingItem=itemId; showPlayerActions('selectAlly',{cb:'execItem'}); }
+function execItem(ai) {
+  clearActions();
+  const id=_pendingItem; const tgt=BT.allies[ai];
+  G.inventory[id]--;
+  let msg;
+  if (id==='potion') {
+    tgt.hp=Math.min(tgt.maxHp,tgt.hp+80);
+    if(tgt.isHero)G.hero.hp=tgt.hp;
+    msg=`${tgt.name}のHPが80回復した！`;
+  } else if (id==='hiPotion') {
+    tgt.hp=Math.min(tgt.maxHp,tgt.hp+250);
+    if(tgt.isHero)G.hero.hp=tgt.hp;
+    msg=`${tgt.name}のHPが250回復した！`;
+  } else if (id==='elixir') {
+    tgt.hp=tgt.maxHp;
+    if(tgt.isHero){tgt.mp=tgt.maxMp;G.hero.hp=tgt.hp;G.hero.mp=tgt.mp;}
+    msg=`${tgt.name}のHP・MPが全回復した！`;
+  }
+  logMsg(msg, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+}
+
+// ── Capture ──
+function attemptCapture() {
+  const ae = BT.enemies.filter(e=>e.hp>0);
+  if (ae.length!==1||ae[0].isBoss) return;
+  clearActions();
+  const enemy=ae[0];
+  G.inventory.monsterBall--;
+  const pct = Math.min(90, (1-enemy.hp/enemy.maxHp)*80+10) * (MONSTER_TYPES[enemy.typeId]?.catchRate||1);
+  logMsg(`🔮 モンスターボールを投げた！`, ()=>{
+    if (Math.random()*100 < pct) {
+      if (!G.caughtMonsters.includes(enemy.typeId)) G.caughtMonsters.push(enemy.typeId);
+      if (G.party.length < 2) {
+        G.party.push(mkPartyMon(enemy.typeId,1));
+        logMsg(`${enemy.name}を捕まえた！ パーティに加わった！`, ()=>{
+          enemy.hp=0; renderBattle(); setTimeout(advanceTurn,400);
+        });
+      } else {
+        logMsg(`${enemy.name}を捕まえた！(パーティ満員のため逃がした)`, ()=>{
+          enemy.hp=0; renderBattle(); setTimeout(advanceTurn,400);
+        });
+      }
+    } else {
+      logMsg(`${enemy.name}は逃げてしまった...`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+    }
+  });
+}
+
+// ── Escape ──
+function attemptEscape() {
+  clearActions();
+  if (Math.random()<0.5) {
+    battleOver=true;
+    logMsg('うまく逃げ出した！', ()=>setTimeout(()=>{showScreen('village-screen');},800));
+  } else {
+    logMsg('逃げられなかった！', ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  }
+}
+
+// ============================================================
+// BATTLE: ALLY AUTO
+// ============================================================
+function allyAuto(ai) {
+  const ally = BT.allies[ai];
+  if (!ally||ally.hp<=0) { advanceTurn(); return; }
+  // Paralysis check
+  if (ally.status.includes('paralysis') && Math.random()<0.5) {
+    logMsg(`${ally.name}はまひで動けない！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);}); return;
+  }
+  const ae = BT.enemies.filter(e=>e.hp>0);
+  if (!ae.length) { advanceTurn(); return; }
+  const tgt = ae[Math.floor(Math.random()*ae.length)];
+
+  // Try healing low ally first
+  const healSk = ally.skills.find(s=>s.effect==='heal');
+  if (healSk) {
+    const lowAlly = BT.allies.find(a=>a.hp>0 && a.hp<a.maxHp*0.4);
+    if (lowAlly) {
+      lowAlly.hp = Math.min(lowAlly.maxHp, lowAlly.hp+healSk.power);
+      if (lowAlly.isHero) G.hero.hp=lowAlly.hp;
+      logMsg(`${ally.name}の${healSk.name}！ ${lowAlly.name}のHPが${healSk.power}回復！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);}); return;
+    }
+  }
+  // Attack skill
+  const atkSk = ally.skills.find(s=>s.effect==='dmg');
+  if (atkSk && Math.random()<0.45) {
+    let dmg = atkSk.power || Math.max(1, ally.atk - Math.floor(tgt.def/2));
+    if (atkSk.atkMult) dmg = Math.round(ally.atk*atkSk.atkMult);
+    dmg = Math.max(1, dmg+ri(-3,3));
+    tgt.hp = Math.max(0,tgt.hp-dmg);
+    if (atkSk.status) addStatus(tgt,atkSk.status);
+    logMsg(`${ally.name}の${atkSk.name}！ ${tgt.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);}); return;
+  }
+  // Basic
+  const dmg = Math.max(1, ally.atk - Math.floor(tgt.def/2) + ri(-3,3));
+  tgt.hp = Math.max(0,tgt.hp-dmg);
+  logMsg(`${ally.name}の攻撃！ ${tgt.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+}
+
+// ============================================================
+// BATTLE: ENEMY AI
+// ============================================================
+function enemyAct(ei) {
+  const enemy = BT.enemies[ei];
+  if (!enemy||enemy.hp<=0) { advanceTurn(); return; }
+  // Paralysis
+  if (enemy.status.includes('paralysis') && Math.random()<0.5) {
+    logMsg(`${enemy.name}はまひで動けない！`, ()=>{renderBattle(); setTimeout(advanceTurn,300);}); return;
+  }
+  // Final boss phase 2
+  if (BT.isFB && enemy.phase===1 && enemy.hp < enemy.maxHp*0.5) {
+    enemy.phase = 2; enemy.atk = Math.round(enemy.atk*1.3);
+    logMsg('魔王ゾルダが激怒した！ パワーアップ！', ()=>doEnemySkill(enemy));
+    return;
+  }
+  doEnemySkill(enemy);
+}
+
+function doEnemySkill(enemy) {
+  const aa = BT.allies.filter(a=>a.hp>0);
+  if (!aa.length) { advanceTurn(); return; }
+  const tgt = aa[Math.floor(Math.random()*aa.length)];
+  const sk = enemy.skills[Math.floor(Math.random()*enemy.skills.length)];
+
+  if (sk.effect==='dmgAll') {
+    const msgs=[`${enemy.name}の${sk.name}！`];
+    for (const a of BT.allies) {
+      if (a.hp<=0) continue;
+      const defV = a.isHero ? heroDef() : a.def;
+      let d = sk.power ? Math.max(1, sk.power - Math.floor(defV/3) + ri(-5,5)) :
+              Math.max(1, enemy.atk - Math.floor(defV/2) + ri(-5,5));
+      a.hp = Math.max(0,a.hp-d);
+      if(a.isHero)G.hero.hp=a.hp;
+      if(sk.status)addStatus(a,sk.status);
+      msgs.push(`${a.name}に${d}ダメージ！`);
+    }
+    seqLog(msgs, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  } else {
+    const defV = tgt.isHero ? heroDef() : tgt.def;
+    let dmg;
+    if (sk.atkMult) dmg = Math.max(1, Math.round(enemy.atk*sk.atkMult) - Math.floor(defV/3) + ri(-5,5));
+    else if (sk.power) dmg = Math.max(1, sk.power - Math.floor(defV/3) + ri(-5,5));
+    else dmg = Math.max(1, enemy.atk - Math.floor(defV/2) + ri(-5,5));
+    tgt.hp = Math.max(0,tgt.hp-dmg);
+    if(tgt.isHero)G.hero.hp=tgt.hp;
+    if(sk.status)addStatus(tgt,sk.status);
+    logMsg(`${enemy.name}の${sk.name}！ ${tgt.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  }
+}
+
+function addStatus(unit, st) {
+  if (!unit.status) unit.status=[];
+  if (!unit.status.includes(st)) unit.status.push(st);
+}
+
+// ============================================================
+// BATTLE: RESULTS
+// ============================================================
+function endVictory() {
+  battleOver = true;
+  let totalExp=0, totalGold=0;
+  for (const e of BT.enemies) { totalExp+=e.exp||0; totalGold+=e.gold||0; }
+  G.gold += totalGold;
+  G.totalBattles = (G.totalBattles||0)+1;
+
+  // Sync hero
+  G.hero.hp = BT.allies[0].hp;
+  G.hero.mp = BT.allies[0].mp;
+  G.hero.status = [...(BT.allies[0].status||[])];
+  G.hero.exp += totalExp;
+
+  // Sync party
+  for (let i=0;i<G.party.length;i++) {
+    if (BT.allies[i+1]) {
+      G.party[i].hp = BT.allies[i+1].hp;
+      G.party[i].status = [...(BT.allies[i+1].status||[])];
+    }
+  }
+
+  // Boss unlocks
+  if (BT.isBoss && !BT.isFB && BT.area && BT.area.boss.unlocks > G.unlockedAreas)
+    G.unlockedAreas = BT.area.boss.unlocks;
+
+  const lvMsgs = checkLevelUps();
+  save();
+
+  const msgs = [`勝利！ ${totalExp}EXP・${totalGold}G獲得！`, ...lvMsgs];
+  seqLog(msgs, ()=>showVictoryPanel(totalExp, totalGold));
+}
+
+function checkLevelUps() {
+  const msgs=[];
+  while (G.hero.exp >= G.hero.lv*50 && G.hero.lv<20) {
+    G.hero.exp -= G.hero.lv*50;
+    G.hero.lv++;
+    G.hero.maxHp+=20; G.hero.maxMp+=8; G.hero.baseAtk+=4; G.hero.baseDef+=3; G.hero.spd+=2;
+    G.hero.hp=Math.min(G.hero.hp+20,G.hero.maxHp);
+    G.hero.mp=Math.min(G.hero.mp+8,G.hero.maxMp);
+    // Sync battle ally
+    if (BT.allies&&BT.allies[0]) {
+      Object.assign(BT.allies[0],{lv:G.hero.lv,maxHp:G.hero.maxHp,maxMp:G.hero.maxMp,
+        hp:G.hero.hp,mp:G.hero.mp,atk:heroAtk(),def:heroDef(),spd:G.hero.spd});
+    }
+    msgs.push(`✨ ${G.hero.name}がLV${G.hero.lv}にアップ！`);
+    const ns = HERO_SKILLS.find(s=>s.lv===G.hero.lv);
+    if (ns) msgs.push(`新スキル「${ns.name}」を習得！`);
+  }
+  return msgs;
+}
+
+function showVictoryPanel(exp, gold) {
+  if (BT.isFB) {
+    G.defeatedFinalBoss=true; save();
+    setTimeout(()=>{ showEndingScreen(); startConfetti(); }, 600);
+    return;
+  }
+  const panel = document.getElementById('battle-action-panel');
+  const unlockNote = (BT.isBoss && G.unlockedAreas <= AREAS.length) ?
+    '<div class="tgr" style="font-size:13px;margin-bottom:8px">🗺️ 新エリア解放！</div>' : '';
+  if (BT.isNormal) {
+    panel.innerHTML = `<div style="text-align:center;padding:8px">
+      <div style="font-size:20px;color:#ffe870;font-weight:bold;margin-bottom:6px">⭐ 勝利！ ⭐</div>
+      <div class="tpu" style="margin-bottom:10px">+${exp}EXP &nbsp; +${gold}G</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;padding:0 8px 8px;flex-wrap:wrap">
+      <button class="btn btn-success" onclick="continueAdventure()">⚔️ つぎの戦い</button>
+      <button class="btn btn-gold" onclick="challengeBoss()">👹 ボスに挑む</button>
+      <button class="btn" onclick="returnToVillage()">🏠 村へ</button>
+    </div>`;
+  } else {
+    panel.innerHTML = `<div style="text-align:center;padding:8px">
+      <div style="font-size:20px;color:#ffe870;font-weight:bold;margin-bottom:6px">👑 ボス撃破！ 👑</div>
+      <div class="tpu" style="margin-bottom:6px">+${exp}EXP &nbsp; +${gold}G</div>
+      ${unlockNote}
+    </div>
+    <div style="padding:0 8px 8px">
+      <button class="btn" style="width:100%" onclick="returnToVillage()">🏠 村へもどる</button>
+    </div>`;
+    startConfetti(); setTimeout(stopConfetti,4000);
+  }
+  renderBattle();
+}
+
+function continueAdventure() { startBattle(BT.area,false,false); }
+function challengeBoss() { startBattle(BT.area,true,false); }
+function returnToVillage() {
+  document.getElementById('battle-action-panel').innerHTML='';
+  showScreen('village-screen');
+}
+
+function endDefeat() {
+  battleOver=true;
+  logMsg('パーティが全滅した...', ()=>{
+    document.getElementById('battle-action-panel').innerHTML=`
+      <div style="text-align:center;padding:10px">
+        <div style="font-size:20px;color:#ff6060;font-weight:bold;margin-bottom:6px">💀 ゲームオーバー</div>
+        <div style="color:#8070c0;font-size:13px;margin-bottom:12px">村に戻り半分のHPで再開します</div>
+      </div>
+      <div style="padding:0 8px 8px">
+        <button class="btn" style="width:100%" onclick="continueFromDefeat()">🏠 村へもどる</button>
+      </div>`;
+  });
+}
+
+function continueFromDefeat() {
+  G.hero.hp = Math.max(1, Math.floor(G.hero.maxHp*0.5));
+  G.hero.mp = Math.floor(G.hero.maxMp*0.5);
+  G.hero.status=[];
+  for (const m of G.party) { m.hp=Math.max(1,Math.floor(m.maxHp*0.5)); m.status=[]; }
+  save();
+  document.getElementById('battle-action-panel').innerHTML='';
+  showScreen('village-screen');
+}
+
+// ============================================================
+// BATTLE: LOG
+// ============================================================
+function logMsg(msg, cb) {
+  const log = document.getElementById('battle-log');
+  const line = document.createElement('div');
+  line.textContent = msg;
+  line.style.cssText = 'opacity:0;transition:opacity 0.3s';
+  log.appendChild(line);
+  while (log.children.length>5) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+  setTimeout(()=>line.style.opacity='1', 30);
+  if (cb) setTimeout(cb, 600);
+}
+
+function seqLog(msgs, finalCb) {
+  let i=0;
+  function next() {
+    if (i>=msgs.length) { if(finalCb) finalCb(); return; }
+    logMsg(msgs[i++], next);
+  }
+  next();
+}
+
+// ============================================================
+// SHOP
+// ============================================================
+function renderShop() {
+  let h=`<div class="gold-display">💰 所持金: ${G.gold}G</div>`;
+  h+='<div class="tg" style="font-weight:bold;margin-bottom:8px">▼ アイテム</div>';
+  for (const it of ITEMS) {
+    const cnt = G.inventory[it.id]||0;
+    h+=`<div class="shop-row">
+      <div><span style="font-size:15px">${it.emoji}</span>
+        <span style="margin-left:6px">${it.name}</span>
+        <span style="font-size:11px;color:#8070c0;margin-left:4px">(所持:${cnt})</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tg" style="font-size:13px">${it.price}G</span>
+        <button class="btn" style="padding:4px 10px" onclick="buyItem('${it.id}',${it.price})" ${G.gold<it.price?'disabled':''}>買う</button>
+      </div></div>`;
+  }
+  h+='<hr class="sep"><div class="tg" style="font-weight:bold;margin:8px 0">▼ 装備 (勇者用)</div>';
+  for (const eq of EQUIPMENT) {
+    const owned = G.hero.weapon===eq.id||G.hero.armor===eq.id;
+    const stat = eq.atk>0?`ATK+${eq.atk}`:`DEF+${eq.def}`;
+    h+=`<div class="shop-row">
+      <div><span style="font-size:15px">${eq.emoji}</span>
+        <span style="margin-left:6px">${eq.name}</span>
+        <span class="tgr" style="font-size:11px;margin-left:4px">${stat}</span>
+        ${owned?'<span class="tg" style="font-size:11px;margin-left:4px">装備中</span>':''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tg" style="font-size:13px">${eq.price}G</span>
+        <button class="btn" style="padding:4px 10px" onclick="buyEquip('${eq.id}',${eq.price})" ${(G.gold<eq.price||owned)?'disabled':''}>買う</button>
+      </div></div>`;
+  }
+  document.getElementById('shop-content').innerHTML = h;
+}
+
+function buyItem(id, price) {
+  if (G.gold<price) return;
+  G.gold-=price; G.inventory[id]=(G.inventory[id]||0)+1; save(); renderShop();
+}
+function buyEquip(id, price) {
+  if (G.gold<price) return;
+  const eq=EQUIPMENT.find(e=>e.id===id);
+  G.gold-=price;
+  if (eq.type==='weapon') G.hero.weapon=id; else G.hero.armor=id;
+  save(); renderShop();
+}
+
+// ============================================================
+// PARTY
+// ============================================================
+function renderParty() {
+  const h=G.hero;
+  const wp = h.weapon ? EQUIPMENT.find(e=>e.id===h.weapon) : null;
+  const ar = h.armor  ? EQUIPMENT.find(e=>e.id===h.armor)  : null;
+  let html=`<div class="party-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:30px">${h.emoji}</span>
+      <div><div style="font-weight:bold;color:#ffe870;font-size:16px">${h.name}</div>
+        <div class="tpu" style="font-size:12px">LV${h.lv} 勇者</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:8px">
+      <div>❤️ HP: <span class="led" style="font-size:11px">${h.hp}/${h.maxHp}</span></div>
+      <div>💫 MP: <span class="led" style="font-size:11px;color:#60b0ff;border-color:#4090ff">${h.mp}/${h.maxMp}</span></div>
+      <div>⚔️ ATK: ${heroAtk()}</div><div>🛡️ DEF: ${heroDef()}</div>
+      <div>💨 SPD: ${h.spd}</div><div>✨ EXP: ${h.exp}/${h.lv*50}</div>
+    </div>
+    <div style="font-size:12px;color:#8070c0">
+      🗡️ 武器: ${wp?wp.emoji+wp.name:'なし'} &nbsp; 🛡️ 防具: ${ar?ar.emoji+ar.name:'なし'}
+    </div>
+  </div>`;
+
+  html+=`<div class="tg" style="font-weight:bold;margin:8px 0">パーティモンスター (${G.party.length}/2)</div>`;
+  if (!G.party.length) html+='<p style="color:#8070c0;font-size:13px;margin-bottom:10px">バトルでモンスターを捕まえよう！</p>';
+
+  for (let i=0;i<G.party.length;i++) {
+    const m=G.party[i];
+    html+=`<div class="party-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:26px">${m.emoji}</span>
+        <div style="flex:1"><div style="font-weight:bold;color:#b898ff">${m.name}</div>
+          <div style="color:#8070c0;font-size:12px">タイプ: ${m.type}</div></div>
+        <button class="btn btn-danger" style="padding:4px 8px;font-size:12px" onclick="releaseMon(${i})">解放</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px">
+        <div>❤️ HP: ${m.hp}/${m.maxHp}</div><div>⚔️ ATK: ${m.atk}</div>
+        <div>🛡️ DEF: ${m.def}</div><div>💨 SPD: ${m.spd}</div>
+      </div>
+      <div style="font-size:12px;color:#8070c0;margin-top:5px">スキル: ${m.skills.map(s=>s.name).join('・')}</div>
+    </div>`;
+  }
+
+  html+='<div class="tg" style="font-weight:bold;margin:8px 0">勇者スキル一覧</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+  for (const sk of HERO_SKILLS) {
+    const ok = sk.lv<=h.lv;
+    html+=`<div style="background:#05010f;border:1px solid ${ok?'#5040a0':'#1a0a40'};border-radius:8px;padding:6px;font-size:12px;opacity:${ok?1:0.4}">
+      ${ok?'✅':'🔒'} <strong>${sk.name}</strong>
+      <div style="color:#8070c0;font-size:11px">LV${sk.lv} / MP:${sk.mp}</div>
+    </div>`;
+  }
+  html+='</div>';
+  document.getElementById('party-content').innerHTML = html;
+}
+
+function releaseMon(idx) {
+  const m=G.party[idx];
+  showOverlay(`<div style="font-size:16px;margin-bottom:12px">⚠️ 確認</div>
+    <p style="margin-bottom:16px">${m.emoji}${m.name}を解放しますか？</p>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn btn-danger" onclick="doReleaseMon(${idx})">解放する</button>
+      <button class="btn" onclick="hideOverlay()">キャンセル</button>
+    </div>`);
+}
+function doReleaseMon(idx) {
+  G.party.splice(idx,1); save(); hideOverlay(); renderParty();
+}
+
+// ============================================================
+// ENCYCLOPEDIA
+// ============================================================
+function renderEncyclopedia() {
+  const ct = G.caughtMonsters||[];
+  let h=`<div style="color:#8070c0;font-size:12px;margin-bottom:10px">捕まえたモンスター: ${ct.length}/${MONSTER_TYPES.length}</div>`;
+  for (const t of MONSTER_TYPES) {
+    const ok = ct.includes(t.id);
+    h+=`<div class="monster-entry ${ok?'caught':'uncaught'}">
+      <span style="font-size:28px">${ok?t.emoji:'❓'}</span>
+      <div style="flex:1">
+        <div style="font-weight:bold;color:${ok?'#ffe870':'#444'}">${ok?t.name:'???'}</div>
+        ${ok?`<div style="font-size:12px;color:#8070c0">タイプ: ${t.type}</div>
+          <div style="font-size:12px;color:#b898ff">HP:${t.baseHp} ATK:${t.baseAtk} DEF:${t.baseDef} SPD:${t.baseSpd}</div>
+          <div style="font-size:11px;color:#8070c0">スキル: ${t.skills.map(s=>s.name).join('・')}</div>`
+          :'<div style="font-size:12px;color:#333">未捕獲</div>'}
+      </div>
+      ${ok?'<span class="tgr">✅</span>':''}
+    </div>`;
+  }
+  document.getElementById('encyclopedia-content').innerHTML = h;
+}
+
+// ============================================================
+// ENDING
+// ============================================================
+function showEndingScreen() {
+  showScreen('ending-screen');
+  document.getElementById('ending-content').innerHTML = `
+    <div class="ending-title">🎉 ゲームクリア！ 🎉</div>
+    <div style="font-size:48px;margin:16px 0">🏆</div>
+    <p class="tpu" style="margin-bottom:12px">おめでとう！魔王ゾルダを倒し、世界に平和が戻った！</p>
+    <p style="font-size:13px;color:#5040a0;margin-bottom:16px">${G.hero.name}は真の英雄として語り継がれた。</p>
+    <div style="background:#05010f;border:1px solid #5040a0;border-radius:10px;padding:12px;margin:12px 0;text-align:left">
+      <div class="tg" style="font-weight:bold;margin-bottom:8px">冒険の記録</div>
+      <div style="font-size:13px;color:#ccc;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <div>勇者名: ${G.hero.name}</div><div>レベル: ${G.hero.lv}</div>
+        <div>バトル数: ${G.totalBattles}</div><div>所持金: ${G.gold}G</div>
+        <div>仲間の数: ${G.party.length}</div><div>捕獲: ${(G.caughtMonsters||[]).length}/${MONSTER_TYPES.length}</div>
+      </div>
+    </div>
+    <button class="btn btn-gold" style="width:100%;padding:12px;font-size:15px" onclick="renderTitle()">タイトルへもどる</button>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('resize', initStars);
+initStars();
+drawStars();
+renderTitle();
+</script>
+<script id="home-nav-js">
+(function(){
+  window.showHomeConfirm=function(){document.getElementById('home-confirm-overlay').classList.add('visible');};
+  var ov=document.getElementById('home-confirm-overlay');
+  if(ov)ov.addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');});
+  var bar=document.getElementById('home-top-bar');
+  if(bar&&window.visualViewport){
+    function upd(){var v=window.visualViewport;bar.style.top=v.offsetTop+'px';bar.style.left=v.offsetLeft+'px';bar.style.width=v.width+'px';}
+    window.visualViewport.addEventListener('scroll',upd);
+    window.visualViewport.addEventListener('resize',upd);
+    upd();
+  }
+})();
+</script></body>
+</html>

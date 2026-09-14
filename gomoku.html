@@ -102,8 +102,25 @@ select.act-btn { -webkit-appearance: none; appearance: none; text-align: center;
 }
 .msg-toast.show { opacity: 1; }
 </style>
-</head>
+<style id="home-nav-css">
+#home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+#home-top-btn{padding:5px 16px;font-size:11px;border-radius:14px;background:linear-gradient(160deg,#3a2080 0%,#22105a 100%);color:#b898ff;border:1px solid #5a3aaa;cursor:pointer;font-weight:bold;touch-action:manipulation;box-shadow:0 2px 0 #08041a,0 3px 8px rgba(0,0,0,0.5);letter-spacing:0.5px;}
+#home-top-btn:active{transform:translateY(2px);box-shadow:0 0 0 #08041a,0 1px 4px rgba(0,0,0,0.4);}
+#home-confirm-overlay{display:none;position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,0.78);justify-content:center;align-items:center;padding:16px;}
+#home-confirm-overlay.visible{display:flex;}
+#home-confirm-box{background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);border:2px solid #7060ff;border-radius:14px;padding:20px 18px;max-width:300px;width:100%;box-shadow:0 0 30px rgba(112,90,255,0.5),0 20px 50px rgba(0,0,0,0.9);text-align:center;}
+.hcb-title{color:#d0c0ff;font-weight:900;font-size:14px;margin-bottom:8px;}
+.hcb-msg{color:#8070b0;font-size:11px;line-height:1.6;margin-bottom:16px;}
+.hcb-btns{display:flex;gap:8px;justify-content:center;}
+.hcb-ok{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#3a2080,#22105a);color:#b898ff;border:1px solid #5a3aaa;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 0 #08041a;}
+.hcb-ok:active{transform:translateY(2px);}
+.hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
+.hcb-cancel:active{transform:translateY(2px);}
+body{padding-top:44px!important;}
+</style></head>
 <body>
+<div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
+
 <canvas id="stars"></canvas>
 <canvas id="confetti"></canvas>
 
@@ -595,5 +612,18 @@ window.addEventListener('resize', () => { initCanvas(); drawBoard(); });
 initCanvas();
 initBoard();
 </script>
-</body>
+<script id="home-nav-js">
+(function(){
+  window.showHomeConfirm=function(){document.getElementById('home-confirm-overlay').classList.add('visible');};
+  var ov=document.getElementById('home-confirm-overlay');
+  if(ov)ov.addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');});
+  var bar=document.getElementById('home-top-bar');
+  if(bar&&window.visualViewport){
+    function upd(){var v=window.visualViewport;bar.style.top=v.offsetTop+'px';bar.style.left=v.offsetLeft+'px';bar.style.width=v.width+'px';}
+    window.visualViewport.addEventListener('scroll',upd);
+    window.visualViewport.addEventListener('resize',upd);
+    upd();
+  }
+})();
+</script></body>
 </html>

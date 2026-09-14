@@ -254,6 +254,7 @@ body {
       <button class="cat-tab" onclick="filterCat(this,'card')">🃏 カード</button>
       <button class="cat-tab" onclick="filterCat(this,'sports')">🎯 スポーツ</button>
       <button class="cat-tab" onclick="filterCat(this,'rhythm')">🎵 リズム</button>
+      <button class="cat-tab" onclick="filterCat(this,'rpg')">⚔️ RPG</button>
     </div>
   </div>
 
@@ -463,6 +464,21 @@ body {
       </a>
     </div>
 
+    <!-- ── RPG ── -->
+    <div class="section-header" id="sec-rpg">
+      <span class="section-icon">⚔️</span>
+      <span class="section-text">RPG</span>
+      <span class="section-count" id="cnt-rpg"></span>
+    </div>
+    <div class="game-grid" id="grid-rpg">
+      <a class="game-card" href="rpg.html" data-cat="rpg">
+        <div class="game-emoji">⚔️</div>
+        <div class="game-name">ミニRPG</div>
+        <div class="game-desc">勇者と仲間で<br>魔王を倒せ</div>
+        <div class="game-tag tag-save">💾 自動セーブ</div>
+      </a>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /window -->
 
@@ -479,7 +495,7 @@ body {
     </div>
     <div class="modal-body">
       <p><strong style="color:#ffe870">🎮 ミニゲーム集へようこそ！</strong></p>
-      <p style="margin-top:6px">全 <strong style="color:#d0c0ff">25種類</strong> のミニゲームが収録されています。</p>
+      <p style="margin-top:6px">全 <strong style="color:#d0c0ff">26種類</strong> のミニゲームが収録されています。</p>
 
       <div class="info-block" style="margin-top:12px">
         <div class="info-block-title">✈ オフライン完全対応</div>
@@ -580,7 +596,7 @@ function filterCat(btn, cat) {
 
 /* ── Game counts per section ── */
 (function updateCounts(){
-  const cats = ['puzzle','action','board','card','sports','rhythm'];
+  const cats = ['puzzle','action','board','card','sports','rhythm','rpg'];
   cats.forEach(cat => {
     const n = document.querySelectorAll(`.game-card[data-cat="${cat}"]`).length;
     const el = document.getElementById('cnt-' + cat);
