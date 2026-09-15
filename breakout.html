@@ -194,6 +194,11 @@
   .hs-record{color:#60ff90;font-weight:900;text-shadow:0 0 6px #60ff90;}
   .hs-val{color:#4038a0;}
   .hs-date{color:#7060a0;font-size:9px;margin-left:4px;}
+  .stage-btn{background:linear-gradient(160deg,#2a1660 0%,#160c40 100%);color:#c0a8ff;border:1px solid #5040a0;border-radius:8px;padding:8px 4px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s;width:100%;}
+  .stage-btn:hover{background:linear-gradient(160deg,#4030a0 0%,#280e68 100%);box-shadow:0 0 12px rgba(120,90,255,0.5);transform:translateY(-1px);}
+  .stage-btn:active{transform:translateY(1px);}
+  .stage-btn .sb-num{font-size:16px;display:block;color:#ffe870;}
+  .stage-btn .sb-label{font-size:9px;color:#8870c0;display:block;margin-top:2px;}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -212,6 +217,11 @@
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(180,20,30,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(150,10,20,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #380810 0%, #1e0408 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -246,7 +256,7 @@ body{padding-top:44px!important;}
   </div>
 
   <div class="canvas-wrap">
-    <canvas id="gameCanvas" width="440" height="340"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <div id="overlay">
       <h2 id="overlayTitle">ブロック崩し</h2>
       <p id="overlayMsg">タップ or クリックでスタート<br>パドルをドラッグして操作</p>
@@ -264,6 +274,7 @@ body{padding-top:44px!important;}
   <div class="action-bar">
     <button class="btn" id="startBtn">▶ スタート</button>
     <button class="btn" id="pauseBtn" disabled>⏸ 一時停止</button>
+    <button class="btn" onclick="showStageSelect()">📋 ステージ</button>
     <button class="btn" onclick="showHiScore()">🏆 ハイスコア</button>
   </div>
 </div>
@@ -375,13 +386,19 @@ animConfetti();
 // ===== GAME =====
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// Dynamic canvas sizing
+{
+  const Wr = Math.min(window.innerWidth, 460) - 16;
+  const Hr = Math.min(window.innerHeight * 0.65, 520);
+  canvas.width = Math.max(Math.round(Wr), 280);
+  canvas.height = Math.max(Math.round(Hr), 300);
+}
 const W = canvas.width, H = canvas.height;
 
-const BRICK_COLS = 10, BRICK_ROWS = 8;
-const BRICK_W = Math.floor((W-20)/BRICK_COLS);
-const BRICK_H = 18;
 const BRICK_PAD = 2;
-const BRICK_TOP = 30;
+const BRICK_TOP = 28;
+const BRICK_H = 18;
 
 const PADDLE_H = 10, PADDLE_Y = H - 30;
 const BALL_R = 6;
@@ -394,58 +411,120 @@ const POWERUP_TYPES = [
   { type:'fire', color:'#ff6040', icon:'🔥', label:'ファイアボール', duration:7000 }
 ];
 
-const STAGE_LAYOUTS = [
-  // Stage 1: all blocks
-  null,
-  // Stage 2: diamond
-  (r,c)=>{ const mid=4.5; return Math.abs(r-3.5)+Math.abs(c-mid)<5; },
-  // Stage 3: border
-  (r,c)=>r===0||r===7||c===0||c===9,
-  // Stage 4: checkerboard
-  (r,c)=>(r+c)%2===0,
-  // Stage 5: X pattern
-  (r,c)=>{ const mid=4.5; return Math.abs(c-mid)<=Math.abs(r-3.5)+0.5 && Math.abs(c-mid)>=Math.abs(r-3.5)-0.5||
-           Math.abs(c-mid)<=0.6; }
+// ---- STAGE DEFINITIONS ----
+// layout(r, c, rows, cols) => { include, hp, indestructible, moving }
+const STAGES = [
+  // 1: Simple 5×6, slow ball, wide paddle
+  { rows:5, cols:6, ballSpeed:2.5, paddleW:0.22,
+    label:'シンプル',
+    layout:(r,c)=>({include:true, hp:1, indestructible:false, moving:false}) },
+  // 2: 6×8, middle row indestructible, slightly faster
+  { rows:6, cols:8, ballSpeed:3.0, paddleW:0.20,
+    label:'障害壁',
+    layout:(r,c,R)=>({include:true, hp:1, indestructible:r===Math.floor(R/2), moving:false}) },
+  // 3: Border-only, 7×9
+  { rows:7, cols:9, ballSpeed:3.3, paddleW:0.18,
+    label:'ボーダー',
+    layout:(r,c,R,C)=>({include:r===0||r===R-1||c===0||c===C-1, hp:1, indestructible:false, moving:false}) },
+  // 4: Checkerboard, top 2 rows 2-hit
+  { rows:6, cols:9, ballSpeed:3.5, paddleW:0.18,
+    label:'チェッカー',
+    layout:(r,c)=>({include:(r+c)%2===0, hp:r<2?2:1, indestructible:false, moving:false}) },
+  // 5: Full grid, alternating rows move
+  { rows:6, cols:8, ballSpeed:3.7, paddleW:0.17,
+    label:'移動ブロック',
+    layout:(r,c)=>({include:true, hp:1, indestructible:false, moving:r%2===0}) },
+  // 6: Diamond, multi-hit
+  { rows:7, cols:9, ballSpeed:4.0, paddleW:0.16,
+    label:'ダイヤモンド',
+    layout:(r,c,R,C)=>{
+      const mid=(C-1)/2, rm=(R-1)/2;
+      const inc=Math.abs(r-rm)+Math.abs(c-mid)<4;
+      return {include:inc, hp:r<2?2:1, indestructible:false, moving:false};
+    }},
+  // 7: Border indestructible + moving inner row
+  { rows:7, cols:9, ballSpeed:4.2, paddleW:0.15,
+    label:'要塞',
+    layout:(r,c,R,C)=>{
+      const border=r===0||r===R-1||c===0||c===C-1;
+      const mid=Math.floor(R/2);
+      return {include:true, hp:border?999:r<3?2:1, indestructible:border, moving:r===mid&&!border};
+    }},
+  // 8: X pattern, top/bottom rows moving, indestructible centre
+  { rows:8, cols:10, ballSpeed:4.5, paddleW:0.14,
+    label:'Xパターン',
+    layout:(r,c,R,C)=>{
+      const xp=Math.abs(c-Math.floor(C/2))===Math.abs(r-Math.floor(R/2));
+      const centre=r===Math.floor(R/2)&&c===Math.floor(C/2);
+      return {include:xp||centre, hp:r<3?2:1, indestructible:centre, moving:r<2||r>R-3};
+    }},
+  // 9: Full grid, every odd row moving, triple-hit top rows
+  { rows:7, cols:9, ballSpeed:4.8, paddleW:0.13,
+    label:'嵐',
+    layout:(r,c)=>({include:true, hp:r<2?3:r<4?2:1, indestructible:false, moving:r%2===1}) },
+  // 10: Max difficulty – border indestructible, moving inside rows, 3-hit upper
+  { rows:8, cols:10, ballSpeed:5.2, paddleW:0.12,
+    label:'地獄',
+    layout:(r,c,R,C)=>{
+      const border=r===0||r===R-1||c===0||c===C-1;
+      return {include:true, hp:border?999:r<4?3:2, indestructible:border, moving:r===1||r===R-2};
+    }},
 ];
 
 const ROW_COLORS = [
   '#ff4040','#ff7020','#ffdd20','#80ff20',
-  '#20ffc0','#20c0ff','#6040ff','#ff40c0'
+  '#20ffc0','#20c0ff','#6040ff','#ff40c0',
+  '#ff80c0','#a0ff60'
 ];
 
-let state = 'idle'; // idle, playing, paused, dead, stageclear, gameover
+let state = 'idle'; // idle, playing, paused, stageclear, gameover
 let score = 0, hiScore = parseInt(localStorage.getItem('breakout_hi')||'0');
 let lives = 3, stage = 1;
 let balls = [], paddle = {}, bricks = [], powerups = [], activePU = {};
-let animId = null, lastTime = 0;
+let animId = null;
 let stageClearTimeout = null;
 
 function lerp(a,b,t){ return a+(b-a)*t; }
 
+function getStageCfg(){ return STAGES[Math.min(stage-1, STAGES.length-1)]; }
+function getBaseSpeed(){ return getStageCfg().ballSpeed; }
+function getDefaultPaddleW(){ return Math.max(Math.round(W * getStageCfg().paddleW), 40); }
+
 function mkBall(x,y,vx,vy){
-  return { x: x||W/2, y: y||PADDLE_Y-BALL_R-1,
-    vx: vx||(Math.random()<0.5?-1:1)*2.5,
-    vy: vy||-3.5, fire:false };
+  const spd = getBaseSpeed();
+  const dir = (Math.random()<0.5?-1:1);
+  return { x: x!=null?x:W/2, y: y!=null?y:PADDLE_Y-BALL_R-1,
+    vx: vx!=null?vx:dir*spd*0.65,
+    vy: vy!=null?vy:-spd, fire:false };
 }
 
 function mkPaddle(){
-  return { x: W/2, w: 70 };
+  return { x: W/2, w: getDefaultPaddleW() };
 }
 
 function mkBricks(){
   bricks = [];
-  const layout = STAGE_LAYOUTS[Math.min(stage-1, STAGE_LAYOUTS.length-1)];
-  for(let r=0;r<BRICK_ROWS;r++){
-    for(let c=0;c<BRICK_COLS;c++){
-      let include = layout ? layout(r,c) : true;
-      if(!include) continue;
-      const hp = stage>=3 ? (r<2?2:1) : 1;
+  const cfg = getStageCfg();
+  const cols = cfg.cols;
+  const brickW = Math.floor((W - 20) / cols);
+  for(let r=0; r<cfg.rows; r++){
+    for(let c=0; c<cols; c++){
+      const info = cfg.layout(r, c, cfg.rows, cols);
+      if(!info.include) continue;
+      const bx = 10 + c * brickW;
+      const by = BRICK_TOP + r * BRICK_H;
       bricks.push({
-        r,c,
-        x: 10+c*BRICK_W, y: BRICK_TOP+r*BRICK_H,
-        w: BRICK_W-BRICK_PAD, h: BRICK_H-BRICK_PAD,
-        hp, maxHp:hp,
-        color: ROW_COLORS[r]
+        r, c,
+        x: bx, y: by,
+        w: brickW - BRICK_PAD, h: BRICK_H - BRICK_PAD,
+        hp: info.hp, maxHp: info.indestructible ? 999 : info.hp,
+        indestructible: info.indestructible,
+        moving: info.moving,
+        movePhase: Math.random() * Math.PI * 2,
+        moveSpeed: 1.2 + Math.random() * 0.6,
+        moveRange: Math.min(brickW * 1.2, 28),
+        origX: bx,
+        color: ROW_COLORS[r % ROW_COLORS.length]
       });
     }
   }
@@ -453,8 +532,7 @@ function mkBricks(){
 
 function startGame(){
   score=0; lives=3; stage=1;
-  activePU={};
-  powerups=[];
+  activePU={}; powerups=[];
   paddle = mkPaddle();
   balls = [mkBall()];
   mkBricks();
@@ -464,21 +542,31 @@ function startGame(){
   document.getElementById('pauseBtn').disabled=false;
 }
 
-function nextStage(){
-  stage++;
-  activePU={};
-  powerups=[];
+function startGameAtStage(n){
+  document.getElementById('breakout-stage-modal').classList.remove('visible');
+  score=0; lives=3; stage=n;
+  activePU={}; powerups=[];
   paddle = mkPaddle();
-  const spd = getBaseSpeed();
-  balls = [mkBall(W/2, PADDLE_Y-BALL_R-1, (Math.random()<0.5?-1:1)*spd, -spd)];
+  balls = [mkBall()];
   mkBricks();
   state='playing';
   updateHUD();
   document.getElementById('overlay').style.display='none';
+  document.getElementById('pauseBtn').disabled=false;
+  if(animId) cancelAnimationFrame(animId);
+  startLoop();
 }
 
-function getBaseSpeed(){
-  return Math.min(2.5 + stage*0.4, 6);
+function nextStage(){
+  stage++;
+  activePU={}; powerups=[];
+  paddle = mkPaddle();
+  balls = [mkBall()];
+  mkBricks();
+  state='playing';
+  updateHUD();
+  document.getElementById('overlay').style.display='none';
+  startLoop(); // restart the game loop after stage clear
 }
 
 function updateHUD(){
@@ -502,9 +590,8 @@ function showOverlay(title,msg,scoreVal){
 function loseLife(){
   lives--;
   updateHUD();
-  activePU={};
-  powerups=[];
-  paddle.w=70;
+  activePU={}; powerups=[];
+  paddle.w = getDefaultPaddleW();
   if(lives<=0){
     state='gameover';
     cancelAnimationFrame(animId);
@@ -518,9 +605,10 @@ function loseLife(){
 function applyPowerup(pu){
   const t = pu.puType;
   const dur = POWERUP_TYPES.find(p=>p.type===t)?.duration||0;
+  const basePW = getDefaultPaddleW();
   if(t==='wide'){
-    paddle.w = Math.min(paddle.w+30, 130);
-    if(dur){ clearTimeout(activePU.wideTimer); activePU.wideTimer=setTimeout(()=>{paddle.w=Math.max(paddle.w-30,70);},dur); }
+    paddle.w = Math.min(paddle.w+30, Math.round(W*0.5));
+    if(dur){ clearTimeout(activePU.wideTimer); activePU.wideTimer=setTimeout(()=>{paddle.w=Math.max(paddle.w-30,basePW);},dur); }
   } else if(t==='multi'){
     const extra = balls.map(b=>mkBall(b.x,b.y,b.vx+1,-(Math.abs(b.vy))));
     balls.push(...extra);
@@ -541,13 +629,20 @@ function update(dt){
   // Move powerups
   powerups = powerups.filter(pu=>{
     pu.y += 2*dt;
-    // Check paddle collision
-    if(pu.y+POWERUP_SIZE>PADDLE_Y && pu.y<PADDLE_Y+PADDLE_H &&
+    if(pu.y+POWERUP_SIZE>PADDLE_Y && pu.y<PADDLE_Y+PADDLE_H+8 &&
        pu.x+POWERUP_SIZE>paddle.x-paddle.w/2 && pu.x<paddle.x+paddle.w/2){
       applyPowerup(pu);
       return false;
     }
     return pu.y < H+POWERUP_SIZE;
+  });
+
+  // Update moving bricks (sinusoidal oscillation)
+  bricks.forEach(b=>{
+    if(b.moving){
+      b.movePhase += b.moveSpeed * dt * 0.04;
+      b.x = b.origX + Math.sin(b.movePhase) * b.moveRange;
+    }
   });
 
   // Move balls
@@ -574,45 +669,42 @@ function update(dt){
     }
 
     // Brick collision
-    let hit=false;
     for(let i=bricks.length-1;i>=0;i--){
       const b=bricks[i];
       if(ball.x+BALL_R>b.x && ball.x-BALL_R<b.x+b.w &&
          ball.y+BALL_R>b.y && ball.y-BALL_R<b.y+b.h){
-        if(!ball.fire){
-          // determine bounce axis
+        // Always bounce off indestructible; fire passes through destructible only
+        if(!ball.fire || b.indestructible){
           const overlapL=ball.x+BALL_R-b.x, overlapR=b.x+b.w-(ball.x-BALL_R);
           const overlapT=ball.y+BALL_R-b.y, overlapB=b.y+b.h-(ball.y-BALL_R);
           const minH=Math.min(overlapL,overlapR), minV=Math.min(overlapT,overlapB);
           if(minH<minV) ball.vx=-ball.vx; else ball.vy=-ball.vy;
         }
-        b.hp--;
-        if(b.hp<=0){
-          const mult = BRICK_ROWS - b.r;
-          score += 10 * mult * stage;
-          updateHUD();
-          // powerup drop
-          if(Math.random()<0.18){
-            const pt=POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
-            powerups.push({ x:b.x+b.w/2-POWERUP_SIZE/2, y:b.y, puType:pt.type, color:pt.color, icon:pt.icon });
+        if(!b.indestructible){
+          b.hp--;
+          if(b.hp<=0){
+            const rowsTotal = getStageCfg().rows;
+            const mult = rowsTotal - b.r;
+            score += 10 * mult * stage;
+            updateHUD();
+            if(Math.random()<0.18){
+              const pt=POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
+              powerups.push({ x:b.x+b.w/2-POWERUP_SIZE/2, y:b.y, puType:pt.type, color:pt.color, icon:pt.icon });
+            }
+            bricks.splice(i,1);
           }
-          bricks.splice(i,1);
         }
-        hit=true;
         break;
       }
     }
 
-    // Check alive
-    if(ball.y-BALL_R>H){
-      // ball lost
-    } else {
-      aliveBalls.push(ball);
-    }
+    if(ball.y-BALL_R<=H) aliveBalls.push(ball);
   }
   balls=aliveBalls;
   if(balls.length===0){ loseLife(); return; }
-  if(bricks.length===0){
+
+  // Stage clear = all destructible bricks gone
+  if(bricks.filter(b=>!b.indestructible).length===0){
     state='stageclear';
     spawnConfetti();
     showOverlay('STAGE CLEAR！','✨ 次のステージへ ✨',score);
@@ -623,7 +715,27 @@ function update(dt){
 }
 
 function drawBrick(b){
-  const alpha = b.hp<b.maxHp ? 0.55 : 1;
+  if(b.indestructible){
+    // Steel look
+    ctx.globalAlpha=1;
+    const grad=ctx.createLinearGradient(b.x,b.y,b.x,b.y+b.h);
+    grad.addColorStop(0,'#b0b8d0');
+    grad.addColorStop(0.5,'#606878');
+    grad.addColorStop(1,'#303848');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.roundRect(b.x,b.y,b.w,b.h,3);
+    ctx.fill();
+    ctx.strokeStyle='rgba(200,220,255,0.5)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+    // rivet dots
+    ctx.fillStyle='rgba(255,255,255,0.25)';
+    ctx.beginPath(); ctx.arc(b.x+4,b.y+b.h/2,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(b.x+b.w-4,b.y+b.h/2,2,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  const alpha = b.hp<b.maxHp ? 0.5 : 1;
   ctx.globalAlpha=alpha;
   const grad=ctx.createLinearGradient(b.x,b.y,b.x,b.y+b.h);
   grad.addColorStop(0, lighten(b.color,40));
@@ -723,7 +835,7 @@ function draw(){
   let iy=4;
   if(activePU.slow){ drawIndicator('❄ SLOW',POWERUP_TYPES[2].color,iy); iy+=16; }
   if(activePU.fire){ drawIndicator('🔥 FIRE',POWERUP_TYPES[3].color,iy); iy+=16; }
-  if(paddle.w>70){ drawIndicator('↔ WIDE',POWERUP_TYPES[0].color,iy); }
+  if(paddle.w>getDefaultPaddleW()){ drawIndicator('↔ WIDE',POWERUP_TYPES[0].color,iy); }
 }
 
 function drawIndicator(text,color,y){
@@ -740,10 +852,11 @@ function gameLoop(ts){
   lastTs=ts;
   update(dt);
   draw();
-  if(state==='playing'||state==='idle') animId=requestAnimationFrame(gameLoop);
+  if(state==='playing'||state==='idle'||state==='stageclear') animId=requestAnimationFrame(gameLoop);
 }
 
 function startLoop(){
+  if(animId) cancelAnimationFrame(animId);
   lastTs=performance.now();
   animId=requestAnimationFrame(gameLoop);
 }
@@ -860,6 +973,19 @@ keyMove();
 })();
 </script>
 
+<div class="modal-overlay" id="breakout-stage-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📋 ステージ選択</span>
+      <button class="modal-close" onclick="document.getElementById('breakout-stage-modal').classList.remove('visible')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:#8878cc;font-size:11px;margin-bottom:10px;text-align:center">クリックしてそのステージから開始（スコアリセット）</p>
+      <div id="stage-btn-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="breakout-hs-modal">
   <div class="modal-box">
     <div class="modal-title">
@@ -876,6 +1002,21 @@ function showHiScore(){
   document.getElementById('breakout-hs-modal').classList.add('visible');
 }
 document.getElementById('breakout-hs-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');});
+
+function showStageSelect(){
+  const grid=document.getElementById('stage-btn-grid');
+  grid.innerHTML='';
+  STAGES.forEach((cfg,i)=>{
+    const n=i+1;
+    const btn=document.createElement('button');
+    btn.className='stage-btn';
+    btn.innerHTML=`<span class="sb-num">${n}</span><span class="sb-label">${cfg.label}</span>`;
+    btn.onclick=()=>startGameAtStage(n);
+    grid.appendChild(btn);
+  });
+  document.getElementById('breakout-stage-modal').classList.add('visible');
+}
+document.getElementById('breakout-stage-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');});
 </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>数独パズル</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -141,6 +141,17 @@ body {
 .sudoku-cell.hint-reveal { animation: hint-flash 0.5s ease-out; }
 @keyframes hint-flash { 0%{background:rgba(245,200,66,0.5)} 100%{background:transparent} }
 
+/* ── Pencil marks ─────────────────────────────────────────────────────────────── */
+.pencil-marks {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  padding: 1px;
+}
+.pm-num {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #8080c0; font-weight: normal; line-height: 1;
+}
+
 /* ── Number pad ──────────────────────────────────────────────────────────────── */
 .numpad-wrap { margin: 0 8px 4px; }
 .numpad {
@@ -164,6 +175,31 @@ body {
   color: #ff7070; border-color: #803030; font-size: clamp(14px,4.5vw,20px);
   background: linear-gradient(160deg, #3a1030 0%, #200818 100%);
 }
+.pencil-btn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 5px 18px; font-size: 12px; font-weight: bold; border-radius: 8px;
+  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
+  color: #c0a8ff; border: 1px solid #5a3aaa; cursor: pointer;
+  transition: all 0.12s; touch-action: manipulation;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5); margin-top: 5px; width: 100%;
+}
+.pencil-btn:active { transform: scale(0.95); }
+.pencil-btn.active {
+  background: linear-gradient(160deg, #5a40a0 0%, #3a2880 100%);
+  color: #e8e0ff; border-color: #9070e0;
+  box-shadow: 0 0 12px rgba(160,130,255,0.55), 0 2px 6px rgba(0,0,0,0.4);
+}
+/* ── Save toast ───────────────────────────────────────────────────────────────── */
+.save-toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: rgba(40,28,90,0.97); color: #c8b8ff;
+  border: 1px solid #6050b0; border-radius: 20px;
+  padding: 8px 20px; font-size: 13px; font-weight: bold;
+  z-index: 9000; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+.save-toast.show { opacity: 1; }
 
 /* ── Win overlay ─────────────────────────────────────────────────────────────── */
 .win-overlay {
@@ -198,6 +234,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(40,60,200,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(25,40,180,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #080c48 0%, #04082e 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -250,6 +291,7 @@ body{padding-top:44px!important;}
         <button class="num-btn" onclick="inputNum(9)">9</button>
         <button class="num-btn clear-btn" onclick="inputNum(0)">✕</button>
       </div>
+      <button class="pencil-btn" id="pencil-btn" onclick="togglePencilMode()">✏️ メモ</button>
     </div>
   </div>
 </div>
@@ -267,7 +309,10 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="newPuzzle()">🔄 新しいパズル</button>
   <button class="act-btn" onclick="useHint()">💡 ヒント</button>
   <button class="act-btn" onclick="showModal('highscore')">🏆 ハイスコア</button>
+  <button class="act-btn" onclick="saveGame()">💾 保存</button>
 </div>
+
+<div class="save-toast" id="save-toast"></div>
 
 <!-- Rules Modal -->
 <div class="modal-overlay" id="rules-modal">
@@ -373,6 +418,7 @@ function generatePuzzle(givens) {
 // ── Game State ────────────────────────────────────────────────────────────────
 const DIFF_GIVENS = { easy: 35, normal: 27, hard: 22 };
 let puzzle, solution, player, selectedCell, hintsLeft, timerSecs, timerInterval, difficulty, solved;
+let pencilMarks, pencilMode = false;
 
 function setDiff(d) {
   difficulty = d;
@@ -388,9 +434,12 @@ function newPuzzle() {
   puzzle = gen.puzzle;
   solution = gen.solution;
   player = Array.from({length:9}, () => Array(9).fill(0));
+  pencilMarks = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
   selectedCell = null;
   hintsLeft = 3;
   solved = false;
+  pencilMode = false;
+  updatePencilBtn();
   stopTimer(); timerSecs = 0; startTimer();
   document.getElementById('hint-led').textContent = hintsLeft;
   document.getElementById('win-overlay').classList.remove('visible');
@@ -446,9 +495,44 @@ function inputNum(n) {
   if (!selectedCell || solved) return;
   const [r, c] = selectedCell;
   if (puzzle[r][c]) return; // given cell
-  player[r][c] = n;
-  renderGrid();
-  checkWin();
+
+  if (pencilMode) {
+    if (n === 0) {
+      pencilMarks[r][c].clear();
+    } else {
+      if (pencilMarks[r][c].has(n)) pencilMarks[r][c].delete(n);
+      else pencilMarks[r][c].add(n);
+    }
+    renderGrid();
+  } else {
+    player[r][c] = n;
+    if (n !== 0) {
+      // Clear pencil marks from this cell
+      pencilMarks[r][c].clear();
+      // Remove this number from same row, col, box pencil marks
+      const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+      for (let i = 0; i < 9; i++) {
+        pencilMarks[r][i].delete(n);
+        pencilMarks[i][c].delete(n);
+      }
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+        pencilMarks[br+i][bc+j].delete(n);
+      }
+    }
+    renderGrid();
+    checkWin();
+  }
+  autoSave();
+}
+
+// ── Pencil Mode ───────────────────────────────────────────────────────────────
+function togglePencilMode() {
+  pencilMode = !pencilMode;
+  updatePencilBtn();
+}
+function updatePencilBtn() {
+  const btn = document.getElementById('pencil-btn');
+  if (btn) btn.classList.toggle('active', pencilMode);
 }
 
 // ── Error Detection ────────────────────────────────────────────────────────────
@@ -525,12 +609,38 @@ function renderGrid() {
       else if (sameNum) cell.classList.add('is-same-num');
       else if (sameBox) cell.classList.add('is-same-box');
 
-      if (effective) cell.textContent = effective;
+      if (effective) {
+        cell.textContent = effective;
+      } else if (pencilMarks[r][c].size > 0) {
+        const pmDiv = document.createElement('div');
+        pmDiv.className = 'pencil-marks';
+        for (let n = 1; n <= 9; n++) {
+          const span = document.createElement('span');
+          span.className = 'pm-num';
+          if (pencilMarks[r][c].has(n)) span.textContent = n;
+          pmDiv.appendChild(span);
+        }
+        cell.appendChild(pmDiv);
+      }
 
-      cell.addEventListener('click', () => {
-        selectedCell = [r, c];
-        renderGrid();
-      });
+      // Touch fix: only fire action if touch didn't scroll
+      let touchMoved = false, txStart = 0, tyStart = 0;
+      cell.addEventListener('touchstart', e => {
+        const t = e.touches[0]; txStart = t.clientX; tyStart = t.clientY; touchMoved = false;
+      }, { passive: true });
+      cell.addEventListener('touchmove', e => {
+        if (!e.touches.length) return;
+        const t = e.touches[0];
+        const dx = t.clientX - txStart, dy = t.clientY - tyStart;
+        if (Math.sqrt(dx*dx + dy*dy) > 10) touchMoved = true;
+      }, { passive: true });
+      cell.addEventListener('touchend', e => {
+        e.preventDefault(); // suppress synthetic click on mobile
+        if (!touchMoved) { selectedCell = [r, c]; renderGrid(); }
+      }, { passive: false });
+      // Desktop fallback (suppressed on mobile by e.preventDefault() above)
+      cell.addEventListener('click', () => { selectedCell = [r, c]; renderGrid(); });
+
       gridEl.appendChild(cell);
     }
   }
@@ -563,6 +673,81 @@ function closeAllModals() {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('visible'); });
 });
+
+// ── Save / Load ───────────────────────────────────────────────────────────────
+function saveGame() {
+  if (!puzzle) return;
+  const saveState = {
+    puzzle: puzzle,
+    solution: solution,
+    playerGrid: player,
+    pencilMarks: pencilMarks.map(row => row.map(s => [...s])),
+    elapsed: timerSecs,
+    hintsLeft: hintsLeft,
+    diff: difficulty || 'easy',
+    isComplete: solved,
+    ts: Date.now()
+  };
+  localStorage.setItem('sudoku_save', JSON.stringify(saveState));
+  showToast('💾 保存しました！');
+}
+
+function autoSave() {
+  if (!puzzle) return;
+  const saveState = {
+    puzzle: puzzle,
+    solution: solution,
+    playerGrid: player,
+    pencilMarks: pencilMarks.map(row => row.map(s => [...s])),
+    elapsed: timerSecs,
+    hintsLeft: hintsLeft,
+    diff: difficulty || 'easy',
+    isComplete: solved,
+    ts: Date.now()
+  };
+  localStorage.setItem('sudoku_save', JSON.stringify(saveState));
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('save-toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._tid);
+  toast._tid = setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+function tryLoadSave() {
+  try {
+    const raw = localStorage.getItem('sudoku_save');
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s || !s.ts || !s.puzzle || !s.solution) return false;
+    if (Date.now() - s.ts > 7 * 24 * 60 * 60 * 1000) return false; // older than 7 days
+    if (s.isComplete) return false; // don't restore completed puzzles
+    // Restore state
+    puzzle = s.puzzle;
+    solution = s.solution;
+    player = s.playerGrid || Array.from({length:9}, () => Array(9).fill(0));
+    pencilMarks = (s.pencilMarks || Array.from({length:9}, () => Array(9).fill([])))
+      .map(row => row.map(arr => new Set(arr)));
+    timerSecs = s.elapsed || 0;
+    hintsLeft = (s.hintsLeft !== undefined) ? s.hintsLeft : 3;
+    difficulty = s.diff || 'easy';
+    solved = false;
+    // Sync UI
+    document.querySelectorAll('.diff-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.diff === difficulty);
+    });
+    document.getElementById('hint-led').textContent = hintsLeft;
+    updateTimer();
+    renderGrid();
+    showToast('📂 続きから再開しました');
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
 
 // ── Visual Viewport fix ───────────────────────────────────────────────────────
 const actionBar = document.querySelector('.action-bar');
@@ -600,6 +785,7 @@ if (window.visualViewport) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 difficulty = 'easy';
 newPuzzle();
+tryLoadSave(); // restore previous session if within 7 days and not complete
 </script>
 <script id="home-nav-js">
 (function(){

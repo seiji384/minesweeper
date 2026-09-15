@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>⚡ 反応速度テスト</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -222,6 +222,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(120,10,220,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(90,5,180,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #1e0860 0%, #120440 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -548,6 +553,26 @@ function showFinalResult() {
 
 updateLEDs();
 updateDots();
+
+// Touch fix for tap-zone
+(function(){
+  var tapZone = document.getElementById('tap-zone');
+  var txStart=0, tyStart=0, touchMoved=false;
+  tapZone.addEventListener('touchstart', function(e) {
+    txStart = e.touches[0].clientX;
+    tyStart = e.touches[0].clientY;
+    touchMoved = e.touches.length > 1;
+  }, {passive: true});
+  tapZone.addEventListener('touchmove', function(e) {
+    var dx = e.touches[0].clientX - txStart;
+    var dy = e.touches[0].clientY - tyStart;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) touchMoved = true;
+  }, {passive: true});
+  tapZone.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    if (!touchMoved) handleTap();
+  }, {passive: false});
+})();
 </script>
 <script id="home-nav-js">
 (function(){

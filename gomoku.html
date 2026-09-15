@@ -119,6 +119,11 @@ select.act-btn { -webkit-appearance: none; appearance: none; text-align: center;
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(50,55,65,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(35,40,50,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #0c0e12 0%, #060810 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -160,6 +165,17 @@ body{padding-top:44px!important;}
     <option value="normal" selected>ふつう</option>
     <option value="hard">つよい</option>
   </select>
+  <button class="act-btn" onclick="saveGame()">💾 保存</button>
+</div>
+
+<div id="restore-overlay" style="display:none;position:fixed;inset:0;z-index:15000;background:rgba(0,0,0,0.78);justify-content:center;align-items:center;padding:16px;">
+  <div style="background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);border:2px solid #7060ff;border-radius:14px;padding:20px 18px;max-width:300px;width:100%;box-shadow:0 0 30px rgba(112,90,255,0.5),0 20px 50px rgba(0,0,0,0.9);text-align:center;">
+    <p style="color:#d0c0ff;font-weight:900;font-size:14px;margin-bottom:8px;">前回の続きを再開しますか？</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+      <button onclick="restoreGame()" style="padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#3a2080,#22105a);color:#b898ff;border:1px solid #5a3aaa;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;">はい</button>
+      <button onclick="declineRestore()" style="padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;">いいえ</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="rulesModal">
@@ -602,17 +618,103 @@ function handleTap(x, y) {
 }
 
 canvas.addEventListener('click', (e) => handleTap(e.clientX, e.clientY));
+
+let touchStartX = 0, touchStartY = 0, touchMoved = false;
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 1) { touchMoved = true; return; }
+  const t = e.touches[0];
+  touchStartX = t.clientX; touchStartY = t.clientY;
+  touchMoved = false;
+}, { passive: true });
+canvas.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 1) { touchMoved = true; return; }
+  const t = e.touches[0];
+  const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
+  if (Math.sqrt(dx*dx + dy*dy) > 10) touchMoved = true;
+}, { passive: true });
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
+  if (touchMoved) return;
   const t = e.changedTouches[0];
   handleTap(t.clientX, t.clientY);
 }, { passive: false });
 
 window.addEventListener('resize', () => { initCanvas(); drawBoard(); });
 
+// ===== SAVE / RESTORE =====
+function showSaveToast(msg) {
+  let t = document.getElementById('save-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'save-toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(50,200,100,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 1500);
+}
+
+function saveGame() {
+  const data = {
+    board: board,
+    currentTurn: currentTurn,
+    moveCount: moveCount,
+    playerWins: playerWins,
+    cpuWins: cpuWins,
+    gameOver: gameOver,
+    difficulty: difficulty,
+    ts: Date.now()
+  };
+  localStorage.setItem('gomoku_save', JSON.stringify(data));
+  showSaveToast('💾 保存しました！');
+}
+
+function checkRestore() {
+  try {
+    const raw = localStorage.getItem('gomoku_save');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Date.now() - data.ts > 24 * 60 * 60 * 1000) return;
+    if (data.gameOver || !data.moveCount) return;
+    const ov = document.getElementById('restore-overlay');
+    ov.style.display = 'flex';
+  } catch(e) {}
+}
+
+function restoreGame() {
+  try {
+    const raw = localStorage.getItem('gomoku_save');
+    const data = JSON.parse(raw);
+    board = data.board;
+    currentTurn = data.currentTurn;
+    moveCount = data.moveCount;
+    playerWins = data.playerWins;
+    cpuWins = data.cpuWins;
+    gameOver = false;
+    lastMove = null;
+    winCells = [];
+    cpuThinking = false;
+    if (data.difficulty) {
+      difficulty = data.difficulty;
+      document.getElementById('diffSelect').value = difficulty;
+    }
+    document.getElementById('restore-overlay').style.display = 'none';
+    updateStatus();
+    drawBoard();
+  } catch(e) {
+    document.getElementById('restore-overlay').style.display = 'none';
+  }
+}
+
+function declineRestore() {
+  document.getElementById('restore-overlay').style.display = 'none';
+  localStorage.removeItem('gomoku_save');
+}
+
 // ===== INIT =====
 initCanvas();
 initBoard();
+checkRestore();
 </script>
 <script id="home-nav-js">
 (function(){

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>リズム天国</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;}
@@ -185,6 +185,11 @@ body{
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(180,20,100,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(150,10,80,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #3a0820 0%, #200410 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -291,15 +296,15 @@ body{padding-top:44px!important;}
         <span class="led-label">コンボ</span>
       </div>
     </div>
-    <div class="tap-zone" id="tap-zone" ontouchstart="handleTap(event)" onmousedown="handleTap(event)">
+    <div class="tap-zone" id="tap-zone" onmousedown="handleTap(event)">
       ▼ TAP ▼
     </div>
     <!-- Piano key buttons (shown only for piano game) -->
-    <div id="piano-keys-ui" style="display:none;display:flex;gap:4px;padding:6px 8px;justify-content:center">
-      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(0)" onmousedown="window._pianoKeyTap(0)">ド</button>
-      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(1)" onmousedown="window._pianoKeyTap(1)">レ</button>
-      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(2)" onmousedown="window._pianoKeyTap(2)">ミ</button>
-      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" ontouchstart="window._pianoKeyTap(3)" onmousedown="window._pianoKeyTap(3)">ソ</button>
+    <div id="piano-keys-ui" style="gap:4px;padding:6px 8px;justify-content:center;display:none">
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" onmousedown="window._pianoKeyTap(0)">ド</button>
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" onmousedown="window._pianoKeyTap(1)">レ</button>
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" onmousedown="window._pianoKeyTap(2)">ミ</button>
+      <button class="act-btn" style="flex:1;padding:14px 4px;font-size:16px" onmousedown="window._pianoKeyTap(3)">ソ</button>
     </div>
   </div>
 
@@ -474,10 +479,10 @@ function closeModal(id){document.getElementById(id).classList.remove('visible');
 
 // ─── High Score ───────────────────────────────────────────────────────────────
 const HS_KEY='rhythm_hs_v1';
-const GAME_NAMES=['🥁 タンバリン','🐸 カエル','⚔️ サムライ'];
+const GAME_NAMES=['🥁 タンバリン','🐸 カエル','⚔️ サムライ','🏀 ドリブル','🎹 ピアノ','🐤 ひよこ','🎤 歌手'];
 function loadHS(){try{return JSON.parse(localStorage.getItem(HS_KEY))||{};}catch(e){return {};}}
 function saveHS(idx,rank){const hs=loadHS();const order=['パーフェクト！','グレート！','OK！','もう一回！'];const cur=hs[idx];if(!cur||order.indexOf(rank)<order.indexOf(cur))hs[idx]=rank;localStorage.setItem(HS_KEY,JSON.stringify(hs));}
-function updateMenuHS(){const hs=loadHS();for(let i=0;i<3;i++){const el=document.getElementById('hs-'+i);el.textContent=hs[i]?('Best: '+hs[i]):'-';}}
+function updateMenuHS(){const hs=loadHS();for(let i=0;i<7;i++){const el=document.getElementById('hs-'+i);if(el)el.textContent=hs[i]?('Best: '+hs[i]):'-';}}
 function buildHSBody(){const hs=loadHS();let s='';GAME_NAMES.forEach((n,i)=>{s+=`<div style="padding:6px 0;border-bottom:1px solid #302060"><b>${n}</b><br><span style="color:#ffe870">${hs[i]||'未プレイ'}</span></div>`;});document.getElementById('hs-body').innerHTML=s||'まだ記録なし';}
 
 // ─── Judge ────────────────────────────────────────────────────────────────────
@@ -682,7 +687,7 @@ function showEndScreen(rank,emoji){
   document.getElementById('end-rank-text').style.color=rank==='パーフェクト！'?'#ffe870':rank==='グレート！'?'#44ffaa':rank==='OK！'?'#88aaff':'#ff6688';
   const total=perfects+goods+misses;
   document.getElementById('end-stats').innerHTML=`
-    <div class="end-stat-row"><span>ゲーム</span><span>${GAME_NAMES[allStages?2:currentGame].split(' ')[0]}</span></div>
+    <div class="end-stat-row"><span>ゲーム</span><span>${(GAME_NAMES[currentGame]||GAME_NAMES[0]).split(' ')[0]}</span></div>
     <div class="end-stat-row"><span>スコア</span><span style="color:#ff44aa">${score}</span></div>
     <div class="end-stat-row"><span>✨ パーフェクト</span><span style="color:#ffe870">${perfects}</span></div>
     <div class="end-stat-row"><span>👍 グッド</span><span style="color:#44ffaa">${goods}</span></div>
@@ -727,7 +732,63 @@ function handleTap(e){
 }
 
 canvas.addEventListener('mousedown',handleTap);
-canvas.addEventListener('touchstart',handleTap,{passive:false});
+(function(){
+  var txStart=0, tyStart=0, touchMoved=false;
+  canvas.addEventListener('touchstart', function(e) {
+    txStart = e.touches[0].clientX;
+    tyStart = e.touches[0].clientY;
+    touchMoved = e.touches.length > 1;
+  }, {passive: true});
+  canvas.addEventListener('touchmove', function(e) {
+    var dx = e.touches[0].clientX - txStart;
+    var dy = e.touches[0].clientY - tyStart;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) touchMoved = true;
+  }, {passive: true});
+  canvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    if (!touchMoved) handleTap(e);
+  }, {passive: false});
+})();
+(function(){
+  var tz = document.getElementById('tap-zone');
+  var txStart=0, tyStart=0, touchMoved=false;
+  tz.addEventListener('touchstart', function(e) {
+    txStart = e.touches[0].clientX;
+    tyStart = e.touches[0].clientY;
+    touchMoved = e.touches.length > 1;
+  }, {passive: true});
+  tz.addEventListener('touchmove', function(e) {
+    var dx = e.touches[0].clientX - txStart;
+    var dy = e.touches[0].clientY - tyStart;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) touchMoved = true;
+  }, {passive: true});
+  tz.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    if (!touchMoved) handleTap(e);
+  }, {passive: false});
+})();
+(function(){
+  var pui = document.getElementById('piano-keys-ui');
+  var btns = pui ? pui.querySelectorAll('button') : [];
+  [0,1,2,3].forEach(function(key) {
+    if (!btns[key]) return;
+    var txStart=0, tyStart=0, touchMoved=false;
+    btns[key].addEventListener('touchstart', function(e) {
+      txStart = e.touches[0].clientX;
+      tyStart = e.touches[0].clientY;
+      touchMoved = e.touches.length > 1;
+    }, {passive: true});
+    btns[key].addEventListener('touchmove', function(e) {
+      var dx = e.touches[0].clientX - txStart;
+      var dy = e.touches[0].clientY - tyStart;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) touchMoved = true;
+    }, {passive: true});
+    btns[key].addEventListener('touchend', function(e) {
+      e.preventDefault();
+      if (!touchMoved) window._pianoKeyTap(key);
+    }, {passive: false});
+  });
+})();
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&gameRunning){e.preventDefault();handleTap(e);}});
 
 function applyJudgment(j,cx,cy){

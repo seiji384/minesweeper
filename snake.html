@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>スネーク</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -187,6 +187,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(30,130,60,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(10,100,40,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #083018 0%, #041808 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -398,6 +403,7 @@ function startGame() {
 }
 
 function resetGame() {
+  localStorage.removeItem('snake_save');
   clearInterval(loopTimer);
   gameState = 'idle';
   setupCanvas();
@@ -431,6 +437,7 @@ function gameLoop() {
     }
     updateLEDs();
     placeFood();
+    saveGame();
   } else {
     snake.pop();
   }
@@ -439,6 +446,7 @@ function gameLoop() {
 }
 
 function endGame() {
+  localStorage.removeItem('snake_save');
   clearInterval(loopTimer);
   gameState = 'over';
   best = Math.max(best || 0, score);
@@ -574,6 +582,49 @@ function saveBest(val) {
   if (val > cur) localStorage.setItem('snake_best', val);
 }
 
+function saveGame() {
+  if (gameState !== 'running') return;
+  localStorage.setItem('snake_save', JSON.stringify({
+    snake: snake, food: food, dir: dir, nextDir: nextDir,
+    score: score, level: level, savedAt: Date.now()
+  }));
+}
+
+function tryLoadSave() {
+  const raw = localStorage.getItem('snake_save');
+  if (!raw) return false;
+  try {
+    const s = JSON.parse(raw);
+    if (!s.savedAt || Date.now() - s.savedAt > 7*24*60*60*1000) { localStorage.removeItem('snake_save'); return false; }
+    window._pendingSnakeSave = s;
+    showOverlay('続きから再開しますか？', '', '');
+    document.getElementById('overlay-sub').innerHTML =
+      '<button onclick="resumeSnake()" style="margin:4px 6px;padding:8px 20px;border-radius:14px;background:linear-gradient(160deg,#3a2080,#22105a);color:#b898ff;border:1px solid #5a3aaa;font-weight:bold;cursor:pointer;">はい</button>' +
+      '<button onclick="declineSnake()" style="margin:4px 6px;padding:8px 20px;border-radius:14px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;cursor:pointer;">いいえ</button>';
+    document.getElementById('overlay-score').textContent = '';
+    return true;
+  } catch(e) { localStorage.removeItem('snake_save'); return false; }
+}
+
+window.resumeSnake = function() {
+  const s = window._pendingSnakeSave;
+  if (!s) { declineSnake(); return; }
+  setupCanvas();
+  snake = s.snake; food = s.food; dir = s.dir; nextDir = s.nextDir;
+  score = s.score; level = s.level;
+  gameState = 'running';
+  hideOverlay();
+  updateLEDs();
+  drawGame();
+  clearInterval(loopTimer);
+  loopTimer = setInterval(gameLoop, getInterval());
+};
+
+window.declineSnake = function() {
+  localStorage.removeItem('snake_save');
+  resetGame();
+};
+
 function showHiScore() {
   document.getElementById('hiscore-body').innerHTML = renderHiRec('snake','点');
   openModal('hiscore-modal');
@@ -599,25 +650,66 @@ document.addEventListener('keydown', e => {
   }
 });
 
-document.getElementById('dpad-up').addEventListener('click', ()=>{ if(gameState!=='running')startGame(); else trySetDir(0,-1); });
-document.getElementById('dpad-down').addEventListener('click', ()=>{ if(gameState!=='running')startGame(); else trySetDir(0,1); });
-document.getElementById('dpad-left').addEventListener('click', ()=>{ if(gameState!=='running')startGame(); else trySetDir(-1,0); });
-document.getElementById('dpad-right').addEventListener('click', ()=>{ if(gameState!=='running')startGame(); else trySetDir(1,0); });
+// Dpad buttons with touchMoved pattern
+(function(){
+  const dpadMap = {
+    'dpad-up':    [0,-1],
+    'dpad-down':  [0, 1],
+    'dpad-left':  [-1,0],
+    'dpad-right': [1, 0]
+  };
+  Object.keys(dpadMap).forEach(id => {
+    const btn = document.getElementById(id);
+    const [dx, dy] = dpadMap[id];
+    let txS=0, tyS=0, moved=false;
+    btn.addEventListener('touchstart', e => {
+      if (e.touches.length > 1) { moved = true; return; }
+      txS = e.touches[0].clientX; tyS = e.touches[0].clientY; moved = false;
+    }, { passive: true });
+    btn.addEventListener('touchmove', e => {
+      if (!moved) {
+        const ddx = e.touches[0].clientX - txS, ddy = e.touches[0].clientY - tyS;
+        if (Math.abs(ddx) > 10 || Math.abs(ddy) > 10) moved = true;
+      }
+    }, { passive: true });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      if (moved) return;
+      if (gameState !== 'running') startGame(); else trySetDir(dx, dy);
+    }, { passive: false });
+    btn.addEventListener('click', () => {
+      if (gameState !== 'running') startGame(); else trySetDir(dx, dy);
+    });
+  });
+})();
 
-// Canvas tap to start
+// Canvas tap to start (mouse)
 canvas.addEventListener('click', ()=>{ if(gameState!=='running') startGame(); });
 
-// Swipe
-let touchStartX=0, touchStartY=0;
-canvas.addEventListener('touchstart', e=>{ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; e.preventDefault(); }, {passive:false});
+// Canvas swipe with touchMoved pattern
+let touchStartX=0, touchStartY=0, touchMoved=false;
+canvas.addEventListener('touchstart', e=>{
+  if (e.touches.length > 1) { touchMoved = true; e.preventDefault(); return; }
+  touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; touchMoved=false;
+  e.preventDefault();
+}, {passive:false});
+canvas.addEventListener('touchmove', e=>{
+  if (!touchMoved) {
+    const dx=e.touches[0].clientX-touchStartX, dy=e.touches[0].clientY-touchStartY;
+    if (Math.abs(dx)>10||Math.abs(dy)>10) touchMoved=true;
+  }
+}, {passive:true});
 canvas.addEventListener('touchend', e=>{
+  e.preventDefault();
+  if (!touchMoved) {
+    if (gameState !== 'running') startGame();
+    return;
+  }
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
   if (gameState !== 'running') { startGame(); return; }
-  if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
   if (Math.abs(dx) > Math.abs(dy)) trySetDir(dx>0?1:-1, 0);
   else trySetDir(0, dy>0?1:-1);
-  e.preventDefault();
 }, {passive:false});
 
 // Init
@@ -627,7 +719,7 @@ best = parseInt(localStorage.getItem('snake_best') || '0');
 initGame();
 drawGame();
 updateLEDs();
-showOverlay('スネーク', 'タップ / スペースでスタート', '');
+if (!tryLoadSave()) showOverlay('スネーク', 'タップ / スペースでスタート', '');
 </script>
 <script id="home-nav-js">
 (function(){

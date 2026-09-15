@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>倉庫番</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -93,7 +93,7 @@ body {
 .cell-floor { background: #04020e; }
 .cell-player { background: #04020e; }
 .cell-box { background: linear-gradient(145deg, #804000, #502000); border: 1px solid #c08020; border-radius: 4px; }
-.cell-goal { background: #04020e; }
+.cell-goal { background: linear-gradient(160deg, #200818, #10040c); border: 1px solid rgba(255,70,130,0.35); }
 .cell-box-on-goal { background: radial-gradient(circle, #3a2400, #1a1000); border: 2px solid #f5c842; border-radius: 4px; }
 
 #game-area {
@@ -214,6 +214,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(140,80,25,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(110,60,15,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #281808 0%, #181004 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -279,6 +284,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" id="btn-undo">↩ アンドゥ</button>
   <button class="act-btn" id="btn-reset">🔄 リセット</button>
   <button class="act-btn" id="btn-next">⏭ 次レベル</button>
+  <button class="act-btn" onclick="manualSave()">💾 保存</button>
 </div>
 
 <!-- Rules modal -->
@@ -518,6 +524,7 @@ function move(dir) {
 
   updateLEDs();
   renderGrid();
+  autoSave();
   checkWin();
 }
 
@@ -640,7 +647,7 @@ function renderGrid() {
           break;
         case GOAL:
           cell.className = 'cell-goal';
-          cell.innerHTML = `<span style="opacity:0.45;font-size:${emojiSize}px;">⭐</span>`;
+          cell.innerHTML = `<span style="color:#ff4488;font-size:${Math.round(emojiSize*0.85)}px;text-shadow:0 0 6px #ff4488;opacity:0.95;">●</span>`;
           break;
         case BOX_ON_GOAL:
           cell.className = 'cell-box-on-goal';
@@ -660,12 +667,18 @@ function renderGrid() {
 
 // ===== TOUCH SWIPE =====
 const gameArea = document.getElementById('game-area');
-let sx, sy;
+let sx, sy, swipeMulti = false;
 gameArea.addEventListener('touchstart', e => {
+  if (e.touches.length > 1) { swipeMulti = true; return; }
   sx = e.touches[0].clientX;
   sy = e.touches[0].clientY;
+  swipeMulti = false;
+}, {passive: true});
+gameArea.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) swipeMulti = true;
 }, {passive: true});
 gameArea.addEventListener('touchend', e => {
+  if (swipeMulti) return;
   const dx = e.changedTouches[0].clientX - sx;
   const dy = e.changedTouches[0].clientY - sy;
   if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
@@ -758,8 +771,45 @@ function startConfetti(){const cv=document.getElementById('confetti');cv.style.d
 // ===== RESIZE HANDLER =====
 window.addEventListener('resize', () => { renderGrid(); });
 
+// ===== TOAST =====
+function showToast(msg){let t=document.getElementById('save-toast');if(!t){t=document.createElement('div');t.id='save-toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(50,200,100,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',1500);}
+
+// ===== SAVE / LOAD =====
+function autoSave(){
+  if(won) return;
+  const data={
+    level:currentLevel,
+    grid:grid.map(row=>row.join('')),
+    playerPos:{...playerPos},
+    moveCount,
+    ts:Date.now()
+  };
+  localStorage.setItem('sokoban_save',JSON.stringify(data));
+}
+function manualSave(){autoSave();showToast('💾 保存しました！');}
+function tryLoadSave(){
+  try{
+    const raw=localStorage.getItem('sokoban_save');
+    if(!raw) return false;
+    const data=JSON.parse(raw);
+    if(!data||!data.ts) return false;
+    if(Date.now()-data.ts>7*24*60*60*1000) return false;
+    currentLevel=data.level;
+    grid=data.grid.map(row=>row.split(''));
+    playerPos={...data.playerPos};
+    moveCount=data.moveCount;
+    won=false;
+    history=[];
+    document.getElementById('win-overlay').classList.remove('visible');
+    updateLEDs();
+    renderGrid();
+    updateLevelSelector();
+    return true;
+  }catch(e){return false;}
+}
+
 // ===== INIT =====
-loadLevel(0);
+if(!tryLoadSave()) loadLevel(0);
 </script>
 <script id="home-nav-js">
 (function(){

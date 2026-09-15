@@ -121,6 +121,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(160,135,20,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(135,110,10,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #2c2408 0%, #1c1804 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -160,6 +165,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="newPuzzle()">🔄 新しいパズル</button>
   <button class="act-btn active-diff" id="diff-btn" onclick="cycleDiff()">難易度: ふつう</button>
   <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
+  <button class="act-btn" onclick="manualSave()">💾 保存</button>
 </div>
 
 <div class="modal-overlay" id="modal-rules">
@@ -243,7 +249,10 @@ function renderGrid(){
     cell.className='cell '+(grid[i]?'on':'off');
     cell.dataset.idx=i;
     cell.addEventListener('click',()=>handleClick(i));
-    cell.addEventListener('touchend',e=>{e.preventDefault();handleClick(i);});
+    let startX=0,startY=0,moved=false;
+    cell.addEventListener('touchstart',e=>{if(e.touches.length>1){moved=true;return;}startX=e.touches[0].clientX;startY=e.touches[0].clientY;moved=false;},{passive:true});
+    cell.addEventListener('touchmove',e=>{if(e.touches.length>1){moved=true;return;}const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;if(dx*dx+dy*dy>100)moved=true;},{passive:true});
+    cell.addEventListener('touchend',e=>{e.preventDefault();if(!moved)handleClick(i);},{passive:false});
     container.appendChild(cell);
   }
 }
@@ -261,6 +270,7 @@ function handleClick(idx){
   moves++;
   document.getElementById('led-moves').textContent=moves;
   updateGrid();
+  autoSave();
   checkWin();
 }
 
@@ -331,7 +341,36 @@ function updateHiModal(){
   document.getElementById('hi-body').innerHTML=html;
 }
 
-newPuzzle();
+// ── Toast ──
+function showToast(msg){let t=document.getElementById('save-toast');if(!t){t=document.createElement('div');t.id='save-toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(50,200,100,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',1500);}
+
+// ── Save / Load ──
+function autoSave(){
+  if(gameOver) return;
+  const data={grid:[...grid],moves,difficulty,ts:Date.now()};
+  localStorage.setItem('lightsout_save',JSON.stringify(data));
+}
+function manualSave(){autoSave();showToast('💾 保存しました！');}
+function tryLoadSave(){
+  try{
+    const raw=localStorage.getItem('lightsout_save');
+    if(!raw) return false;
+    const data=JSON.parse(raw);
+    if(!data||!data.ts) return false;
+    if(Date.now()-data.ts>7*24*60*60*1000) return false;
+    grid=data.grid;
+    moves=data.moves;
+    difficulty=data.difficulty||'normal';
+    document.getElementById('diff-btn').textContent='難易度: '+diffConfig[difficulty].label;
+    document.getElementById('led-moves').textContent=moves;
+    gameOver=false;
+    renderGrid();
+    updateBestLED();
+    return true;
+  }catch(e){return false;}
+}
+
+if(!tryLoadSave()) newPuzzle();
 </script>
 <script id="home-nav-js">
 (function(){

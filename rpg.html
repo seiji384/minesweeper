@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>ミニRPG ～勇者と仲間たち～</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -266,6 +266,11 @@ hr.sep { border: none; border-top: 1px solid #2a1860; margin: 10px 0; }
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(90,15,170,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(65,8,145,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #120530 0%, #0c0320 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -1560,6 +1565,37 @@ function showEndingScreen() {
 window.addEventListener('resize', initStars);
 initStars();
 drawStars();
+
+// Touch fix: global tracker + delegation for all interactive elements
+(function(){
+  let txM=false,txX=0,txY=0;
+  document.addEventListener('touchstart',e=>{
+    if(e.touches.length>1){txM=true;return;}
+    txX=e.touches[0].clientX;txY=e.touches[0].clientY;txM=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(txM)return;
+    if(e.touches.length>1){txM=true;return;}
+    const dx=e.touches[0].clientX-txX,dy=e.touches[0].clientY-txY;
+    if(dx*dx+dy*dy>100)txM=true;
+  },{passive:true});
+  function addDel(container,sel){
+    container.addEventListener('touchend',e=>{
+      if(txM)return;
+      const tgt=e.target.closest(sel);
+      if(!tgt||tgt.disabled)return;
+      e.preventDefault();
+      tgt.click();
+    },{passive:false});
+  }
+  const app=document.getElementById('app');
+  const ov=document.getElementById('overlay');
+  const ab=document.getElementById('action-bar');
+  if(app) addDel(app,'.btn,.village-card,.area-card');
+  if(ov)  addDel(ov,'.btn');
+  if(ab)  addDel(ab,'.btn');
+})();
+
 renderTitle();
 </script>
 <script id="home-nav-js">

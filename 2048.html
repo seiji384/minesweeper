@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>2048パズル</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -163,6 +163,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(180,80,20,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(150,50,5,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #40180a 0%, #281004 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -204,6 +209,14 @@ body{padding-top:44px!important;}
         <div class="btn-row">
           <button class="o-btn" onclick="continueGame()">続ける</button>
           <button class="o-btn2" onclick="newGame()">新ゲーム</button>
+        </div>
+      </div>
+
+      <div class="overlay" id="over-resume">
+        <h2 style="color:#f5c842;text-shadow:0 0 20px #f5c842">続きから再開しますか？</h2>
+        <div class="btn-row">
+          <button class="o-btn" onclick="resumeGame()">はい</button>
+          <button class="o-btn2" onclick="declineResume()">いいえ</button>
         </div>
       </div>
     </div>
@@ -313,7 +326,43 @@ function saveBest() {
   }
 }
 
+function saveGame() {
+  if (isGameOver) { localStorage.removeItem('2048_save'); return; }
+  localStorage.setItem('2048_save', JSON.stringify({
+    board: board, score: score, bestScore: bestScore, wonShown: wonShown, savedAt: Date.now()
+  }));
+}
+
+function tryLoadSave() {
+  const raw = localStorage.getItem('2048_save');
+  if (!raw) return false;
+  try {
+    const s = JSON.parse(raw);
+    if (!s.savedAt || Date.now() - s.savedAt > 7*24*60*60*1000) { localStorage.removeItem('2048_save'); return false; }
+    window._pendingSave2048 = s;
+    document.getElementById('over-resume').classList.add('visible');
+    return true;
+  } catch(e) { localStorage.removeItem('2048_save'); return false; }
+}
+
+function resumeGame() {
+  const s = window._pendingSave2048;
+  if (!s) { declineResume(); return; }
+  board = s.board; score = s.score; bestScore = s.bestScore || bestScore;
+  wonShown = s.wonShown || false; isGameOver = false;
+  newTilePos = null; mergedSet = new Set();
+  document.getElementById('over-resume').classList.remove('visible');
+  render();
+}
+
+function declineResume() {
+  localStorage.removeItem('2048_save');
+  document.getElementById('over-resume').classList.remove('visible');
+  newGame();
+}
+
 function newGame() {
+  localStorage.removeItem('2048_save');
   board = Array.from({length:4}, () => Array(4).fill(0));
   score = 0;
   wonShown = false; isGameOver = false;
@@ -404,6 +453,7 @@ function move(dir) {
   render();
   checkWin();
   checkGameOver();
+  saveGame();
 }
 
 function checkWin() {
@@ -464,17 +514,23 @@ document.addEventListener('keydown', e => {
   if (map[e.key]) { e.preventDefault(); move(map[e.key]); }
 });
 
-let tx = 0, ty = 0;
+let tx = 0, ty = 0, touchMoved = false;
 const gridEl = document.getElementById('grid');
 gridEl.addEventListener('touchstart', e => {
-  tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+  if (e.touches.length > 1) { touchMoved = true; return; }
+  tx = e.touches[0].clientX; ty = e.touches[0].clientY; touchMoved = false;
+}, { passive: true });
+gridEl.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) touchMoved = true;
 }, { passive: true });
 gridEl.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (touchMoved) return;
   const dx = e.changedTouches[0].clientX - tx;
   const dy = e.changedTouches[0].clientY - ty;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
   move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-}, { passive: true });
+}, { passive: false });
 
 // ── Modals ────────────────────────────────────────────────────────────────────
 function showModal(type) {
@@ -528,7 +584,7 @@ if (window.visualViewport) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadBest();
-newGame();
+if (!tryLoadSave()) newGame();
 </script>
 <script id="home-nav-js">
 (function(){

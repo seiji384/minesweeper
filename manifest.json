@@ -1,0 +1,13 @@
+{
+  "name": "ミニゲーム集",
+  "short_name": "ゲーム集",
+  "description": "26種類のミニゲームがオフラインで遊べる！広告なし・完全無料",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "./",
+  "scope": "./",
+  "background_color": "#0d0830",
+  "theme_color": "#0d0830",
+  "lang": "ja",
+  "categories": ["games", "entertainment"]
+}

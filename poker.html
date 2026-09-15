@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>🃏 ポーカー</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -266,6 +266,11 @@ hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(150,15,20,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(120,8,15,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #28060a 0%, #180404 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -315,6 +320,30 @@ body{padding-top:44px!important;}
 
 <!-- Action bar (injected by JS) -->
 <div class="action-bar" id="actionBar"></div>
+
+<!-- Resume overlay -->
+<div class="modal-overlay" id="pk-resume-overlay">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>&#127183;</span>
+      <span>セーブデータ</span>
+      <span>&#127183;</span>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="margin-bottom:18px;font-size:15px;">続きから再開しますか？</p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button onclick="pkResume()"
+          style="padding:9px 24px;background:linear-gradient(160deg,#1a5020,#0d2810);color:#77ff88;border:2px solid #336640;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;">
+          はい
+        </button>
+        <button onclick="pkResumeNo()"
+          style="padding:9px 24px;background:linear-gradient(160deg,#3a1010,#1a0808);color:#ff8888;border:1px solid #aa3030;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;touch-action:manipulation;">
+          いいえ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Rules modal -->
 <div class="modal-overlay" id="rulesModal">
@@ -568,14 +597,33 @@ function makeCardEl(card, faceDown, selected, clickable) {
   el.appendChild(mid);
   el.appendChild(br);
 
-  if (clickable) el.addEventListener('click', () => clickable(el));
+  if (clickable) {
+    const action = () => clickable(el);
+    el.addEventListener('click', action);
+    (function() {
+      let touchMoved = false, txStart = 0, tyStart = 0;
+      el.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) { touchMoved = true; return; }
+        txStart = e.touches[0].clientX; tyStart = e.touches[0].clientY; touchMoved = false;
+      }, {passive: true});
+      el.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 0 &&
+            (Math.abs(e.touches[0].clientX - txStart) > 10 ||
+             Math.abs(e.touches[0].clientY - tyStart) > 10)) touchMoved = true;
+      }, {passive: true});
+      el.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        if (!touchMoved) action();
+      }, {passive: false});
+    })();
+  }
   return el;
 }
 
 // ══════════════════════════════════════════════
 //  GAME STATE
 // ══════════════════════════════════════════════
-let chips = parseInt(localStorage.getItem('poker_chips') || '1000');
+let chips = (function(){try{var s=JSON.parse(localStorage.getItem('poker_save')||'{}');return s.chips||1000;}catch(e){return 1000;}}());
 let deck = [];
 let playerHand = [];  // [{r, s}]
 let cpuHand    = [];
@@ -584,7 +632,15 @@ let betAmt = 0;
 let currentBet = 0;
 let phase = 'betting'; // betting | draw | result
 
-function saveChips() { localStorage.setItem('poker_chips', String(chips)); }
+function saveGame() {
+  try {
+    localStorage.setItem('poker_save', JSON.stringify({
+      chips: chips, deck: deck, playerHand: playerHand, cpuHand: cpuHand,
+      discardIdx: Array.from(discardIdx), betAmt: betAmt, currentBet: currentBet,
+      phase: phase, savedAt: Date.now()
+    }));
+  } catch(e) {}
+}
 
 function updateTopHUD() {
   document.getElementById('chipsLed').textContent = chips.toLocaleString();
@@ -635,6 +691,23 @@ function updateHint() {
 // ══════════════════════════════════════════════
 //  ACTION BAR
 // ══════════════════════════════════════════════
+function addBtnTouch(btn, action) {
+  let touchMoved = false, txStart = 0, tyStart = 0;
+  btn.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) { touchMoved = true; return; }
+    txStart = e.touches[0].clientX; tyStart = e.touches[0].clientY; touchMoved = false;
+  }, {passive: true});
+  btn.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 0 &&
+        (Math.abs(e.touches[0].clientX - txStart) > 10 ||
+         Math.abs(e.touches[0].clientY - tyStart) > 10)) touchMoved = true;
+  }, {passive: true});
+  btn.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    if (!touchMoved) action();
+  }, {passive: false});
+}
+
 function renderActionBar() {
   const bar = document.getElementById('actionBar');
   bar.innerHTML = '';
@@ -646,7 +719,9 @@ function renderActionBar() {
       btn.className = 'btn' + (betAmt === b ? ' bet-selected' : '');
       btn.textContent = b.toLocaleString() + 'G';
       btn.disabled = b > chips;
-      btn.onclick = () => { betAmt = b; renderActionBar(); };
+      const act = () => { betAmt = b; renderActionBar(); };
+      btn.onclick = act;
+      addBtnTouch(btn, act);
       bar.appendChild(btn);
     });
     // Deal button
@@ -655,6 +730,7 @@ function renderActionBar() {
     deal.textContent = '🃏 ディール';
     deal.disabled = betAmt === 0 || betAmt > chips;
     deal.onclick = doDeal;
+    addBtnTouch(deal, doDeal);
     bar.appendChild(deal);
     // Rules
     bar.appendChild(rulesBtn());
@@ -669,6 +745,7 @@ function renderActionBar() {
       drawBtn.textContent = `🔄 ${discardIdx.size}枚交換`;
     }
     drawBtn.onclick = doDraw;
+    addBtnTouch(drawBtn, doDraw);
     bar.appendChild(drawBtn);
     bar.appendChild(rulesBtn());
 
@@ -677,6 +754,7 @@ function renderActionBar() {
     again.className = 'btn btn-primary';
     again.textContent = chips > 0 ? '▶ もう一度' : '🔄 リセット（1000G）';
     again.onclick = doNextRound;
+    addBtnTouch(again, doNextRound);
     bar.appendChild(again);
     bar.appendChild(rulesBtn());
   }
@@ -687,6 +765,7 @@ function rulesBtn() {
   b.className = 'btn';
   b.textContent = '📖 ルール';
   b.onclick = openRules;
+  addBtnTouch(b, openRules);
   return b;
 }
 
@@ -701,7 +780,6 @@ function doDeal() {
 
   currentBet = betAmt;
   chips -= currentBet;
-  saveChips();
 
   deck = shuffle(makeDeck());
   playerHand = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
@@ -720,6 +798,7 @@ function doDeal() {
   setMsg(`ベット <span class="led-sm">${currentBet}</span> チップを賭けました。捨てるカードを選んでください。`);
   updateHint();
   renderActionBar();
+  saveGame();
 }
 
 function doDraw() {
@@ -756,15 +835,15 @@ function doDraw() {
 
     if (cmp > 0) {
       chips += currentBet * 2;
-      saveChips();
+      saveGame();
       msgHtml = `<span class="badge badge-win">🎉 あなたの勝ち！ +${currentBet.toLocaleString()}G</span>`;
       launchConfetti();
     } else if (cmp < 0) {
-      saveChips();
+      saveGame();
       msgHtml = `<span class="badge badge-lose">😢 CPUの勝ち！ −${currentBet.toLocaleString()}G</span>`;
     } else {
       chips += currentBet; // push
-      saveChips();
+      saveGame();
       msgHtml = `<span class="badge badge-push">🤝 引き分け！ ベット返却</span>`;
     }
 
@@ -775,10 +854,7 @@ function doDraw() {
 }
 
 function doNextRound() {
-  if (chips <= 0) {
-    chips = 1000;
-    saveChips();
-  }
+  if (chips <= 0) chips = 1000;
   betAmt = 0;
   currentBet = 0;
   phase = 'betting';
@@ -794,6 +870,60 @@ function doNextRound() {
   setMsg('ベット額を選んでゲームを開始してください');
   updateTopHUD();
   renderActionBar();
+  saveGame();
+}
+
+// ══════════════════════════════════════════════
+//  SAVE / RESTORE
+// ══════════════════════════════════════════════
+function tryLoadSave() {
+  try {
+    const raw = localStorage.getItem('poker_save');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    const age = Date.now() - (s.savedAt || 0);
+    if (age > 7 * 24 * 3600 * 1000) { localStorage.removeItem('poker_save'); return; }
+    const needsResume = s.phase === 'draw' || s.phase === 'result';
+    if (!needsResume) return;
+    window._pkPendingSave = s;
+    document.getElementById('pk-resume-overlay').classList.add('visible');
+  } catch(e) {}
+}
+
+function pkResume() {
+  const s = window._pkPendingSave;
+  if (!s) return;
+  chips      = s.chips;
+  deck       = s.deck || [];
+  playerHand = s.playerHand || [];
+  cpuHand    = s.cpuHand || [];
+  discardIdx = new Set(s.discardIdx || []);
+  betAmt     = s.betAmt || 0;
+  currentBet = s.currentBet || 0;
+  phase      = s.phase;
+  document.getElementById('pk-resume-overlay').classList.remove('visible');
+  updateTopHUD();
+  if (phase === 'draw') {
+    renderCpuHand(true);
+    renderPlayerHand(true);
+    const pe = evalHand(playerHand);
+    setPlayerHN(pe.nameJa);
+    setCpuHN('');
+    setMsg(`ベット <span class="led-sm">${currentBet}</span> チップを賭けました。捨てるカードを選んでください。`);
+    updateHint();
+  } else if (phase === 'result') {
+    renderCpuHand(false);
+    renderPlayerHand(false);
+    if (playerHand.length) setPlayerHN(evalHand(playerHand).nameJa);
+    if (cpuHand.length)    setCpuHN(evalHand(cpuHand).nameJa);
+    setMsg('ゲームを再開しました。');
+  }
+  renderActionBar();
+}
+
+function pkResumeNo() {
+  localStorage.removeItem('poker_save');
+  document.getElementById('pk-resume-overlay').classList.remove('visible');
 }
 
 // ══════════════════════════════════════════════
@@ -802,6 +932,7 @@ function doNextRound() {
 updateTopHUD();
 setMsg('ベット額を選んでゲームを開始してください');
 renderActionBar();
+tryLoadSave();
 </script>
 <script id="home-nav-js">
 (function(){

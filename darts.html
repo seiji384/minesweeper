@@ -94,6 +94,11 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(110,10,10,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(85,5,5,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #1e0404 0%, #140202 100%) !important; }</style>
+<!-- pwa-meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
@@ -169,6 +174,20 @@ body{padding-top:44px!important;}
   <div class="modal-box">
     <div class="modal-title"><span>🏆 ハイスコア</span><button class="modal-close" onclick="hideModal('modal-hi')">✕</button></div>
     <div class="modal-body" id="hi-body">読込中…</div>
+  </div>
+</div>
+
+<!-- Resume overlay -->
+<div class="modal-overlay" id="resume-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><span>💾 セーブデータ</span></div>
+    <div class="modal-body" style="text-align:center">
+      <p style="margin-bottom:16px">続きから再開しますか？</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="act-btn" id="resume-yes" style="padding:10px 24px;font-size:14px">はい</button>
+        <button class="act-btn" id="resume-no" style="padding:10px 24px;font-size:14px">いいえ</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -416,6 +435,7 @@ function throwDart(){
     drawBoard(null,landedDarts);
     stopReticle();
     gameOver=true;
+    localStorage.removeItem('darts_save');
     flash('🎉 あなたの勝ち！', '#ffe060');
     startConfetti();
     saveBest(totalDartsThrown());
@@ -487,6 +507,7 @@ function cpuTurn(){
       drawBoard(null,cpuLanded);
       flash('CPU の勝ち…', '#ff6699');
       gameOver=true;
+      localStorage.removeItem('darts_save');
       document.getElementById('throw-btn').disabled=true;
       cpuThinking=false;
       return;
@@ -506,6 +527,7 @@ function cpuTurn(){
     landedDarts=[];
     dartsLeft=3; turnScores=[];
     playerTurn=true;
+    saveGame();
     updateLog();
     updateLEDs();
     drawBoard(reticle,landedDarts);
@@ -527,6 +549,7 @@ function updateHiModal(){
 }
 
 function newGame(){
+  localStorage.removeItem('darts_save');
   playerScore=501; cpuScore=501;
   dartsLeft=3; turnScores=[]; landedDarts=[];
   totalDarts=0; gameOver=false; playerTurn=true; cpuThinking=false;
@@ -538,7 +561,45 @@ function newGame(){
   flash('');
 }
 
-newGame();
+function saveGame(){
+  if(gameOver){localStorage.removeItem('darts_save');return;}
+  localStorage.setItem('darts_save',JSON.stringify({playerScore,cpuScore,totalDarts,savedAt:Date.now()}));
+}
+function tryLoadSave(){
+  newGame();
+  try{
+    const raw=localStorage.getItem('darts_save');
+    if(!raw)return;
+    const s=JSON.parse(raw);
+    if(!s||!s.savedAt||Date.now()-s.savedAt>7*24*60*60*1000){localStorage.removeItem('darts_save');return;}
+    document.getElementById('resume-overlay').classList.add('visible');
+    document.getElementById('resume-yes').onclick=function(){
+      document.getElementById('resume-overlay').classList.remove('visible');
+      stopReticle();
+      playerScore=s.playerScore;cpuScore=s.cpuScore;
+      dartsLeft=3;totalDarts=s.totalDarts||0;
+      gameOver=false;playerTurn=true;cpuThinking=false;
+      turnScores=[];landedDarts=[];
+      document.getElementById('throw-btn').disabled=false;
+      updateLEDs();updateLog();
+      reticleR=80;reticleAngle=0;
+      startReticle();
+    };
+    document.getElementById('resume-no').onclick=function(){
+      document.getElementById('resume-overlay').classList.remove('visible');
+      localStorage.removeItem('darts_save');
+    };
+  }catch(e){}
+}
+// Touch fix: throw button
+(function(){
+  let txM=false,txX=0,txY=0;
+  const btn=document.getElementById('throw-btn');
+  btn.addEventListener('touchstart',e=>{if(e.touches.length>1){txM=true;return;}txX=e.touches[0].clientX;txY=e.touches[0].clientY;txM=false;},{passive:true});
+  btn.addEventListener('touchmove',e=>{if(e.touches.length>1){txM=true;return;}const dx=e.touches[0].clientX-txX,dy=e.touches[0].clientY-txY;if(dx*dx+dy*dy>100)txM=true;},{passive:true});
+  btn.addEventListener('touchend',e=>{e.preventDefault();if(!txM)throwDart();},{passive:false});
+})();
+tryLoadSave();
 </script>
 <script id="home-nav-js">
 (function(){
