@@ -171,6 +171,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
   <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
+  <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
 </div>
 
 <div class="modal-overlay" id="modal-rules">
@@ -545,13 +546,13 @@ function throwBall(){
     if(currentFrame<10){
       if(rollInFrame===1){
         if(kCount===10){
-          msg='STRIKE！'; rollInFrame=1; standing=makePins();
+          msg='ストライク！'; rollInFrame=1; standing=makePins();
           currentFrame++;
         } else {
           rollInFrame=2;
         }
       } else {
-        if(kCount+rolls[rolls.length-2]===10) msg='SPARE！';
+        if(kCount+rolls[rolls.length-2]===10) msg='スペア！';
         rollInFrame=1; standing=makePins();
         currentFrame++;
       }
@@ -560,16 +561,16 @@ function throwBall(){
       const fr10start=getRollsForFrame(9);
       const cnt=fr10start.length;
       if(cnt===1){
-        if(kCount===10){ msg='STRIKE！'; standing=makePins(); rollInFrame=2; }
+        if(kCount===10){ msg='ストライク！'; standing=makePins(); rollInFrame=2; }
         else rollInFrame=2;
       } else if(cnt===2){
         const prev=fr10start[0];
         if(prev===10){
-          if(kCount===10){ msg='STRIKE！'; standing=makePins(); }
+          if(kCount===10){ msg='ストライク！'; standing=makePins(); }
           else standing=makePins(); // or just continue
           rollInFrame=3;
         } else if(prev+kCount===10){
-          msg='SPARE！'; standing=makePins(); rollInFrame=3;
+          msg='スペア！'; standing=makePins(); rollInFrame=3;
         } else {
           // done
           currentFrame=11;
@@ -636,6 +637,17 @@ function saveGame(){
   if(currentFrame>10){localStorage.removeItem('bowling_save');return;}
   localStorage.setItem('bowling_save',JSON.stringify({rolls,currentFrame,rollInFrame,standing,aimPct,savedAt:Date.now()}));
 }
+
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
+
+window.addEventListener('beforeunload', ()=>{ saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
 function tryLoadSave(){
   newGame();
   try{

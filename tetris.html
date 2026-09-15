@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -242,19 +242,19 @@ body{padding-top:44px!important;}
 
   <div class="scores-row">
     <div class="led-group">
-      <div class="led-label">Score</div>
+      <div class="led-label">スコア</div>
       <div class="led" id="led-score">0</div>
     </div>
     <div class="led-group">
-      <div class="led-label">Best</div>
+      <div class="led-label">ベスト</div>
       <div class="led" id="led-hi">0</div>
     </div>
     <div class="led-group">
-      <div class="led-label">Level</div>
+      <div class="led-label">レベル</div>
       <div class="led" id="led-level">1</div>
     </div>
     <div class="led-group">
-      <div class="led-label">Lines</div>
+      <div class="led-label">ライン</div>
       <div class="led" id="led-lines">0</div>
     </div>
   </div>
@@ -263,7 +263,7 @@ body{padding-top:44px!important;}
     <!-- Left panel: HOLD -->
     <div class="side-panel">
       <div class="panel-box">
-        <div class="panel-label">Hold</div>
+        <div class="panel-label">ホールド</div>
         <canvas id="hold-canvas" width="64" height="64"></canvas>
       </div>
     </div>
@@ -274,7 +274,7 @@ body{padding-top:44px!important;}
     <!-- Right panel: NEXT -->
     <div class="side-panel">
       <div class="panel-box">
-        <div class="panel-label">Next</div>
+        <div class="panel-label">ネクスト</div>
         <canvas id="next-canvas" width="64" height="192"></canvas>
       </div>
     </div>
@@ -283,8 +283,8 @@ body{padding-top:44px!important;}
   <!-- Overlay for start/game over -->
   <div id="overlay">
     <h2 id="overlay-title">TETRIS</h2>
-    <p id="overlay-msg">Swipe or use arrow keys<br>Space = hard drop<br>Tap to rotate</p>
-    <button class="btn overlay-btn" id="overlay-btn">START</button>
+    <p id="overlay-msg">スワイプまたは矢印キーで操作<br>スペース = 即落とし<br>タップ = 回転</p>
+    <button class="btn overlay-btn" id="overlay-btn">スタート</button>
   </div>
 
   <div class="action-bar">
@@ -297,9 +297,10 @@ body{padding-top:44px!important;}
       <button class="btn dpad-btn" id="btn-right">▶</button>
     </div>
     <div class="ctrl-row">
-      <button class="btn ctrl-btn" id="btn-hold">HOLD</button>
-      <button class="btn ctrl-btn" id="btn-drop">DROP</button>
-      <button class="btn ctrl-btn" id="btn-pause">PAUSE</button>
+      <button class="btn ctrl-btn" id="btn-hold">ホールド</button>
+      <button class="btn ctrl-btn" id="btn-drop">即落とし</button>
+      <button class="btn ctrl-btn" id="btn-pause">一時停止</button>
+      <button class="btn ctrl-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
       <button class="btn ctrl-btn" onclick="showHiScore()">🏆</button>
     </div>
   </div>
@@ -494,9 +495,9 @@ function declineTetris(){
   localStorage.removeItem('tetris_save');
   const nb=document.getElementById('overlay-no-btn');
   if(nb) nb.remove();
-  document.getElementById('overlay-btn').textContent='START';
+  document.getElementById('overlay-btn').textContent='スタート';
   document.getElementById('overlay-title').textContent='TETRIS';
-  document.getElementById('overlay-msg').innerHTML='Swipe or use arrow keys<br>Space = hard drop<br>Tap to rotate';
+  document.getElementById('overlay-msg').innerHTML='スワイプまたは矢印キーで操作<br>スペース = 即落とし<br>タップ = 回転';
   document.getElementById('overlay-btn').onclick=startGame;
   document.getElementById('overlay').style.display='flex';
 }
@@ -633,9 +634,9 @@ function holdPiece(){
 function endGame(){
   localStorage.removeItem('tetris_save');
   gameRunning=false; gameOver=true;
-  document.getElementById('overlay-title').textContent='GAME OVER';
-  document.getElementById('overlay-msg').innerHTML=`Score: ${score}<br>Best: ${hiScore}<br>Level: ${level}`;
-  document.getElementById('overlay-btn').textContent='PLAY AGAIN';
+  document.getElementById('overlay-title').textContent='ゲームオーバー';
+  document.getElementById('overlay-msg').innerHTML=`スコア: ${score}<br>ベスト: ${hiScore}<br>レベル: ${level}`;
+  document.getElementById('overlay-btn').textContent='もう一度';
   document.getElementById('overlay').style.display='flex';
 }
 
@@ -796,8 +797,9 @@ document.getElementById('overlay-btn').onclick = startGame;
 function togglePause(){
   if(!gameRunning||gameOver) return;
   paused=!paused;
-  document.getElementById('btn-pause').textContent=paused?'RESUME':'PAUSE';
-  if(!paused){ lastTime=0; requestAnimationFrame(gameLoop); }
+  document.getElementById('btn-pause').textContent=paused?'再開':'一時停止';
+  if(paused){ saveGame(); }
+  else { lastTime=0; requestAnimationFrame(gameLoop); }
 }
 
 // Touch controls on canvas — touchMoved pattern
@@ -851,6 +853,21 @@ function addDAS(btn, fn){
 }
 addDAS(document.getElementById('btn-left'),()=>move(-1));
 addDAS(document.getElementById('btn-right'),()=>move(1));
+
+// Auto-save every 20 seconds while playing
+setInterval(()=>{ if(gameRunning&&!gameOver&&!paused) saveGame(); }, 20000);
+// Save on page close/navigate
+window.addEventListener('beforeunload', ()=>{ if(gameRunning&&!gameOver) saveGame(); });
+// Save when page becomes hidden (tab switch, home screen)
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&gameRunning&&!gameOver) saveGame(); });
+
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
 
 // Init
 hiScore=getHiScore();

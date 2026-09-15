@@ -367,7 +367,7 @@ body{padding-top:44px!important;}
 </div>
 
 <div class="window">
-  <div class="titlebar">💣 MINE SWEEPER PLUS 💣</div>
+  <div class="titlebar">💣 マインスイーパー PLUS 💣</div>
 
   <div class="diff-bar">
     <button class="diff-btn active" data-diff="beginner">初級</button>
@@ -1004,6 +1004,7 @@ body{padding-top:44px!important;}
   }
 
   // ===== セーブ / 復元 =====
+  function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
   const SAVE_KEY = 'ms_save_v1';
 
   function saveGame() {
@@ -1127,6 +1128,8 @@ body{padding-top:44px!important;}
   } else {
     init(9, 9, 10, 'beginner');
   }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
+  window.addEventListener('beforeunload', ()=>{ saveGame(); });
 </script>
 <script id="home-nav-js">
 (function(){

@@ -310,7 +310,7 @@ body{padding-top:44px!important;}
 
     <!-- Dealer area -->
     <div class="felt-area">
-      <div class="area-label">Dealer &nbsp;ディーラー</div>
+      <div class="area-label">ディーラー</div>
       <div class="cards-row" id="dealer-cards"></div>
       <div id="dealer-score"></div>
     </div>
@@ -324,7 +324,7 @@ body{padding-top:44px!important;}
 
     <!-- Player area -->
     <div class="felt-area">
-      <div class="area-label">Player &nbsp;プレイヤー</div>
+      <div class="area-label">プレイヤー</div>
       <div id="player-hands"></div>
     </div>
 
@@ -372,6 +372,7 @@ body{padding-top:44px!important;}
 <div class="action-bar">
   <button class="act-btn" onclick="openModal('modal-rules')">&#128214; ルール</button>
   <button class="act-btn" onclick="openModal('modal-reset')">&#128260; リセット</button>
+  <button class="act-btn" onclick="saveGame();showSaveToast()">&#128190; 保存</button>
 </div>
 
 <!-- Rules modal -->
@@ -379,7 +380,7 @@ body{padding-top:44px!important;}
   <div class="modal-box">
     <div class="modal-title">
       <span>&#9824;</span>
-      <span>ルール &nbsp;/ &nbsp;RULES</span>
+      <span>ルール</span>
       <button class="modal-close" onclick="closeModal('modal-rules')">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -395,11 +396,11 @@ body{padding-top:44px!important;}
       <strong>ダブル</strong> &mdash; ベット倍増・1枚だけ引いて終了<br>
       <strong>スプリット</strong> &mdash; 同数字ペアを2つの手に分割</p><br>
       <p><strong style="color:#ffd700">&#127942; 勝敗と配当</strong><br>
-      <span style="color:#ffd700">BLACKJACK</span>（A+10系） &rarr; &times;1.5払い戻し<br>
-      <span style="color:#00ff88">WIN</span> &rarr; &times;1.0払い戻し<br>
-      <span style="color:#9988ff">PUSH</span>（引き分け） &rarr; ベット返却<br>
-      <span style="color:#ff5555">LOSE</span> &rarr; ベット没収<br>
-      <span style="color:#ff5555">BUST</span>（21超え） &rarr; ベット没収</p><br>
+      <span style="color:#ffd700">ブラックジャック</span>（A+10系） &rarr; &times;1.5払い戻し<br>
+      <span style="color:#00ff88">勝ち</span> &rarr; &times;1.0払い戻し<br>
+      <span style="color:#9988ff">引き分け</span> &rarr; ベット返却<br>
+      <span style="color:#ff5555">負け</span> &rarr; ベット没収<br>
+      <span style="color:#ff5555">バスト</span>（21超え） &rarr; ベット没収</p><br>
       <p><strong style="color:#ffd700">&#127922; ディーラールール</strong><br>
       16以下 &rarr; 必ずヒット<br>
       17以上 &rarr; 必ずスタンド</p>
@@ -548,6 +549,17 @@ function saveGame() {
   } catch(e) {}
 }
 
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
+
+window.addEventListener('beforeunload', ()=>{ saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
+
 /* ═══════════════════════════════════════════════════════
    RENDERING
 ═══════════════════════════════════════════════════════ */
@@ -583,7 +595,7 @@ function renderDealer(revealAll) {
     const bj   = isNatural(dCards);
     const cls  = bust ? ' bust' : bj ? ' blackjack' : '';
     scoreEl.innerHTML = '<span class="score-badge' + cls + '">' +
-      (bust ? v + ' BUST' : bj ? 'BJ! &nbsp;21' : v) + '</span>';
+      (bust ? v + ' バスト' : bj ? 'BJ! &nbsp;21' : v) + '</span>';
   } else {
     const v = dCards[0].r === 'A' ? 'A' : rankPip(dCards[0].r);
     scoreEl.innerHTML = '<span class="score-badge">' + v + '</span>';
@@ -618,7 +630,7 @@ function renderPlayer() {
       inner.appendChild(cr);
       const sb = document.createElement('span');
       sb.className = 'score-badge' + (bust ? ' bust' : bj ? ' blackjack' : '');
-      sb.innerHTML = bust ? v + ' BUST' : bj ? 'BJ! &nbsp;21' : v;
+      sb.innerHTML = bust ? v + ' バスト' : bj ? 'BJ! &nbsp;21' : v;
       inner.appendChild(sb);
       hw.appendChild(inner);
     } else {
@@ -628,7 +640,7 @@ function renderPlayer() {
       hw.appendChild(cr);
       const sb = document.createElement('span');
       sb.className = 'score-badge' + (bust ? ' bust' : bj ? ' blackjack' : '');
-      sb.innerHTML = bust ? v + ' BUST' : bj ? 'BJ! &nbsp;21' : v;
+      sb.innerHTML = bust ? v + ' バスト' : bj ? 'BJ! &nbsp;21' : v;
       hw.appendChild(sb);
     }
 
@@ -742,14 +754,14 @@ function deal() {
     renderDealer(true);
     if (pBJ && dBJ) {
       chips += bet; // push – return stake
-      setMsg('PUSH', 'push');
+      setMsg('引き分け', 'push');
     } else if (pBJ) {
       const win = Math.floor(bet * 1.5);
       chips += bet + win;
       setMsg('BLACKJACK! &#9733;', 'blackjack');
       startConfetti();
     } else {
-      setMsg('LOSE', 'lose');
+      setMsg('負け', 'lose');
     }
     updateLEDs();
     phase = 'RESULT';
@@ -882,22 +894,22 @@ function dealerTurn() {
 
   // Show summary message
   if (total === 1) {
-    if (wins === 1)   { setMsg('WIN!', 'win'); startConfetti(); }
-    else if (pushes === 1) { setMsg('PUSH', 'push'); }
+    if (wins === 1)   { setMsg('勝ち！', 'win'); startConfetti(); }
+    else if (pushes === 1) { setMsg('引き分け', 'push'); }
     else {
       const allBust = pHands.every(h => handValue(h) > 21);
-      setMsg(allBust ? 'BUST' : 'LOSE', 'lose');
+      setMsg(allBust ? 'バスト' : '負け', 'lose');
     }
   } else {
     // Split result summary
-    if (wins === total)   { setMsg('WIN!', 'win'); startConfetti(); }
-    else if (pushes === total) { setMsg('PUSH', 'push'); }
+    if (wins === total)   { setMsg('勝ち！', 'win'); startConfetti(); }
+    else if (pushes === total) { setMsg('引き分け', 'push'); }
     else if (losses === total) {
       const allBust = pHands.every(h => handValue(h) > 21);
-      setMsg(allBust ? 'BUST' : 'LOSE', 'lose');
+      setMsg(allBust ? 'バスト' : '負け', 'lose');
     } else {
       // Mixed
-      const label = wins + 'WIN / ' + losses + 'LOSE';
+      const label = wins + '勝ち / ' + losses + '負け';
       if (wins > losses) { setMsg(label, 'win'); startConfetti(); }
       else               { setMsg(label, 'lose'); }
     }

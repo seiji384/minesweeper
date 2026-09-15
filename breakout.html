@@ -238,19 +238,19 @@ body{padding-top:44px!important;}
 
   <div class="hud">
     <div class="hud-item">
-      <span class="hud-label">SCORE</span>
+      <span class="hud-label">スコア</span>
       <span class="led" id="scoreDisplay">0</span>
     </div>
     <div class="hud-item">
-      <span class="hud-label">BEST</span>
+      <span class="hud-label">ベスト</span>
       <span class="led" id="hiDisplay">0</span>
     </div>
     <div class="hud-item">
-      <span class="hud-label">LIVES</span>
+      <span class="hud-label">ライフ</span>
       <span class="led lives" id="livesDisplay">❤️❤️❤️</span>
     </div>
     <div class="hud-item">
-      <span class="hud-label">STAGE</span>
+      <span class="hud-label">ステージ</span>
       <span class="led stage" id="stageDisplay">1</span>
     </div>
   </div>
@@ -274,6 +274,7 @@ body{padding-top:44px!important;}
   <div class="action-bar">
     <button class="btn" id="startBtn">▶ スタート</button>
     <button class="btn" id="pauseBtn" disabled>⏸ 一時停止</button>
+    <button class="btn" onclick="saveGame();showSaveToast()">💾 保存</button>
     <button class="btn" onclick="showStageSelect()">📋 ステージ</button>
     <button class="btn" onclick="showHiScore()">🏆 ハイスコア</button>
   </div>
@@ -595,7 +596,7 @@ function loseLife(){
   if(lives<=0){
     state='gameover';
     cancelAnimationFrame(animId);
-    showOverlay('GAME OVER','スコア',score);
+    showOverlay('ゲームオーバー','スコア',score);
     document.getElementById('pauseBtn').disabled=true;
   } else {
     balls=[mkBall()];
@@ -707,7 +708,7 @@ function update(dt){
   if(bricks.filter(b=>!b.indestructible).length===0){
     state='stageclear';
     spawnConfetti();
-    showOverlay('STAGE CLEAR！','✨ 次のステージへ ✨',score);
+    showOverlay('ステージクリア！','✨ 次のステージへ ✨',score);
     document.getElementById('pauseBtn').disabled=true;
     clearTimeout(stageClearTimeout);
     stageClearTimeout=setTimeout(()=>{ nextStage(); document.getElementById('pauseBtn').disabled=false; },2200);
@@ -833,9 +834,9 @@ function draw(){
 
   // Active powerup indicators
   let iy=4;
-  if(activePU.slow){ drawIndicator('❄ SLOW',POWERUP_TYPES[2].color,iy); iy+=16; }
-  if(activePU.fire){ drawIndicator('🔥 FIRE',POWERUP_TYPES[3].color,iy); iy+=16; }
-  if(paddle.w>getDefaultPaddleW()){ drawIndicator('↔ WIDE',POWERUP_TYPES[0].color,iy); }
+  if(activePU.slow){ drawIndicator('❄ スロー',POWERUP_TYPES[2].color,iy); iy+=16; }
+  if(activePU.fire){ drawIndicator('🔥 ファイア',POWERUP_TYPES[3].color,iy); iy+=16; }
+  if(paddle.w>getDefaultPaddleW()){ drawIndicator('↔ ワイド',POWERUP_TYPES[0].color,iy); }
 }
 
 function drawIndicator(text,color,y){
@@ -957,6 +958,25 @@ function keyMove(){
   requestAnimationFrame(keyMove);
 }
 keyMove();
+
+function saveGame(){
+  if(state !== 'playing') return;
+  localStorage.setItem('breakout_save', JSON.stringify({
+    score: score, stage: stage, lives: lives, savedAt: Date.now()
+  }));
+}
+
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
+
+window.addEventListener('beforeunload', ()=>{ if(state==='playing') saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&state==='playing') saveGame(); });
+setInterval(()=>{ if(state==='playing') saveGame(); }, 30000);
 </script>
 <script id="home-nav-js">
 (function(){

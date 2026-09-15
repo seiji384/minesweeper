@@ -642,9 +642,20 @@ function saveGame() {
   } catch(e) {}
 }
 
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
+
+window.addEventListener('beforeunload', ()=>{ saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
+
 function updateTopHUD() {
   document.getElementById('chipsLed').textContent = chips.toLocaleString();
-  document.getElementById('chipsVal').textContent = chips.toLocaleString() + ' chips';
+  document.getElementById('chipsVal').textContent = chips.toLocaleString() + ' チップ';
   document.getElementById('betVal').textContent = currentBet > 0 ? currentBet.toLocaleString() : '-';
   const phaseNames = { betting:'ベット中', draw:'カード交換', result:'結果' };
   document.getElementById('phaseVal').textContent = phaseNames[phase] || '-';
@@ -734,6 +745,7 @@ function renderActionBar() {
     bar.appendChild(deal);
     // Rules
     bar.appendChild(rulesBtn());
+    bar.appendChild(saveBtn());
 
   } else if (phase === 'draw') {
     // Draw / keep button
@@ -748,6 +760,7 @@ function renderActionBar() {
     addBtnTouch(drawBtn, doDraw);
     bar.appendChild(drawBtn);
     bar.appendChild(rulesBtn());
+    bar.appendChild(saveBtn());
 
   } else if (phase === 'result') {
     const again = document.createElement('button');
@@ -757,6 +770,7 @@ function renderActionBar() {
     addBtnTouch(again, doNextRound);
     bar.appendChild(again);
     bar.appendChild(rulesBtn());
+    bar.appendChild(saveBtn());
   }
 }
 
@@ -766,6 +780,16 @@ function rulesBtn() {
   b.textContent = '📖 ルール';
   b.onclick = openRules;
   addBtnTouch(b, openRules);
+  return b;
+}
+
+function saveBtn() {
+  const b = document.createElement('button');
+  b.className = 'btn';
+  b.textContent = '💾 保存';
+  const act = () => { saveGame(); showSaveToast(); };
+  b.onclick = act;
+  addBtnTouch(b, act);
   return b;
 }
 

@@ -193,6 +193,7 @@ body{padding-top:44px!important;}
 
 <div class="action-bar">
   <button class="act-btn" onclick="openModal('rules-modal')">📖 ルール</button>
+  <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
   <button class="act-btn" onclick="showHiScore()">🏆 ハイスコア</button>
 </div>
 
@@ -775,6 +776,25 @@ document.addEventListener('keydown', (e) => {
     flap();
   }
 });
+
+function saveGame(){
+  if(gameState !== 'running') return;
+  localStorage.setItem('flappy_save', JSON.stringify({
+    score: score, best: best, savedAt: Date.now()
+  }));
+}
+
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
+
+window.addEventListener('beforeunload', ()=>{ if(gameState==='running') saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&gameState==='running') saveGame(); });
+setInterval(()=>{ if(gameState==='running') saveGame(); }, 30000);
 
 // Resize
 window.addEventListener('resize', () => {

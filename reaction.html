@@ -512,7 +512,7 @@ function startRound() {
     if (phase !== 'waiting') return;
     phase = 'ready';
     startTime = Date.now();
-    setZone('ready', 'タップ！！', 'GO! GO! GO!', '#00ff44', '#00aa22');
+    setZone('ready', 'タップ！！', 'さあ行け！', '#00ff44', '#00aa22');
     waitTimer = setTimeout(()=>{
       if (phase === 'ready') {
         // Too slow

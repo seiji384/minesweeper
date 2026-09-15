@@ -201,7 +201,7 @@ body{padding-top:44px!important;}
   <div class="titlebar">
     <a href="index.html">🏠</a>
     <span>🥁 リズム天国</span>
-    <span style="font-size:11px;opacity:0.6">RHYTHM</span>
+    <span style="font-size:11px;opacity:0.6">リズム</span>
   </div>
 
   <!-- Menu Screen -->
@@ -264,7 +264,7 @@ body{padding-top:44px!important;}
         <button class="act-btn" style="padding:10px" onclick="startRandom(5)">初級 — 5ゲーム</button>
         <button class="act-btn" style="padding:10px" onclick="startRandom(10)">中級 — 10ゲーム</button>
         <button class="act-btn" style="padding:10px" onclick="startRandom(20)">上級 — 20ゲーム</button>
-        <button class="act-btn" style="padding:10px;color:#ffd080;border-color:#ff8030" onclick="startRandom(50)">ULTRA — 50ゲーム</button>
+        <button class="act-btn" style="padding:10px;color:#ffd080;border-color:#ff8030" onclick="startRandom(50)">ウルトラ — 50ゲーム</button>
         <button class="act-btn" style="padding:8px;margin-top:4px" onclick="document.getElementById('random-overlay').style.display='none'">✕ キャンセル</button>
       </div>
     </div>
@@ -297,7 +297,7 @@ body{padding-top:44px!important;}
       </div>
     </div>
     <div class="tap-zone" id="tap-zone" onmousedown="handleTap(event)">
-      ▼ TAP ▼
+      ▼ タップ ▼
     </div>
     <!-- Piano key buttons (shown only for piano game) -->
     <div id="piano-keys-ui" style="gap:4px;padding:6px 8px;justify-content:center;display:none">
@@ -338,9 +338,9 @@ body{padding-top:44px!important;}
       「セイ！」「ヤー！」の掛け声に合わせてタップ！<br>
       飛んでくるものを斬りまくれ！<br><br>
       <b>判定</b><br>
-      ✨ PERFECT: ±50ms以内<br>
-      👍 GOOD: ±120ms以内<br>
-      💦 MISS: それ以外<br>
+      ✨ パーフェクト: ±50ms以内<br>
+      👍 グッド: ±120ms以内<br>
+      💦 ミス: それ以外<br>
     </div>
   </div>
 </div>
@@ -794,15 +794,15 @@ document.addEventListener('keydown',e=>{if(e.code==='Space'&&gameRunning){e.prev
 function applyJudgment(j,cx,cy){
   if(j==='perfect'){
     perfects++;combo++;score+=100;
-    addJudgment('PERFECT!','#ffe870',cx,cy);
+    addJudgment('パーフェクト！','#ffe870',cx,cy);
     playClang();
   } else if(j==='good'){
     goods++;combo++;score+=50;
-    addJudgment('GOOD','#44ffaa',cx,cy);
+    addJudgment('グッド','#44ffaa',cx,cy);
     playTone(440,0.15,0.3,'triangle');
   } else {
     misses++;combo=0;
-    addJudgment('MISS','#ff4466',cx,cy);
+    addJudgment('ミス','#ff4466',cx,cy);
     playMiss();
   }
   if(combo>maxCombo)maxCombo=combo;
@@ -893,7 +893,7 @@ function updateTambourine(elapsed,audioNow){
     if(!ev.judged&&audioNow>ev.time+0.15){
       ev.judged=true;ev.result='miss';
       misses++;combo=0;tambSad=30;
-      addJudgment('MISS','#ff4466',W*0.65,H*0.45);
+      addJudgment('ミス','#ff4466',W*0.65,H*0.45);
     }
   });
   // Conductor animation
@@ -921,7 +921,7 @@ function onTapTambourine(tapTime){
   });
   if(!closest||closestDelta>300){
     // No nearby tap
-    addJudgment('MISS','#ff4466',W*0.65,H*0.45);
+    addJudgment('ミス','#ff4466',W*0.65,H*0.45);
     misses++;combo=0;tambSad=30;
     playMiss();return;
   }
@@ -1103,7 +1103,7 @@ function updateFrog(elapsed,audioNow){
     if(!ev.judged&&ev.x<FROG_TARGET_X-60){
       ev.judged=true;ev.result='miss';
       misses++;combo=0;frogSad=40;
-      addJudgment('MISS','#ff4466',FROG_TARGET_X,FROG_PAD_Y-50);
+      addJudgment('ミス','#ff4466',FROG_TARGET_X,FROG_PAD_Y-50);
     }
   });
   // Frog jump physics
@@ -1133,7 +1133,7 @@ function onTapFrog(tapTime){
   });
   if(!closest||closestDelta>350){
     frogSad=40;playMiss();
-    addJudgment('MISS','#ff4466',FROG_TARGET_X,FROG_PAD_Y-50);
+    addJudgment('ミス','#ff4466',FROG_TARGET_X,FROG_PAD_Y-50);
     misses++;combo=0;return;
   }
   closest.judged=true;closest.result=judge(closestDelta);
@@ -1302,7 +1302,7 @@ function updateSamurai(elapsed,audioNow){
     if(!ev.judged&&audioNow>ev.time+0.15){
       ev.judged=true;ev.result='miss';
       misses++;combo=0;
-      addJudgment('MISS','#ff4466',SAM_X-60,H*0.5);
+      addJudgment('ミス','#ff4466',SAM_X-60,H*0.5);
     }
   });
   samObjSplit=samObjSplit.filter(o=>{o.life--;return o.life>0;});
@@ -1324,7 +1324,7 @@ function onTapSamurai(tapTime){
   samSlash=1;samSlashAngle=(Math.random()-0.5)*40+(-30);
   if(!closest||closestDelta>350){
     misses++;combo=0;playMiss();
-    addJudgment('MISS','#ff4466',SAM_X-60,H*0.45);
+    addJudgment('ミス','#ff4466',SAM_X-60,H*0.45);
     return;
   }
   closest.judged=true;closest.result=judge(closestDelta);

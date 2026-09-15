@@ -767,6 +767,8 @@ function showToast(msg) {
   setTimeout(() => t.style.opacity = '0', 1500);
 }
 
+function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
+
 function saveGame() {
   const data = {
     board: board,
@@ -829,6 +831,8 @@ function declineRestore() {
 initCanvas();
 initBoard();
 checkRestore();
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
+window.addEventListener('beforeunload', ()=>{ saveGame(); });
 </script>
 <script id="home-nav-js">
 (function(){

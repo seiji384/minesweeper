@@ -148,6 +148,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
   <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
+  <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
 </div>
 
 <!-- Rules modal -->
@@ -159,7 +160,7 @@ body{padding-top:44px!important;}
       • スタートは 501 点<br>
       • 1ターン 3 本投げてスコアを減らす<br>
       • ダブルリング(外輪)でピッタリ 0 にすると勝利<br>
-      • BUST: 0 未満 or 1 残り → そのターンのスコア無効<br>
+      • バスト: 0 未満 or 1 残り → そのターンのスコア無効<br>
       • ボタンを押して移動中のレティクルを止める<br>
       • 的に近いほど高得点！<br><br>
       <b>点数区分</b><br>
@@ -343,7 +344,7 @@ function getScore(px,py){
   const dx=px-CX, dy=py-CY;
   const dist=Math.sqrt(dx*dx+dy*dy);
   if(dist>DOUBLE_OUT) return {score:0,label:'0',miss:true};
-  if(dist<=BULL_R) return {score:50,label:'BULL'};
+  if(dist<=BULL_R) return {score:50,label:'ブル'};
   if(dist<=SBULL_R) return {score:25,label:'25'};
   const angle=Math.atan2(dy,dx);
   const segAngle=Math.PI*2/20;
@@ -444,7 +445,7 @@ function throwDart(){
   }
 
   if(newScore<0||newScore===1||(!result.double&&newScore===0)){
-    flash('BUST！', '#ff4466');
+    flash('バスト！', '#ff4466');
     dartsLeft=0;
   } else {
     playerScore=newScore;
@@ -565,6 +566,17 @@ function saveGame(){
   if(gameOver){localStorage.removeItem('darts_save');return;}
   localStorage.setItem('darts_save',JSON.stringify({playerScore,cpuScore,totalDarts,savedAt:Date.now()}));
 }
+
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
+
+window.addEventListener('beforeunload', ()=>{ saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
 function tryLoadSave(){
   newGame();
   try{
