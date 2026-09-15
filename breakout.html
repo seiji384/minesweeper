@@ -276,7 +276,27 @@ body{padding-top:44px!important;}
     <button class="btn" id="pauseBtn" disabled>⏸ 一時停止</button>
     <button class="btn" onclick="saveGame();showSaveToast()">💾 保存</button>
     <button class="btn" onclick="showStageSelect()">📋 ステージ</button>
+    <button class="btn" onclick="document.getElementById('breakout-rules-modal').classList.add('visible')">📖 ルール</button>
     <button class="btn" onclick="showHiScore()">🏆 ハイスコア</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="breakout-rules-modal" onclick="if(event.target===this)this.classList.remove('visible')">
+  <div class="modal-box">
+    <div class="modal-title"><span>📖 ブロック崩し ルール</span><button class="modal-close" onclick="document.getElementById('breakout-rules-modal').classList.remove('visible')">✕</button></div>
+    <div class="modal-body">
+      <b>🎮 操作方法</b><br>
+      ・画面をドラッグ / マウス移動 → パドル操作<br>
+      ・タップ / クリック → スタート・ポーズ解除<br><br>
+      <b>📋 ステージ</b><br>
+      全10ステージ。ステージボタンから好きなステージを選んで挑戦できます。<br><br>
+      <b>⚡ パワーアップ</b><br>
+      ・<span style="color:#40e0ff">■</span> パドル拡張 / <span style="color:#ffdd40">■</span> マルチボール<br>
+      ・<span style="color:#a040ff">■</span> スローボール / <span style="color:#ff6040">■</span> ファイアボール（壁抜け）<br><br>
+      <b>❤️ ライフ</b><br>
+      ボールを落とすとライフが1つ減ります。全ライフを失うとゲームオーバー。<br><br>
+      💾 保存ボタンで進行状況を保存できます。次回起動時に続きから再開できます。
+    </div>
   </div>
 </div>
 

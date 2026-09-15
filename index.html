@@ -98,6 +98,7 @@ body {
 
 /* ── Game card base ── */
 .game-card {
+  position: relative;
   background: linear-gradient(160deg, #2a1a6a, #160e3c);
   border: 1.5px solid #4030a0;
   border-radius: 14px; padding: 14px 8px 11px;
@@ -150,6 +151,21 @@ body {
   font-size: 8px; padding: 2px 7px; border-radius: 8px; margin-top: 3px;
   font-weight: 900; letter-spacing: 0.5px;
   background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2);
+}
+
+.save-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 14px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
 }
 
 .hidden { display: none !important; }
@@ -229,6 +245,7 @@ body {
       <button class="cat-tab" onclick="filterCat(this,'sports')">🎯 スポーツ</button>
       <button class="cat-tab" onclick="filterCat(this,'rhythm')">🎵 リズム</button>
       <button class="cat-tab" onclick="filterCat(this,'rpg')">⚔️ RPG</button>
+      <button class="cat-tab" onclick="filterCat(this,'saved')">💾 保存中</button>
     </div>
   </div>
 
@@ -508,7 +525,10 @@ function filterCat(btn, cat) {
   allCards.forEach(c   => c.classList.add('hidden'));
   allHeaders.forEach(h => h.classList.add('hidden'));
   allGrids.forEach(g   => g.classList.add('hidden'));
-  document.querySelectorAll(`.game-card[data-cat="${cat}"]`).forEach(card => {
+  const selector = cat === 'saved'
+    ? '.game-card[data-saved="1"]'
+    : `.game-card[data-cat="${cat}"]`;
+  document.querySelectorAll(selector).forEach(card => {
     card.classList.remove('hidden');
     const grid = card.closest('.game-grid');
     if (!grid) return;
@@ -532,6 +552,58 @@ function filterCat(btn, cat) {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if(e.target === el) el.classList.remove('visible'); });
 });
+
+(function checkSaves() {
+  const SAVE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+  const saveKeyMap = {
+    'tetris.html':      'tetris_save',
+    'snake.html':       'snake_save',
+    '2048.html':        '2048_save',
+    'blackjack.html':   'bj_save',
+    'poker.html':       'poker_save',
+    'mastermind.html':  'mastermind_save',
+    'darts.html':       'darts_save',
+    'bowling.html':     'bowling_save',
+    'memory.html':      'memory_save',
+    'connect4.html':    'connect4_save',
+    'dotsboxes.html':   'dotsboxes_save',
+    'gomoku.html':      'gomoku_save',
+    'lightsout.html':   'lightsout_save',
+    'puzzle15.html':    'puzzle15_save',
+    'sokoban.html':     'sokoban_save',
+    'sudoku.html':      'sudoku_save',
+    'minesweeper.html': 'ms_save_v1',
+    'reversi.html':     'reversi_save',
+    'rpg.html':         'rpg_save',
+    'daifugou.html':    'daifugou_save'
+  };
+
+  const now = Date.now();
+  const savedHrefs = new Set();
+
+  for (const [href, key] of Object.entries(saveKeyMap)) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const data = JSON.parse(raw);
+      if (data.savedAt && (now - data.savedAt) < SAVE_TTL) {
+        savedHrefs.add(href);
+      }
+    } catch(e) {}
+  }
+
+  if (savedHrefs.size === 0) return;
+
+  document.querySelectorAll('.game-card').forEach(card => {
+    const href = (card.getAttribute('href') || '').replace(/^\.\//, '');
+    if (!savedHrefs.has(href)) return;
+    card.setAttribute('data-saved', '1');
+    const badge = document.createElement('div');
+    badge.className = 'save-badge';
+    badge.textContent = '💾';
+    card.appendChild(badge);
+  });
+})();
 </script>
 </body>
 </html>

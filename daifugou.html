@@ -22,7 +22,13 @@ body{
 /* Wood-rim border */
 #gameWrap::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
-  box-shadow:inset 0 0 0 5px #2c1a00,inset 0 0 0 8px #c8960c,inset 0 0 0 11px #2c1a00;
+  box-shadow:
+    inset 0 0 0 4px #1a0800,
+    inset 0 0 0 8px #c8960c,
+    inset 0 0 0 10px #f5e642,
+    inset 0 0 0 13px #c8960c,
+    inset 0 0 0 17px #5a3a00,
+    0 0 60px rgba(0,0,0,0.8);
 }
 /* CPU area */
 #cpuArea{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%;position:relative;z-index:2;}
@@ -50,12 +56,27 @@ body{
 }
 .cpu-back-card:first-child{margin-left:0;}
 
+/* Shimmer animation */
+@keyframes tableShimmer{
+  0%{background-position:200% center,0 0;}
+  100%{background-position:-200% center,0 0;}
+}
 /* Field area */
 #fieldWrap{
-  background:rgba(0,100,0,0.3);border:2px solid rgba(200,150,50,0.35);
+  background:
+    linear-gradient(110deg,transparent 30%,rgba(255,255,255,0.055) 50%,transparent 70%) no-repeat,
+    radial-gradient(ellipse at 50% 40%,rgba(30,110,30,0.6) 0%,rgba(0,80,0,0.35) 100%);
+  background-size:200% 100%,100% 100%;
+  animation:tableShimmer 7s linear infinite;
+  border:2px solid #c8960c;
   border-radius:12px;padding:10px;min-height:120px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   position:relative;z-index:2;
+  box-shadow:
+    inset 0 0 40px rgba(0,0,0,0.35),
+    inset 0 0 80px rgba(0,60,0,0.2),
+    0 0 0 1px #f5e642,
+    0 0 0 3px #5a3a00;
 }
 #fieldLabel{
   font-size:10px;color:rgba(255,215,0,0.6);letter-spacing:2px;
@@ -84,12 +105,7 @@ body{
 #timerNum{font-size:10px;color:#fff;position:absolute;transform:rotate(90deg);}
 .timer-container{position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
 
-/* Log area */
-#logArea{
-  background:rgba(0,0,0,0.3);border-radius:8px;padding:5px 10px;
-  max-height:56px;overflow-y:auto;position:relative;z-index:2;
-}
-#logArea div{font-size:10px;padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Log area removed */
 
 /* Hand area */
 #handWrap{
@@ -319,7 +335,7 @@ body{padding-top:44px!important;}
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal-box">
-    <div class="modal-title"><span>⚙️ ルール設定</span><button class="modal-close" onclick="closeModal('settingsModal')">✕</button></div>
+    <div class="modal-title"><span>⚙️ ルール設定</span><button class="modal-close" id="settingsCloseBtn" onclick="tryCloseSettings()">✕</button></div>
     <div class="modal-body">
       <div class="rule-group">
         <div class="rule-group-title">👥 プレイ人数</div>
@@ -390,8 +406,34 @@ body{padding-top:44px!important;}
         <div class="rule-group-title">⏱️ タイマー</div>
         <label class="rule-item"><input type="checkbox" id="r_timer"><label for="r_timer">カウントダウンタイマー <span>自分のターンに60秒のタイマーを表示、時間切れで自動パス</span></label></label>
       </div>
-      <button class="modal-btn" onclick="applySettings()">設定を保存して新ゲーム</button>
-      <button class="modal-btn modal-btn-sub" onclick="closeModal('settingsModal')">キャンセル</button>
+      <button class="modal-btn" id="settingsStartBtn" onclick="applySettings()">ゲームスタート</button>
+      <button class="modal-btn modal-btn-sub" id="settingsCancelBtn" onclick="closeModal('settingsModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rules Explanation Modal -->
+<div class="modal-overlay" id="daifugouRulesModal">
+  <div class="modal-box">
+    <div class="modal-title"><span>📖 大富豪 ルール</span><button class="modal-close" onclick="closeModal('daifugouRulesModal')">✕</button></div>
+    <div class="modal-body">
+      <b>🎯 目的</b><br>
+      手札を早く出し切ることが目標です。1位（大富豪）〜最下位（大貧民）の順位に応じてポイントが入ります。<br><br>
+      <b>🃏 カードの強さ</b><br>
+      弱い ← 3 4 5 6 7 8 9 10 J Q K A 2 ジョーカー → 強い<br><br>
+      <b>📋 基本ルール</b><br>
+      ・場の直前より強いカードを同じ枚数で出します。<br>
+      ・出せない、または出したくない場合はパスできます。<br>
+      ・全員パスしたら場がリセットされ、最後に出した人から再開。<br><br>
+      <b>⚙️ オプションルール（設定から選択）</b><br>
+      ・8切り: 8を出すと場リセット、もう一度先手<br>
+      ・革命: 4枚同時出しで強弱が永続逆転（背景が赤くなります）<br>
+      ・縛り: 同スート/同ランクが連続したら以降そのスートのみ<br>
+      ・貢ぎ: ラウンド開始前に順位に応じてカード交換<br>
+      ・その他多数のルールを設定画面で追加できます<br><br>
+      <b>👥 プレイ人数</b><br>
+      3〜5人（設定画面で変更可能）<br><br>
+      💾 ゲームの進捗はブラウザに自動保存されます。
     </div>
   </div>
 </div>
@@ -462,7 +504,6 @@ body{padding-top:44px!important;}
       </div>
     </div>
   </div>
-  <div id="logArea"></div>
   <div id="handWrap">
     <div id="handHeader"><span>あなたの手札</span><span id="handCount">0枚</span></div>
     <div id="handScroll"></div>
@@ -470,7 +511,8 @@ body{padding-top:44px!important;}
 </div>
 
 <div class="action-bar">
-  <button class="act-btn-sm" onclick="openModal('settingsModal');syncSettingsUI()">⚙️ ルール</button>
+  <button class="act-btn-sm" onclick="openModal('settingsModal');syncSettingsUI()">⚙️ 設定</button>
+  <button class="act-btn-sm" onclick="openModal('daifugouRulesModal')">📖 ルール</button>
   <button class="act-btn" id="dasuBtn" onclick="playCards()">出す</button>
   <button class="act-btn" id="passBtn" onclick="doPassHuman()">パス</button>
   <button class="act-btn-sm" onclick="newGame()">🔄 新ゲーム</button>
@@ -573,6 +615,10 @@ function setDiff(d){
     b.classList.toggle('active',b.dataset.d===d);
   });
 }
+function tryCloseSettings(){
+  if(!gameStarted){return;} // must start game first
+  closeModal('settingsModal');
+}
 function applySettings(){
   ['kaidan','joker','supe3','jokerAgari','8cut','4stop','sunaArashi','skip5','rev9',
    'kakumei','kakumeiGaeshi','jBack','give7','trash10','qBomb','no2agari','no8agari',
@@ -582,6 +628,14 @@ function applySettings(){
   });
   saveRules();
   closeModal('settingsModal');
+  gameStarted=true;
+  // Reveal cancel/close for future opens, update button label
+  const cb=document.getElementById('settingsCancelBtn');
+  const xb=document.getElementById('settingsCloseBtn');
+  const sb=document.getElementById('settingsStartBtn');
+  if(cb)cb.style.display='';
+  if(xb)xb.style.display='';
+  if(sb)sb.textContent='設定を保存して新ゲーム';
   newGame();
 }
 
@@ -756,13 +810,14 @@ function newGame(){
     currentPlayer:start,
     passedPlayers:new Set(),
     rankings:[],gameOver:false,
-    log:[],round:S.round||1,
+    log:[],round:1,
     sel:[],thinking:false,
     revolution:false,jBackActive:false,
     turnDir:1,
     shibari:{active:false,suit:null,rank:null},
     prevField:null,
-    prevRankings:S.prevRankings||[],
+    prevRankings:[],
+    totalPoints:initPoints(N),
     timerSec:60,
   };
 
@@ -1189,12 +1244,9 @@ function checkGameOver(){
     if(ap.length===1&&!S.rankings.includes(ap[0]))S.rankings.push(ap[0]);
     S.gameOver=true;S.thinking=false;stopTimer();
     renderAll();
-    // Special finish rules
     applyFinishRules();
-    setTimeout(()=>{
-      if(RULES.tribute&&S.prevRankings.length>0)startTribute();
-      else showResult();
-    },700);
+    applyRoundPoints();
+    setTimeout(()=>showResult(),700);
     return true;
   }
   return false;
@@ -1307,7 +1359,11 @@ function cpuTributeGive(){
 function finalizeTribute(){
   addLog('💎 貢ぎ完了');
   pendingTribute=null;
-  startNewRound();
+  renderAll();
+  // Cards already dealt by newGameRound — just start playing
+  const start=S.currentPlayer;
+  if(start!==0){S.thinking=true;renderAll();setTimeout(cpuTurn,900);}
+  else{if(RULES.timer)startTimer();checkAutoSkipHuman();}
 }
 function startNewRound(){
   const prev=[...S.rankings];
@@ -1332,13 +1388,14 @@ function newGameRound(){
   }
   const prevRankings=S.prevRankings;
   const round=S.round;
+  const totalPoints=S.totalPoints||initPoints(N);
   S={
     n:N,hands,field:null,currentPlayer:start,
     passedPlayers:new Set(),rankings:[],gameOver:false,
     log:[],round,sel:[],thinking:false,
     revolution:false,jBackActive:false,turnDir:1,
     shibari:{active:false,suit:null,rank:null},
-    prevField:null,prevRankings,timerSec:60,
+    prevField:null,prevRankings,totalPoints,timerSec:60,
   };
   showRevolutionBg(false);
   addLog('ラウンド'+round+'開始！');
@@ -1356,19 +1413,66 @@ function newGameRound(){
 function showResult(){
   const N=S.n;
   const titles=RANK_TITLES[N]||RANK_TITLES[3];
-  let html='';
+  let html=`<div style="text-align:center;margin-bottom:10px;color:rgba(255,215,0,0.65);font-size:11px;letter-spacing:2px;">── ラウンド${S.round} 結果 ──</div>`;
   S.rankings.forEach((p,i)=>{
     const icon=i===0?'👑':i===N-1?'😢':i===1?'😊':'😐';
-    html+=`<div class="result-row"><span class="result-icon">${icon}</span>
-      <div><div class="result-rank">${titles[i]}</div><div class="result-name">${PNAMES_BASE[p]}</div></div></div>`;
+    const pts=N-i;
+    const total=S.totalPoints[p]||0;
+    html+=`<div class="result-row">
+      <span class="result-icon">${icon}</span>
+      <div style="flex:1"><div class="result-rank">${titles[i]}</div><div class="result-name">${PNAMES_BASE[p]}</div></div>
+      <div style="text-align:right">
+        <div style="color:#ffd700;font-size:14px;font-weight:bold;">+${pts}pt</div>
+        <div style="color:rgba(255,255,255,0.45);font-size:11px;">計 ${total}pt</div>
+      </div>
+    </div>`;
   });
-  html+=`<div style="text-align:center;margin-top:14px">
-    <button class="modal-btn" onclick="S.round=1;S.prevRankings=[];newGame()" style="margin-bottom:6px">🔄 もう一度（全リセット）</button>
-    <button class="modal-btn modal-btn-sub" onclick="S.round=(S.round||1)+1;S.prevRankings=[...S.rankings];newGameRound()">▶ 次のラウンド</button>
+  html+=`<div style="text-align:center;margin-top:14px;display:flex;flex-direction:column;gap:6px;">
+    <button class="modal-btn" onclick="doNextRound()">▶ 次のラウンド</button>
+    <button class="modal-btn modal-btn-sub" onclick="showFinalResult()">🏁 ゲームを終える</button>
   </div>`;
   document.getElementById('resultBody').innerHTML=html;
   openModal('resultModal');
   if(S.rankings[0]===0)startConfetti();
+}
+
+function showFinalResult(){
+  const N=S.n;
+  const sorted=Array.from({length:N},(_,i)=>i).sort((a,b)=>(S.totalPoints[b]||0)-(S.totalPoints[a]||0));
+  const medals=['🥇','🥈','🥉'];
+  let html=`<div style="text-align:center;margin-bottom:12px;">
+    <div style="font-size:16px;font-weight:bold;color:#ffd700;">🏆 総合結果</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">${S.round}ラウンド終了</div>
+  </div>`;
+  sorted.forEach((p,i)=>{
+    const medal=medals[i]||'　';
+    const pts=S.totalPoints[p]||0;
+    html+=`<div class="result-row">
+      <span class="result-icon">${medal}</span>
+      <div style="flex:1"><div class="result-name" style="font-size:14px;">${PNAMES_BASE[p]}</div></div>
+      <div style="color:#ffd700;font-size:15px;font-weight:bold;">${pts}pt</div>
+    </div>`;
+  });
+  const winner=sorted[0];
+  if(winner===0){
+    html+=`<div style="text-align:center;margin:12px 0;color:#ffd700;font-size:14px;font-weight:bold;">🎉 あなたの勝利！</div>`;
+  } else {
+    html+=`<div style="text-align:center;margin:12px 0;color:rgba(255,215,0,0.7);font-size:13px;">🏆 総合優勝: ${PNAMES_BASE[winner]} (${S.totalPoints[winner]}pt)</div>`;
+  }
+  html+=`<div style="text-align:center;margin-top:10px;">
+    <button class="modal-btn" onclick="closeModal('resultModal');newGame()">🔄 新しいゲーム</button>
+  </div>`;
+  document.getElementById('resultBody').innerHTML=html;
+}
+
+function doNextRound(){
+  closeModal('resultModal');
+  const prev=[...S.rankings];
+  const prevPoints={...S.totalPoints};
+  S.prevRankings=prev;
+  S.totalPoints=prevPoints;
+  S.round=(S.round||1)+1;
+  newGameRound();
 }
 
 // ==================== CPU AI ====================
@@ -1623,9 +1727,15 @@ function renderField(){
   }
 }
 
-function renderLog(){
-  const el=document.getElementById('logArea');
-  el.innerHTML=S.log.map((l,i)=>`<div style="color:${i===0?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.35)'}">${l}</div>`).join('')||'<div style="color:rgba(255,255,255,0.2)">...</div>';
+function renderLog(){/* log area removed */}
+
+// ==================== Point helpers ====================
+function initPoints(N){const p={};for(let i=0;i<N;i++)p[i]=0;return p;}
+function applyRoundPoints(){
+  const N=S.n;
+  S.rankings.forEach((p,i)=>{
+    S.totalPoints[p]=(S.totalPoints[p]||0)+(N-i);
+  });
 }
 
 function renderHand(){
@@ -1692,8 +1802,16 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{
 });
 
 // ==================== Start ====================
+let gameStarted=false;
 syncSettingsUI();
-newGame();
+// Hide cancel/close on first load; show settings launch screen
+(function(){
+  const cb=document.getElementById('settingsCancelBtn');
+  const xb=document.getElementById('settingsCloseBtn');
+  if(cb)cb.style.display='none';
+  if(xb)xb.style.display='none';
+  openModal('settingsModal');
+})();
 </script>
 <script id="home-nav-js">
 (function(){

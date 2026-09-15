@@ -280,6 +280,28 @@ body{padding-top:44px!important;}
     </div>
   </div>
 
+  <!-- Rules Modal -->
+  <div class="modal-overlay" id="tetris-rules-modal" onclick="if(event.target===this)this.classList.remove('visible')">
+    <div class="modal-box">
+      <div class="modal-title"><span>📖 テトリス ルール</span><button class="modal-close" onclick="document.getElementById('tetris-rules-modal').classList.remove('visible')">✕</button></div>
+      <div class="modal-body">
+        <b>🎮 操作方法</b><br>
+        ・矢印キー左右 / 画面を左右スワイプ → 移動<br>
+        ・矢印キー上 / 上スワイプ → 回転<br>
+        ・矢印キー下 / 下スワイプ → 加速落下<br>
+        ・スペースキー / ダブルタップ → 即落とし<br>
+        ・タップ → 回転<br><br>
+        <b>ホールド機能</b><br>
+        ホールドボタンでピースを一時保留できます。保留中のピースはいつでも入れ替え可能。<br><br>
+        <b>レベルシステム</b><br>
+        ラインを消すごとに経験値が貯まり、レベルアップすると落下速度が上がります。<br><br>
+        <b>得点</b><br>
+        1ライン: 40点 / 2ライン: 100点 / 3ライン: 300点 / 4ライン(テトリス): 1200点<br><br>
+        💾 保存ボタンで進行状況を保存できます。次回起動時に続きから再開できます。
+      </div>
+    </div>
+  </div>
+
   <!-- Overlay for start/game over -->
   <div id="overlay">
     <h2 id="overlay-title">TETRIS</h2>
@@ -301,6 +323,7 @@ body{padding-top:44px!important;}
       <button class="btn ctrl-btn" id="btn-drop">即落とし</button>
       <button class="btn ctrl-btn" id="btn-pause">一時停止</button>
       <button class="btn ctrl-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
+      <button class="btn ctrl-btn" onclick="document.getElementById('tetris-rules-modal').classList.add('visible')">📖 ルール</button>
       <button class="btn ctrl-btn" onclick="showHiScore()">🏆</button>
     </div>
   </div>
@@ -443,7 +466,7 @@ function getHiScore(){ return parseInt(localStorage.getItem('tetris_hi')||'0'); 
 function setHiScore(s){ localStorage.setItem('tetris_hi', s); }
 
 function saveGame(){
-  if(!gameRunning||gameOver) return;
+  if(!board||gameOver) return;
   localStorage.setItem('tetris_save', JSON.stringify({
     board: board, current: current, nextBag: nextBag, hold: hold,
     score: score, hiScore: hiScore, level: level, lines: lines,
@@ -857,9 +880,9 @@ addDAS(document.getElementById('btn-right'),()=>move(1));
 // Auto-save every 20 seconds while playing
 setInterval(()=>{ if(gameRunning&&!gameOver&&!paused) saveGame(); }, 20000);
 // Save on page close/navigate
-window.addEventListener('beforeunload', ()=>{ if(gameRunning&&!gameOver) saveGame(); });
+window.addEventListener('beforeunload', ()=>{ saveGame(); });
 // Save when page becomes hidden (tab switch, home screen)
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&gameRunning&&!gameOver) saveGame(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
 
 function showSaveToast(){
   const t=document.createElement('div');
