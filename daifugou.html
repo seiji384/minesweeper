@@ -7,7 +7,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;}
 body{
-  background:radial-gradient(ellipse at 50% 40%,#1e7a1e 0%,#0f5a0f 55%,#093009 100%);
+  background:
+    repeating-linear-gradient(45deg,rgba(0,0,0,0.06) 0,rgba(0,0,0,0.06) 1px,transparent 1px,transparent 8px),
+    repeating-linear-gradient(-45deg,rgba(0,0,0,0.06) 0,rgba(0,0,0,0.06) 1px,transparent 1px,transparent 8px),
+    radial-gradient(ellipse at 50% 40%,#1a5c1a 0%,#0d3d0d 50%,#071f07 100%);
   min-height:100vh;font-family:Arial,sans-serif;overflow-x:hidden;
   padding:54px 0 72px;display:flex;flex-direction:column;align-items:center;
 }
@@ -19,7 +22,7 @@ body{
 /* Wood-rim border */
 #gameWrap::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
-  box-shadow:inset 0 0 0 6px #5a3000,inset 0 0 0 8px #8b5200,inset 0 0 0 10px #5a3000;
+  box-shadow:inset 0 0 0 5px #2c1a00,inset 0 0 0 8px #c8960c,inset 0 0 0 11px #2c1a00;
 }
 /* CPU area */
 #cpuArea{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%;position:relative;z-index:2;}
@@ -64,7 +67,8 @@ body{
 /* Status strip */
 #statusStrip{
   display:flex;gap:6px;align-items:center;justify-content:space-between;
-  background:rgba(0,0,0,0.4);border-radius:8px;padding:5px 10px;
+  background:rgba(10,6,0,0.65);border-radius:8px;padding:5px 10px;
+  border:1px solid rgba(200,150,50,0.25);
   position:relative;z-index:2;flex-wrap:wrap;
 }
 .stat-chip{
@@ -160,10 +164,19 @@ body{
 }
 @keyframes effectAnim{
   0%{opacity:0;transform:scale(0.2);}
-  15%{opacity:1;transform:scale(1.2);}
-  35%{opacity:1;transform:scale(1);}
+  10%{opacity:1;transform:scale(1.2);}
+  25%{opacity:1;transform:scale(1);}
   80%{opacity:1;transform:scale(1);}
   100%{opacity:0;transform:scale(0.7) translateY(-40px);}
+}
+@keyframes flashRedAnim{
+  0%{opacity:0;}
+  12%{opacity:1;}
+  100%{opacity:0;}
+}
+#revolution-bg{
+  display:none;position:fixed;inset:0;background:rgba(160,0,0,0.28);z-index:4999;pointer-events:none;
+  transition:opacity 0.4s ease;
 }
 
 /* Action bar */
@@ -294,6 +307,7 @@ body{padding-top:44px!important;}
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
+<div id="revolution-bg"></div>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">🏠 ホーム</button></div>
 <div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">🏠 ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
 
@@ -467,7 +481,7 @@ body{padding-top:44px!important;}
 function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:100},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*7+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*5,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*12}));let frame=0;function anim(){if(frame++>200){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
 
 // ==================== Effect Overlay ====================
-function showEffect(text,color,dur=1400){
+function showEffect(text,color,dur=2000){
   const el=document.getElementById('effectText');
   el.textContent=text;el.style.color=color;el.style.display='block';
   el.style.animation='none';
@@ -475,6 +489,18 @@ function showEffect(text,color,dur=1400){
     el.style.animation=`effectAnim ${dur}ms ease-out forwards`;
   });
   setTimeout(()=>{el.style.display='none';},dur);
+}
+function showRevolutionBg(on){
+  const el=document.getElementById('revolution-bg');
+  if(!el)return;
+  el.style.display=on?'block':'none';
+}
+function flashRed(){
+  // 一瞬だけ赤くフラッシュ（都落ち用）
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(180,0,0,0.38);z-index:5000;pointer-events:none;animation:flashRedAnim 1.7s ease-out forwards;';
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(),1750);
 }
 
 // ==================== Visual Viewport fix ====================
@@ -700,6 +726,9 @@ function checkAgariKinshi(p,cards){
   return false;
 }
 
+// ==================== Hand Sort (Joker rightmost) ====================
+function sortHand(hand){return hand.sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));}
+
 // ==================== New Game ====================
 function newGame(){
   stopTimer();
@@ -711,7 +740,7 @@ function newGame(){
   let idx=0;
   for(let i=0;i<N;i++){
     const cnt=Math.floor(total/N)+(i<(total%N)?1:0);
-    hands.push(deck.slice(idx,idx+cnt).sort((a,b)=>a.rank-b.rank));
+    hands.push(deck.slice(idx,idx+cnt).sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank)));
     idx+=cnt;
   }
   // Find who starts (has ♣3, or lowest rank)
@@ -737,6 +766,7 @@ function newGame(){
     timerSec:60,
   };
 
+  showRevolutionBg(false);
   addLog('ゲーム開始！'+PNAMES_BASE[start]+'から');
   renderAll();
   startDealAnimation(()=>{
@@ -798,6 +828,30 @@ function doAutoSkip(){
   if(!S.field&&S.hands[0].length>0){
     const cards=[S.hands[0][0]];
     doPlay(0,cards,[0]);
+  }
+}
+
+// ==================== Auto-skip when no valid cards ====================
+function checkAutoSkipHuman(){
+  if(S.currentPlayer!==0||S.gameOver||S.thinking)return;
+  if(!S.field)return; // Empty field: must play, can't auto-skip
+  if(S.rankings.includes(0))return; // Already finished
+  const hand=S.hands[0];
+  if(!hand.length)return;
+  const hasAny=hand.some(c=>{
+    // Check shibari constraint first
+    if(S.shibari.active&&!c.isJoker){
+      if(S.shibari.suit&&c.suit!==S.shibari.suit)return false;
+      if(S.shibari.rank!==null&&c.rank!==S.shibari.rank)return false;
+    }
+    return validSet([c],S.field);
+  });
+  if(!hasAny){
+    addLog('出せるカードがありません → 自動スキップ');
+    renderLog();
+    setTimeout(()=>{
+      if(S.currentPlayer===0&&!S.gameOver&&!S.thinking)doPass(0);
+    },800);
   }
 }
 
@@ -884,6 +938,7 @@ function processSpecialEffects(p,cards,finished){
       S.revolution=!S.revolution;
       addLog(S.revolution?'🔄 革命！':'🔄 革命返し！');
       showEffect(S.revolution?'革命':'革命返し',S.revolution?'#ffd700':'#ff8040');
+      showRevolutionBg(S.revolution);
     }
   }
 
@@ -965,21 +1020,38 @@ function clearField(p){
   renderAll();
   if(S.currentPlayer!==0&&!S.gameOver)setTimeout(cpuTurn,900);
   else if(RULES.timer&&S.currentPlayer===0)startTimer();
+  if(S.currentPlayer===0&&!S.gameOver)checkAutoSkipHuman();
 }
 
 function updateShibari(cards,prevSuit,prevRank){
   const normals=cards.filter(c=>!c.isJoker);
-  if(!normals.length)return;
-  const newSuit=normals[0].suit;
-  const newRank=normals[0].rank;
-  if(RULES.shibariSuit&&prevSuit&&newSuit===prevSuit&&!S.shibari.active){
-    S.shibari={active:true,suit:newSuit,rank:null};
-    addLog('🔗 スート縛り発動！('+newSuit+')');
-    showEffect('縛り','#ffffff');
-  } else if(RULES.shibariRank&&prevRank!==null&&newRank===prevRank&&!S.shibari.active){
-    S.shibari={active:true,suit:null,rank:newRank};
-    addLog('🔗 数字縛り発動！('+VALUES[newRank]+')');
-    showEffect('縛り','#ffffff');
+  if(!normals.length)return; // Joker-only plays don't change shibari state
+
+  // Suit shibari
+  if(RULES.shibariSuit){
+    const newSuit=normals[0].suit;
+    const allSameSuit=normals.every(c=>c.suit===newSuit);
+    if(S.shibari.active&&S.shibari.suit){
+      // Already active - validSet enforces it, just keep active
+    } else if(!S.shibari.active&&allSameSuit&&prevSuit&&newSuit===prevSuit){
+      S.shibari={active:true,suit:newSuit,rank:null};
+      addLog('🔗 スート縛り発動！('+newSuit+')');
+      showEffect('縛り','#ffffff');
+      return;
+    }
+  }
+
+  // Rank (number) shibari
+  if(RULES.shibariRank){
+    const newRank=normals[0].rank;
+    const allSameRank=normals.every(c=>c.rank===newRank);
+    if(S.shibari.active&&S.shibari.rank!==null){
+      // Already active - keep
+    } else if(!S.shibari.active&&allSameRank&&prevRank!==null&&newRank===prevRank){
+      S.shibari={active:true,suit:null,rank:newRank};
+      addLog('🔗 数字縛り発動！('+VALUES[newRank]+')');
+      showEffect('縛り','#ffffff');
+    }
   }
 }
 
@@ -990,6 +1062,7 @@ function advanceTurn(p,skip5Count){
   renderAll();
   if(S.currentPlayer!==0&&!S.gameOver)setTimeout(cpuTurn,900);
   else if(RULES.timer&&S.currentPlayer===0&&!S.gameOver)startTimer();
+  if(S.currentPlayer===0&&!S.gameOver)checkAutoSkipHuman();
 }
 
 // ==================== 7渡し Modal ====================
@@ -1027,7 +1100,7 @@ function confirmCardAction(){
     const givenCards=indices.map(i=>S.hands[0][i]);
     [...indices].sort((a,b)=>b-a).forEach(i=>S.hands[0].splice(i,1));
     S.hands[pa.toPlayer].push(...givenCards);
-    S.hands[pa.toPlayer].sort((a,b)=>a.rank-b.rank);
+    S.hands[pa.toPlayer].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
     addLog('👐 7渡し：'+PNAMES_BASE[pa.toPlayer]+'に'+pa.count+'枚');
   } else {
     [...indices].sort((a,b)=>b-a).forEach(i=>S.hands[0].splice(i,1));
@@ -1040,7 +1113,7 @@ function cpuGive7(p,cnt,toP,skip){
   // Give lowest cnt cards
   const give=S.hands[p].slice(0,cnt);
   S.hands[p].splice(0,cnt);
-  S.hands[toP].push(...give);S.hands[toP].sort((a,b)=>a.rank-b.rank);
+  S.hands[toP].push(...give);S.hands[toP].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   addLog('👐 7渡し(CPU'+p+')：'+PNAMES_BASE[toP]+'に'+cnt+'枚');
   pendingCardAction=null;
   advanceTurn(p,skip);
@@ -1096,6 +1169,7 @@ function doPass(p){
       renderAll();
       if(S.currentPlayer!==0&&!S.gameOver)setTimeout(cpuTurn,900);
       else if(RULES.timer&&S.currentPlayer===0)startTimer();
+      if(S.currentPlayer===0&&!S.gameOver)checkAutoSkipHuman();
       return;
     }
   }
@@ -1105,6 +1179,7 @@ function doPass(p){
   renderAll();
   if(S.currentPlayer!==0&&!S.gameOver)setTimeout(cpuTurn,900);
   else if(RULES.timer&&S.currentPlayer===0)startTimer();
+  if(S.currentPlayer===0&&!S.gameOver)checkAutoSkipHuman();
 }
 
 // ==================== Game Over ====================
@@ -1131,6 +1206,7 @@ function applyFinishRules(){
     if(S.rankings[S.rankings.length-1]===prevDaifugo){
       addLog('💥 都落ち！'+PNAMES_BASE[prevDaifugo]);
       showEffect('都落ち！','#ff4040',2000);
+      flashRed();
     }
   }
   // 下剋上
@@ -1163,14 +1239,14 @@ function doTributeAutoGive(){
   // poor gives 2 best cards to rich
   const poorBest=getTopN(S.hands[poor],2);
   poorBest.forEach(c=>{S.hands[poor].splice(S.hands[poor].indexOf(c),1);});
-  S.hands[rich].push(...poorBest);S.hands[rich].sort((a,b)=>a.rank-b.rank);
+  S.hands[rich].push(...poorBest);S.hands[rich].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   // If N>=4: 富豪(rank 1) gets best from 貧民(rank N-2)
   if(N>=4){
     const fugo=rankings[1];
     const hinin=rankings[N-2];
     const hininBest=getTopN(S.hands[hinin],1);
     hininBest.forEach(c=>{S.hands[hinin].splice(S.hands[hinin].indexOf(c),1);});
-    S.hands[fugo].push(...hininBest);S.hands[fugo].sort((a,b)=>a.rank-b.rank);
+    S.hands[fugo].push(...hininBest);S.hands[fugo].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   }
   // Now human (if 大富豪) must give 2 back; if human is 富豪, give 1 back
   pendingTribute.poorBest=poorBest;
@@ -1210,7 +1286,7 @@ function confirmTributeGive(giver,receiver,count){
   const indices=[];wraps.forEach((w,i)=>{if(w.querySelector('.card.selected'))indices.push(i);});
   const givenCards=indices.map(i=>S.hands[giver][i]);
   [...indices].sort((a,b)=>b-a).forEach(i=>S.hands[giver].splice(i,1));
-  S.hands[receiver].push(...givenCards);S.hands[receiver].sort((a,b)=>a.rank-b.rank);
+  S.hands[receiver].push(...givenCards);S.hands[receiver].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   closeModal('tributeModal');
   finalizeTribute();
 }
@@ -1220,11 +1296,11 @@ function cpuTributeGive(){
   const rich=rankings[0];const poor=rankings[N-1];
   // Rich CPU gives 2 lowest cards
   const give=S.hands[rich].slice(0,2);give.forEach(c=>S.hands[rich].splice(S.hands[rich].indexOf(c),1));
-  S.hands[poor].push(...give);S.hands[poor].sort((a,b)=>a.rank-b.rank);
+  S.hands[poor].push(...give);S.hands[poor].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   if(N>=4&&rankings[1]!==0){
     const fugo=rankings[1];const hinin=rankings[N-2];
     const g2=S.hands[fugo].slice(0,1);g2.forEach(c=>S.hands[fugo].splice(S.hands[fugo].indexOf(c),1));
-    S.hands[hinin].push(...g2);S.hands[hinin].sort((a,b)=>a.rank-b.rank);
+    S.hands[hinin].push(...g2);S.hands[hinin].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   }
   finalizeTribute();
 }
@@ -1247,7 +1323,7 @@ function newGameRound(){
   const hands=[];let idx=0;
   for(let i=0;i<N;i++){
     const cnt=Math.floor(total/N)+(i<(total%N)?1:0);
-    hands.push(deck.slice(idx,idx+cnt).sort((a,b)=>a.rank-b.rank));
+    hands.push(deck.slice(idx,idx+cnt).sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank)));
     idx+=cnt;
   }
   let start=0;
@@ -1264,6 +1340,7 @@ function newGameRound(){
     shibari:{active:false,suit:null,rank:null},
     prevField:null,prevRankings,timerSec:60,
   };
+  showRevolutionBg(false);
   addLog('ラウンド'+round+'開始！');
   renderAll();
   startDealAnimation(()=>{
@@ -1297,7 +1374,19 @@ function showResult(){
 // ==================== CPU AI ====================
 function cpuTurn(){
   if(S.gameOver)return;
-  const p=S.currentPlayer;if(p===0)return;
+  const p=S.currentPlayer;
+  // If it's legitimately the human's turn (not ranked), exit
+  if(p===0&&!S.rankings.includes(0))return;
+  // If current player is ranked (finished), advance to next active CPU
+  if(S.rankings.includes(p)){
+    const nxt=nextActive(p);
+    if(nxt===p){checkGameOver();return;}
+    S.currentPlayer=nxt;
+    S.thinking=nxt!==0;
+    renderAll();
+    if(nxt!==0&&!S.gameOver)setTimeout(cpuTurn,900);
+    return;
+  }
   const hand=S.hands[p];
   let play=null;
   const diff=RULES.diff||'normal';
@@ -1558,8 +1647,15 @@ function renderHand(){
   }
   el.innerHTML=h.map((c,i)=>{
     const sel=S.sel.includes(i);
-    // Check if this card is playable (heuristic: only dim for single-card fields)
-    const canPlay=isMy&&(!S.field||S.field.count===1?validSet([c],S.field):true);
+    // Check if this card is playable
+    let canPlay=true;
+    if(isMy&&S.field){
+      if(S.shibari.active&&!c.isJoker){
+        if(S.shibari.suit&&c.suit!==S.shibari.suit)canPlay=false;
+        if(S.shibari.rank!==null&&c.rank!==S.shibari.rank)canPlay=false;
+      }
+      if(canPlay)canPlay=S.field.count===1?validSet([c],S.field):canPlay;
+    }
     const unplay=isMy&&!canPlay&&!sel?'unplayable':'';
     if(c.isJoker){
       return `<div class="card joker-card${sel?' selected':''}${unplay?' '+unplay:''}" onclick="toggleCard(${i})">

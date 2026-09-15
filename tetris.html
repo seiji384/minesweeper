@@ -791,7 +791,7 @@ document.getElementById('btn-down').addEventListener('click',()=>softDrop());
 document.getElementById('btn-hold').addEventListener('click',()=>holdPiece());
 document.getElementById('btn-drop').addEventListener('click',()=>hardDrop());
 document.getElementById('btn-pause').addEventListener('click',()=>togglePause());
-document.getElementById('overlay-btn').addEventListener('click',startGame);
+document.getElementById('overlay-btn').onclick = startGame;
 
 function togglePause(){
   if(!gameRunning||gameOver) return;
