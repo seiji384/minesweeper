@@ -438,6 +438,14 @@ body{padding-top:44px!important;}
   </div>
 </div>
 
+<!-- Resume Modal -->
+<div class="modal-overlay" id="resumeModal">
+  <div class="modal-box">
+    <div class="modal-title"><span>💾 保存データあり</span></div>
+    <div class="modal-body" id="resumeBody" style="text-align:center;padding:20px 14px;"></div>
+  </div>
+</div>
+
 <!-- Result Modal -->
 <div class="modal-overlay" id="resultModal">
   <div class="modal-box">
@@ -515,6 +523,7 @@ body{padding-top:44px!important;}
   <button class="act-btn-sm" onclick="openModal('daifugouRulesModal')">📖 ルール</button>
   <button class="act-btn" id="dasuBtn" onclick="playCards()">出す</button>
   <button class="act-btn" id="passBtn" onclick="doPassHuman()">パス</button>
+  <button class="act-btn-sm" onclick="saveGame()">💾 保存</button>
   <button class="act-btn-sm" onclick="newGame()">🔄 新ゲーム</button>
 </div>
 
@@ -785,6 +794,7 @@ function sortHand(hand){return hand.sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoke
 
 // ==================== New Game ====================
 function newGame(){
+  localStorage.removeItem(DAIFUGOU_SAVE_KEY);
   stopTimer();
   closeModal('resultModal');closeModal('cardActionModal');closeModal('tributeModal');
   const N=RULES.numPlayers;
@@ -1227,6 +1237,17 @@ function doPass(p){
       if(S.currentPlayer===0&&!S.gameOver)checkAutoSkipHuman();
       return;
     }
+  } else {
+    // Empty field: if all active players pass consecutively, it's a deadlock — end round
+    const ap=activePlayers();
+    if(ap.length>0&&ap.every(x=>S.passedPlayers.has(x))){
+      addLog('⚠️ 全員上がり禁止 → ラウンド終了');
+      ap.forEach(x=>{if(!S.rankings.includes(x))S.rankings.push(x);});
+      S.gameOver=true;S.thinking=false;stopTimer();
+      renderAll();applyFinishRules();applyRoundPoints();
+      setTimeout(()=>showResult(),700);
+      return;
+    }
   }
   if(checkGameOver())return;
   S.currentPlayer=nextActive(p);
@@ -1275,7 +1296,7 @@ function applyFinishRules(){
 // ==================== 貢ぎ ====================
 function startTribute(){
   const N=S.n;
-  const rankings=S.rankings;
+  const rankings=S.prevRankings; // use PREVIOUS round's rankings, not current (which is empty)
   // Automatically give best cards from lower ranks to upper ranks
   // 大貧民 → 大富豪: 2 cards auto (CPU does auto, human needs UI)
   // 大富豪 → 大貧民: 2 cards (choice)
@@ -1437,6 +1458,7 @@ function showResult(){
 }
 
 function showFinalResult(){
+  localStorage.removeItem(DAIFUGOU_SAVE_KEY); // game fully ended — clear save
   const N=S.n;
   const sorted=Array.from({length:N},(_,i)=>i).sort((a,b)=>(S.totalPoints[b]||0)-(S.totalPoints[a]||0));
   const medals=['🥇','🥈','🥉'];
@@ -1492,6 +1514,7 @@ function cpuTurn(){
     return;
   }
   const hand=S.hands[p];
+  if(!hand.length){S.thinking=false;doPass(p);return;} // empty hand (agari-kinshi stuck): force pass
   let play=null;
   const diff=RULES.diff||'normal';
   if(diff==='easy')play=cpuPlayEasy(p,hand,S.field);
@@ -1502,8 +1525,13 @@ function cpuTurn(){
   else doPass(p);
 }
 
+function filterAgariKinshi(p,plays){
+  return plays.filter(play=>!checkAgariKinshi(p,play));
+}
+
 function cpuPlayEasy(p,hand,field){
-  const valid=findAllValid(hand,field);
+  let valid=findAllValid(hand,field);
+  valid=filterAgariKinshi(p,valid);
   if(!valid.length)return null;
   if(Math.random()<0.2)return null; // random pass
   return valid[Math.floor(Math.random()*valid.length)];
@@ -1511,12 +1539,15 @@ function cpuPlayEasy(p,hand,field){
 
 function cpuPlayNormal(p,hand,field){
   if(!field){
-    // Play lowest single
-    return [hand.find(c=>!c.isJoker)||hand[0]];
+    // Play lowest single, avoiding agari-kinshi finish
+    const singles=hand.map(c=>[c]).filter(play=>!checkAgariKinshi(p,play));
+    if(!singles.length)return null; // only forbidden-finish cards remain: pass
+    singles.sort((a,b)=>(a[0].isJoker?999:a[0].rank)-(b[0].isJoker?999:b[0].rank));
+    return singles[0];
   }
-  const valid=findAllValid(hand,field);
+  let valid=findAllValid(hand,field);
+  valid=filterAgariKinshi(p,valid);
   if(!valid.length)return null;
-  // Sort by effective rank and return weakest valid
   valid.sort((a,b)=>{
     const ar=a[0].isJoker?200:effectiveRank(a[0]);
     const br=b[0].isJoker?200:effectiveRank(b[0]);
@@ -1527,38 +1558,35 @@ function cpuPlayNormal(p,hand,field){
 
 function cpuPlayHard(p,hand,field){
   const ap=activePlayers();
-  const handCounts=ap.map(i=>({player:i,count:S.hands[i].length}));
   const minOpponent=Math.min(...ap.filter(i=>i!==p).map(i=>S.hands[i].length));
   const myCount=hand.length;
 
   if(!field){
-    // On empty field: if 革命 chance (4-of-a-kind) and losing, use it
     if(RULES.kakumei){
       const groups=groupByRank(hand);
       for(const [r,cs] of Object.entries(groups)){
-        if(cs.length===4){
-          // Play 革命 if at a disadvantage
+        if(cs.length===4&&!checkAgariKinshi(p,cs)){
           if(myCount>=minOpponent+2)return cs;
         }
       }
     }
-    // Play 8 if holding many 8s and stuck
     const eights=hand.filter(c=>c.value==='8');
-    if(RULES['8cut']&&eights.length>0&&myCount>8)return [eights[0]];
-    return [hand.find(c=>!c.isJoker)||hand[0]];
+    const eightsPlay=[eights[0]];
+    if(RULES['8cut']&&eights.length>0&&myCount>8&&!checkAgariKinshi(p,eightsPlay))return eightsPlay;
+    const singles=hand.map(c=>[c]).filter(play=>!checkAgariKinshi(p,play));
+    if(!singles.length)return null;
+    singles.sort((a,b)=>(a[0].isJoker?999:a[0].rank)-(b[0].isJoker?999:b[0].rank));
+    return singles[0];
   }
 
-  const valid=findAllValid(hand,field);
+  let valid=findAllValid(hand,field);
+  valid=filterAgariKinshi(p,valid);
   if(!valid.length)return null;
-  // If opponent is close to winning, use stronger cards
   if(minOpponent<=3){
-    // Play strongest valid
     valid.sort((a,b)=>effectiveRank(b[0])-effectiveRank(a[0]));
   } else {
-    // Play weakest valid (save strong cards)
     valid.sort((a,b)=>effectiveRank(a[0])-effectiveRank(b[0]));
   }
-  // Prefer 8 to clear when stuck
   const eight=valid.find(v=>v.every(c=>c.value==='8'));
   if(eight&&myCount>10)return eight;
   return valid[0];
@@ -1697,11 +1725,13 @@ function renderCPUs(){
     if(fin)badge=`<div class="cpu-badge">${titles[fr]}</div>`;
     else if(S.thinking&&isCur)badge=`<div class="cpu-badge" style="color:#80ffff;">🤔...</div>`;
     else if(isCur)badge=`<div class="cpu-badge" style="color:#60ff80;">▶ 番</div>`;
+    const prevRankIdx=S.prevRankings.indexOf(i);
+    const prevRankLabel=prevRankIdx>=0?`<div style="font-size:9px;color:rgba(255,215,0,0.55);margin-top:1px;">${titles[prevRankIdx]}</div>`:'';
     html+=`<div class="cpu-card${isCur?' active':''}${fin?' finished':''}">
       <div class="cpu-avatar">🤖</div>
       <div class="cpu-name">${PNAMES_BASE[i]}</div>
       <div class="cpu-count">${cnt}枚</div>
-      ${badge}
+      ${badge}${prevRankLabel}
       <div class="cpu-backs">${backsHTML}</div>
     </div>`;
   }
@@ -1742,11 +1772,13 @@ function renderHand(){
   const el=document.getElementById('handScroll');
   const hc=document.getElementById('handCount');
   const h=S.hands[0];
-  hc.textContent=h.length+'枚'+(S.sel.length?' ('+S.sel.length+'選択)':'');
+  const titles=RANK_TITLES[S.n]||RANK_TITLES[3];
+  const prevRankIdx0=S.prevRankings.indexOf(0);
+  const prevRankSuffix=prevRankIdx0>=0?` (前回: ${titles[prevRankIdx0]})`:'';
+  hc.textContent=h.length+'枚'+(S.sel.length?' ('+S.sel.length+'選択)':'')+prevRankSuffix;
   const isMy=S.currentPlayer===0&&!S.gameOver&&!S.thinking;
   const fin=S.rankings.includes(0);
   const fr=S.rankings.indexOf(0);
-  const titles=RANK_TITLES[S.n]||RANK_TITLES[3];
   if(fin){
     el.innerHTML=`<div style="color:#ffd700;font-size:14px;font-weight:bold;padding:24px;width:100%;text-align:center;">${titles[fr]}</div>`;
     return;
@@ -1801,16 +1833,113 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{
   ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('visible');});
 });
 
-// ==================== Start ====================
-let gameStarted=false;
-syncSettingsUI();
-// Hide cancel/close on first load; show settings launch screen
-(function(){
+// ==================== Save / Load ====================
+const DAIFUGOU_SAVE_KEY='daifugou_save';
+const SAVE_TTL=7*24*60*60*1000;
+
+function saveGame(){
+  if(!gameStarted||!S||!S.hands||S.gameOver)return;
+  try{
+    const saveData={
+      S:{...S,passedPlayers:[...S.passedPlayers]},
+      RULES:{...RULES},
+      savedAt:Date.now()
+    };
+    localStorage.setItem(DAIFUGOU_SAVE_KEY,JSON.stringify(saveData));
+    showSaveToast();
+  }catch(e){}
+}
+
+function showSaveToast(){
+  let t=document.getElementById('df-save-toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='df-save-toast';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a8a3a;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent='💾 保存しました';
+  t.style.opacity='1';
+  clearTimeout(t._tid);
+  t._tid=setTimeout(()=>{t.style.opacity='0';},1500);
+}
+
+function tryLoadSave(){
+  try{
+    const raw=localStorage.getItem(DAIFUGOU_SAVE_KEY);
+    if(!raw)return false;
+    const data=JSON.parse(raw);
+    if(!data.savedAt||Date.now()-data.savedAt>SAVE_TTL){localStorage.removeItem(DAIFUGOU_SAVE_KEY);return false;}
+    const saved=data.S;
+    const N=saved.n||3;
+    const titles=RANK_TITLES[N]||RANK_TITLES[3];
+    const d=new Date(data.savedAt);
+    const dateStr=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('resumeBody').innerHTML=`
+      <p style="color:#ffd700;font-weight:bold;margin-bottom:8px;">ラウンド${saved.round||1} の途中データがあります</p>
+      <p style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:16px;">保存日時: ${dateStr}</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="modal-btn" onclick="resumeGame()">▶ 続きから再開</button>
+        <button class="modal-btn modal-btn-sub" onclick="closeModal('resumeModal');startFreshSettings()">🆕 新しくはじめる</button>
+      </div>`;
+    openModal('resumeModal');
+    return true;
+  }catch(e){return false;}
+}
+
+function resumeGame(){
+  closeModal('resumeModal');
+  try{
+    const raw=localStorage.getItem(DAIFUGOU_SAVE_KEY);
+    const data=JSON.parse(raw);
+    const saved=data.saved||data.S;
+    // Restore RULES
+    Object.assign(RULES,data.RULES);
+    syncSettingsUI();
+    // Restore S, converting passedPlayers array back to Set
+    S={...saved,passedPlayers:new Set(saved.passedPlayers||[])};
+    gameStarted=true;
+    // Show cancel/close buttons in settings
+    const cb=document.getElementById('settingsCancelBtn');
+    const xb=document.getElementById('settingsCloseBtn');
+    if(cb)cb.style.display='';
+    if(xb)xb.style.display='';
+    showRevolutionBg(S.revolution||false);
+    renderAll();
+    // Resume turn
+    if(!S.gameOver){
+      if(S.currentPlayer!==0&&!S.thinking){
+        S.thinking=true;renderAll();setTimeout(cpuTurn,900);
+      }else if(S.currentPlayer===0){
+        if(RULES.timer)startTimer();
+        checkAutoSkipHuman();
+      }
+    }
+  }catch(e){startFreshSettings();}
+}
+
+function startFreshSettings(){
   const cb=document.getElementById('settingsCancelBtn');
   const xb=document.getElementById('settingsCloseBtn');
   if(cb)cb.style.display='none';
   if(xb)xb.style.display='none';
   openModal('settingsModal');
+}
+
+window.addEventListener('beforeunload',()=>{saveGame();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
+
+// ==================== Start ====================
+let gameStarted=false;
+syncSettingsUI();
+(function(){
+  if(!tryLoadSave()){
+    const cb=document.getElementById('settingsCancelBtn');
+    const xb=document.getElementById('settingsCloseBtn');
+    if(cb)cb.style.display='none';
+    if(xb)xb.style.display='none';
+    openModal('settingsModal');
+  }
 })();
 </script>
 <script id="home-nav-js">
