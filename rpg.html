@@ -1278,7 +1278,7 @@ function defaultState() {
     dungeonFloorCleared: false,
     dungeonBossDefeated: {},
     dungeonEntryPos: null,
-    exitPos: { x: 7, y: 9, mapId: 'granzerdo' },
+    exitPos: null,
     items: [],
   };
 }
@@ -1316,7 +1316,7 @@ function loadGame()  {
     if (!G.currentMap) G.currentMap = 'granzerdo';
     if (!WORLD_MAPS[G.currentMap]) G.currentMap = 'granzerdo';
     if (G.dungeonEntryPos === undefined) G.dungeonEntryPos = null;
-    if (!G.exitPos) G.exitPos = { x: 7, y: 9, mapId: 'granzerdo' };
+    if (G.exitPos === undefined) G.exitPos = null;
     if (!G.items) G.items = [];
     if (!G.hero.equip) G.hero.equip = { weapon:null, armor:null, accessory:null };
     // Migration: new party arrays
@@ -2337,7 +2337,7 @@ function transitionMap(dir) {
   const mapData = WORLD_MAPS[G.currentMap];
   if (!mapData) return;
   // If exiting a town and we have a saved overworld position, restore it
-  if (mapData.isTown && G.exitPos && G.exitPos.mapId) {
+  if (mapData.isTown && G.exitPos && G.exitPos.mapId && G.exitPos.mapId !== G.currentMap) {
     const returnMapData = WORLD_MAPS[G.exitPos.mapId];
     const maxY = returnMapData ? returnMapData.height - 1 : 99;
     const returnX = G.exitPos.x;
