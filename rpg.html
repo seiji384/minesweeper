@@ -1255,7 +1255,7 @@ let G = {};
 function defaultState() {
   return {
     hero: {name:'主人公',lv:1,hp:50,maxHp:50,mp:20,maxMp:20,
-           atk:8,def:5,xp:0,xpNext:20,gold:50,weapon:null,armor:null,
+           atk:8,def:5,xp:0,xpNext:9,gold:50,weapon:null,armor:null,
            chikara:14,mimamori:12,subayasa:15,kiyosa:10,atkMagic:8,healMagic:8,
            spells:[], skills:[], btBuffs:{},
            equip:{ weapon:null, armor:null, accessory:null }},
@@ -1263,7 +1263,7 @@ function defaultState() {
     pos: {x:7,y:9},
     currentMap: 'granzerdo',
     flags: {castleVisited:false,finalBossDefeated:false,chapter:1,emblems:0,azuranVisited:false,grenVisited:false,gataraVisited:false,merlinJoined:false,aliceJoined:false,dungeon1Cleared:false,dungeon2Cleared:false,dungeon3Cleared:false,sawNergelCutscene:false},
-    quests: {accepted:[], completed:[]},
+    quests: {accepted:[], completed:[], unlocked:[]},
     stepsToEnc: ri(8,14),
     totalBattles: 0,
     monsterParty: [],
@@ -1303,9 +1303,10 @@ function loadGame()  {
     if (!G.dungeonBossDefeated) G.dungeonBossDefeated = {};
     // Migration: story flags
     if (!G.flags) G.flags = {};
-    if (!G.quests) G.quests = {accepted:[], completed:[]};
+    if (!G.quests) G.quests = {accepted:[], completed:[], unlocked:[]};
     if (!G.quests.accepted) G.quests.accepted = [];
     if (!G.quests.completed) G.quests.completed = [];
+    if (!G.quests.unlocked) G.quests.unlocked = [];
     if (G.flags.dungeon1Cleared === undefined) G.flags.dungeon1Cleared = false;
     if (G.flags.dungeon2Cleared === undefined) G.flags.dungeon2Cleared = false;
     if (G.flags.dungeon3Cleared === undefined) G.flags.dungeon3Cleared = false;
@@ -2385,7 +2386,39 @@ function onMapEnter(mapId, prevMapId) {
         saveGame();
       }
     }
+    // Quest unlock on town entry
+    const questTriggers = {
+      'azuran_town': 'quest_azuran',
+      'gren_town':   'quest_gren',
+      'gatara_town': 'quest_gatara',
+    };
+    const qid = questTriggers[mapId];
+    if (qid) {
+      if (!G.quests) G.quests = {accepted:[], completed:[], unlocked:[]};
+      if (!G.quests.unlocked) G.quests.unlocked = [];
+      if (!G.quests.unlocked.includes(qid)) {
+        G.quests.unlocked.push(qid);
+        saveGame();
+        setTimeout(() => showQuestUnlocked(qid), 900);
+      }
+    }
   }
+}
+
+function showQuestUnlocked(qid) {
+  const q = SIDE_QUESTS.find(q => q.id === qid);
+  if (!q) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);pointer-events:auto;';
+  overlay.innerHTML = `
+    <div style="background:linear-gradient(160deg,#1e1248,#0d0830);border:3px solid #ffd700;border-radius:6px;padding:20px;max-width:300px;width:90%;text-align:center;font-family:monospace">
+      <div style="color:#ffd700;font-size:11px;letter-spacing:2px;margin-bottom:8px">✨ 新しいクエスト ✨</div>
+      <div style="color:#fff;font-size:14px;font-weight:bold;margin-bottom:8px">${q.title}</div>
+      <div style="color:#aaa;font-size:11px;margin-bottom:12px">${q.giver}</div>
+      <button onclick="this.closest('div[style*=inset]').remove()" style="background:#2a1060;border:1px solid #ffd700;color:#ffd700;padding:6px 16px;border-radius:3px;font-family:monospace;cursor:pointer;touch-action:manipulation;">OK</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 6000);
 }
 
 // ── BUILDING ENTRY (town map DOOR tiles) ──────────────────────
@@ -2716,12 +2749,26 @@ function buyItem(id, price, tile) {
 }
 function buyWeapon(id, price, tile) {
   if (G.hero.gold < price) return;
-  G.hero.gold -= price; G.hero.weapon = id;
+  G.hero.gold -= price;
+  G.hero.weapon = id;
+  // Also add to G.items for the equip screen
+  if (!G.items) G.items = [];
+  const wd = WEAPON_DATA[id];
+  if (wd) {
+    G.items.push({ name: wd.name, slot: 'weapon', atk: wd.atk || 0, mgk: 0, description: wd.name });
+  }
   saveGame(); sndMenu(); renderShop(tile);
 }
 function buyArmor(id, price, tile) {
   if (G.hero.gold < price) return;
-  G.hero.gold -= price; G.hero.armor = id;
+  G.hero.gold -= price;
+  G.hero.armor = id;
+  // Also add to G.items for the equip screen
+  if (!G.items) G.items = [];
+  const ad = ARMOR_DATA[id];
+  if (ad) {
+    G.items.push({ name: ad.name, slot: 'armor', def: ad.def || 0, description: ad.name });
+  }
   saveGame(); sndMenu(); renderShop(tile);
 }
 
@@ -3760,8 +3807,10 @@ function startNextRound() { endRound(); }
 function doVictory() {
   BT.over=true;
   const mon = BT.mon;
-  G.hero.gold += mon.gold;
-  G.hero.xp   += mon.xp;
+  const expGain  = Math.floor((mon.xp   || 10) * 3);
+  const goldGain = Math.floor((mon.gold ||  5) * 3);
+  G.hero.gold += goldGain;
+  G.hero.xp   += expGain;
   sndVictory();
   const lvMsgs = checkLevelUp();
   updateBattleHUD();
@@ -3775,7 +3824,7 @@ function doVictory() {
     const hn = G.hero.name;
     seqMsg([
       `${mon.name}を　たおした！`,
-      `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
+      `${expGain}けいけんちと　${goldGain}Gを　てにいれた！`,
       ...lvMsgs,
       '「……そんな　馬鹿な……\nわが　永遠の　野望が……」',
       '冥王ネルゲルは　光に　包まれ\nゆっくりと　消えていった……',
@@ -3827,7 +3876,7 @@ function doVictory() {
     const doStoryMsgs = () => {
       seqMsg([
         `${mon.name}を　たおした！`,
-        `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
+        `${expGain}けいけんちと　${goldGain}Gを　てにいれた！`,
         ...lvMsgs,
         ...storyMsgs,
         '出口への　階段が　あらわれた…',
@@ -3862,7 +3911,7 @@ function doVictory() {
     G.dungeonFloorCleared = true;
     seqMsg([
       `${mon.name}を　たおした！`,
-      `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
+      `${expGain}けいけんちと　${goldGain}Gを　てにいれた！`,
       ...lvMsgs
     ], ()=>checkRecruitOffer(mon, ()=>showVictoryPanel()));
     return;
@@ -3870,7 +3919,7 @@ function doVictory() {
 
   seqMsg([
     `${mon.name}を　たおした！`,
-    `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
+    `${expGain}けいけんちと　${goldGain}Gを　てにいれた！`,
     ...lvMsgs
   ], ()=>checkRecruitOffer(mon, ()=>showVictoryPanel()));
 }
@@ -3939,7 +3988,7 @@ function checkLevelUp() {
   while (G.hero.xp >= G.hero.xpNext && G.hero.lv < 15) {
     G.hero.xp -= G.hero.xpNext;
     G.hero.lv++;
-    G.hero.xpNext = G.hero.lv * 22;
+    G.hero.xpNext = Math.floor(G.hero.lv * 9);
     // Also update legacy atk/def fields for compatibility
     G.hero.atk = (G.hero.atk||8) + 2;
     G.hero.def = (G.hero.def||5) + 2;
@@ -4486,15 +4535,65 @@ const SIDE_QUESTS = [
     rewardText: '2000ゴールドを　もらった！\n英雄への　褒賞じゃ！',
     available: () => G.flags && G.flags.castleVisited,
   },
+  // ── Story quests triggered by visiting each town ──
+  {
+    id: 'quest_azuran',
+    title: 'アズランの　試練',
+    giver: 'アズランの長老',
+    town: 'azuran_town',
+    desc: '「村を　苦しめる　死霊の騎士を　倒してくれ。\n冥府の洞窟　B3Fに　いるはずだ。」\n→ 冥府の洞窟の　ボスを　倒せ！',
+    condition: () => G.flags && G.flags.dungeon1Cleared,
+    reward: () => {
+      G.hero.gold = (G.hero.gold||0) + 500;
+      if (!G.flags.merlinJoined) {
+        // Merlin join reward handled in checkCompanionJoin; just grant gold here
+      }
+      saveGame();
+    },
+    rewardText: '500ゴールドを　もらった！\nアズランの長老から　感謝された！',
+    available: () => G.quests && (G.quests.unlocked||[]).includes('quest_azuran'),
+  },
+  {
+    id: 'quest_gren',
+    title: 'グレンの　誓い',
+    giver: 'グレンの剣士',
+    town: 'gren_town',
+    desc: '「ダークドラゴンを　倒し、\n我が剣の　誓いを　果たせ！」\n→ 冥王の心臓の　ボスを　倒せ！',
+    condition: () => G.flags && G.flags.dungeon2Cleared,
+    reward: () => {
+      G.hero.gold = (G.hero.gold||0) + 800;
+      saveGame();
+    },
+    rewardText: '800ゴールドを　もらった！\nグレンの剣士から　認められた！',
+    available: () => G.quests && (G.quests.unlocked||[]).includes('quest_gren'),
+  },
+  {
+    id: 'quest_gatara',
+    title: 'ガタラの　奇跡',
+    giver: 'ガタラの鍛冶師',
+    town: 'gatara_town',
+    desc: '「全ての　エンブレムを　集めた者に\n最高の　武器を　授けよう。」\n→ 三つのエンブレムを　集めよ！',
+    condition: () => G.flags && (G.flags.emblems||0) >= 3,
+    reward: () => {
+      if (!G.items) G.items = [];
+      G.items.push({ name:'けんじゃのつえ', slot:'weapon', atk:0, mgk:25, heal:20, description:'けんじゃが もちいる しんぴの つえ' });
+      G.hero.gold = (G.hero.gold||0) + 1000;
+      saveGame();
+    },
+    rewardText: '1000ゴールドと　けんじゃのつえを　もらった！\n(まほうりょく+25　かいふく+20)',
+    available: () => G.quests && (G.quests.unlocked||[]).includes('quest_gatara'),
+  },
 ];
 
 function showQuestOverlay() {
-  if (!G.quests) G.quests = {accepted:[], completed:[]};
+  if (!G.quests) G.quests = {accepted:[], completed:[], unlocked:[]};
+  if (!G.quests.unlocked) G.quests.unlocked = [];
   const available = SIDE_QUESTS.filter(q =>
     q.available && q.available() &&
     !G.quests.completed.includes(q.id)
   );
   let h = '<div class="ov-title">📜 サブクエスト</div>';
+  h += '<div style="overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 200px);padding-right:2px;">';
   if (available.length === 0) {
     h += '<p style="color:#aaa;font-size:12px;text-align:center">現在　受けられる\nクエストは　ありません。</p>';
   } else {
@@ -4512,6 +4611,7 @@ function showQuestOverlay() {
       </div>`;
     });
   }
+  h += '</div>';
   h += '<div class="ov-btns"><button class="ov-btn" onclick="hideOverlay()">とじる</button></div>';
   showOverlay(h);
 }
