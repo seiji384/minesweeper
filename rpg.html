@@ -52,34 +52,37 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
 .dpad-btn:active{background:linear-gradient(180deg,#2a1890 0%,#160a50 100%);border-color:#ffd700;}
 .dpad-center{background:#0a0010;border:2px solid #1a1040;border-radius:4px;}
 
-/* BATTLE SCREEN — DQ11 style */
-#battle-screen{max-width:480px;margin:0 auto;}
+/* BATTLE SCREEN — DQ SFC style */
+#battle-screen{max-width:480px;margin:0 auto;background:linear-gradient(180deg,#111166 0%,#2244cc 40%,#4488ee 55%,#70a040 55%,#508030 70%,#304820 100%) !important;position:relative;overflow:hidden;}
 #battle-field{position:relative;height:240px;overflow:hidden;transition:background 0.4s;
   background:linear-gradient(180deg,#2563a8 0%,#4a90d9 22%,#87ceeb 42%,#b8dba0 50%,#4a8c28 52%,#5aa830 58%,#3d7a22 62%,#2d6018 100%);}
 #battle-bg-overlay{position:absolute;inset:0;pointer-events:none;}
 /* DQ11 ground stripe */
 #battle-field::after{content:'';position:absolute;bottom:0;left:0;right:0;height:28px;background:linear-gradient(180deg,#2d6018,#1e4a10);border-top:2px solid #5aa830;}
 /* Platforms (subtle) */
-#enemy-platform{position:absolute;right:8%;top:38%;width:100px;height:28px;background:radial-gradient(ellipse,rgba(200,232,144,0.5) 30%,transparent 100%);border-radius:50%;}
-#player-platform{position:absolute;left:3%;bottom:14%;width:140px;height:42px;background:radial-gradient(ellipse,rgba(200,232,144,0.5) 30%,transparent 100%);border-radius:50%;}
+#enemy-platform{position:absolute;left:50%;transform:translateX(-50%);top:38%;width:120px;height:28px;background:radial-gradient(ellipse,rgba(200,232,144,0.5) 30%,transparent 100%);border-radius:50%;}
+#player-platform{position:absolute;left:0;right:0;bottom:10%;height:36px;background:radial-gradient(ellipse,rgba(200,232,144,0.4) 30%,transparent 100%);border-radius:50%;}
 @keyframes platformPulse{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.08)}}
 .platform-pulse{animation:platformPulse 0.4s ease-out;}
-/* Enemy sprite */
-#enemy-sprite-wrap{position:absolute;right:10%;top:4%;z-index:5;filter:drop-shadow(4px 8px 12px rgba(0,0,0,0.8));}
+/* Enemy sprite — centered top */
+#enemy-sprite-wrap{position:absolute;left:50%;transform:translateX(-50%);top:4%;z-index:5;filter:drop-shadow(4px 8px 12px rgba(0,0,0,0.8));}
 @keyframes monShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-12px)}35%{transform:translateX(12px)}55%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 .mon-shake{animation:monShake 0.38s ease-out;}
 @keyframes monAppear{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
 #enemy-sprite-wrap{animation:monAppear 0.4s ease-out;}
-/* Hero sprite — DQ11 back-view, bottom-left */
-#hero-silhouette{position:absolute;left:2%;bottom:12%;z-index:5;filter:drop-shadow(3px 5px 8px rgba(0,0,0,0.7));}
+/* Hero sprite — DQ3 back-view, bottom row */
+#hero-silhouette{position:absolute;left:2%;bottom:10%;z-index:5;filter:drop-shadow(3px 5px 8px rgba(0,0,0,0.7));}
+/* Battle party sprite slots */
+.battle-party-sprite{position:absolute;bottom:10%;z-index:5;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.7));}
+.battle-party-sprite.ko-sprite{opacity:0.4;filter:grayscale(0.8);}
 @keyframes heroFlash{0%,100%{opacity:1}25%{opacity:0.1}50%{opacity:0.8}75%{opacity:0.2}}
 .hero-flash{animation:heroFlash 0.45s;}
 /* Enemy HUD — top-left, DQ11 style dark box */
 #enemy-hud{position:absolute;top:6px;left:6px;background:rgba(10,5,30,0.82);border:1px solid rgba(100,80,200,0.5);border-radius:6px;padding:6px 10px;min-width:155px;font-family:monospace;z-index:10;backdrop-filter:blur(4px);}
 #enemy-hud span[id="enemy-name"]{color:#ffd700;}
 #enemy-hud span[id="enemy-level"]{color:#aaa;}
-/* Party panel — DQ11 right side vertical list */
-#player-hud{position:absolute;bottom:6px;right:6px;background:rgba(10,5,30,0.82);border:1px solid rgba(100,80,200,0.5);border-radius:6px;padding:6px 10px;min-width:150px;font-family:monospace;z-index:10;backdrop-filter:blur(4px);}
+/* Party panel — hidden in DQ3 layout (party status shown in side panel) */
+#player-hud{display:none;}
 /* DQ11 clouds SVG overlay */
 #battle-clouds{position:absolute;top:0;left:0;width:100%;height:50%;pointer-events:none;z-index:2;}
 /* Battle UI below field — DQ11 style dark */
@@ -250,6 +253,25 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
 /* Daycare / missionary overlays */
 .sub-overlay{position:fixed;inset:0;z-index:630;background:rgba(0,0,0,0.97);display:none;flex-direction:column;overflow:hidden;}
 .sub-overlay.show{display:flex;}
+
+/* Battle screen SFC-style enhancements */
+#enemy-area{width:100%;height:52%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;position:relative;}
+#enemy-sprite{width:120px!important;height:120px!important;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.7));transform-origin:bottom center;}
+/* DQ window style (applied to dq-window class) */
+.dq-window{background:rgba(0,0,48,0.92)!important;border:3px solid #ffffff!important;border-radius:5px!important;box-shadow:inset 0 0 0 2px #000055!important;color:#ffffff!important;font-family:'MS Gothic','Hiragino Kaku Gothic ProN',monospace!important;}
+/* Battle command buttons DQ style */
+.cmd-btn{display:block;width:100%;background:transparent;border:none;color:#fff;font-size:13px;font-family:'MS Gothic',monospace;text-align:left;padding:4px 6px;cursor:pointer;position:relative;touch-action:manipulation;}
+.cmd-btn:hover,.cmd-btn.selected{color:#ffd700;}
+.cmd-btn.disabled{color:#555;cursor:default;}
+/* Party status panel HP bars */
+.party-member-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.15);font-size:11px;}
+.party-member-row.active-turn{color:#ffd700;}
+.hp-bar{width:45px;height:4px;background:#333;border-radius:2px;overflow:hidden;margin:1px 0;}
+.hp-fill{height:100%;background:linear-gradient(90deg,#22cc22,#88ff44);transition:width 0.3s;}
+.hp-fill.low{background:linear-gradient(90deg,#cc2200,#ff6644);}
+.hp-fill.mid{background:linear-gradient(90deg,#cc8800,#ffcc22);}
+/* Battle cloud decoration */
+.btl-cloud{position:absolute;pointer-events:none;z-index:2;}
 </style>
 </head>
 <body>
@@ -304,7 +326,9 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
     <span class="fs-mp" id="fs-mp">MP 10/10</span>
     <span class="fs-gold" id="fs-gold">50G</span>
     <button id="mission-btn" onclick="showMissionPopup()" style="padding:3px 8px;font-size:10px;background:linear-gradient(180deg,#b8860b,#8b6914);border:1px solid #ffd700;border-radius:10px;color:#fff9e6;font-weight:bold;cursor:pointer;touch-action:manipulation;font-family:monospace;">📋 ミッション</button>
+    <button onclick="showQuestOverlay()" style="padding:3px 8px;font-size:10px;background:linear-gradient(180deg,#1a5a1a,#0d3a0d);border:1px solid #44cc44;border-radius:10px;color:#aaffaa;font-weight:bold;cursor:pointer;touch-action:manipulation;font-family:monospace;">📜 クエスト</button>
     <button onclick="showPartyOverlay()" style="padding:3px 8px;font-size:10px;background:linear-gradient(180deg,#1e1248,#0d0830);border:1px solid #4a38a0;border-radius:10px;color:#b898ff;font-weight:bold;cursor:pointer;touch-action:manipulation;font-family:monospace;">⚙ パーティ</button>
+    <button onclick="showEquipMenu()" style="padding:3px 8px;font-size:10px;background:linear-gradient(180deg,#3a1a00,#1a0a00);border:1px solid #cc8800;border-radius:10px;color:#ffd700;font-weight:bold;cursor:pointer;touch-action:manipulation;font-family:monospace;">⚔ そうび</button>
   </div>
   <div id="field-location" id="field-location-bar">&nbsp;</div>
   <div id="dungeon-hud">
@@ -352,6 +376,7 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
     </svg>
     <div id="enemy-platform"></div>
     <div id="player-platform"></div>
+    <div id="battle-companions-wrap" style="position:absolute;inset:0;pointer-events:none;z-index:4"></div>
     <div id="enemy-hud">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span id="enemy-name" style="font-weight:bold;font-size:13px;color:#ffd700"></span>
@@ -435,8 +460,11 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
     </div>
   </div>
   <div id="battle-ui">
+    <div style="display:flex;gap:4px;margin-bottom:4px;min-height:110px">
+      <div id="cmd-panel" style="flex:1;min-width:0"></div>
+      <div id="party-status-panel" style="flex:1;min-width:0;background:rgba(10,5,30,0.95);border:1px solid rgba(100,80,200,0.7);border-radius:4px;padding:4px 6px;font-family:monospace;font-size:11px;overflow-y:auto"></div>
+    </div>
     <div id="dq-msgbox"><div id="msg-text"></div><div id="msg-cursor">▼</div></div>
-    <div id="cmd-panel"></div>
   </div>
 </div>
 
@@ -480,10 +508,19 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
 
 <!-- ENDING SCREEN -->
 <div id="ending-screen" class="screen">
-  <div class="ending-title">おめでとう！</div>
-  <div style="color:#ffd700;font-family:monospace;font-size:13px;margin-bottom:16px">冥王ネルゲルを　たおし　アストルティアに　へいわが　もどった！</div>
+  <div style="text-align:center;padding:12px 0 4px">
+    <div class="ending-title">★ クリア おめでとう ★</div>
+    <div style="color:#ffd700;font-family:monospace;font-size:11px;letter-spacing:2px;margin-bottom:4px">CONGRATULATIONS</div>
+  </div>
+  <div style="color:#e0d0ff;font-family:'MS Gothic','Hiragino Sans',monospace;font-size:13px;line-height:1.8;margin-bottom:12px;padding:0 4px;white-space:pre-wrap">冥王ネルゲルを　倒し
+アストルティアに　ふたたび　光が　もどった！
+
+五つの種族の　絆が　世界を　救った。</div>
   <div class="ending-box" id="ending-stats"></div>
-  <button class="dq-close-btn" onclick="goTitle()">タイトルへ</button>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="dq-close-btn" style="flex:1" onclick="goTitle()">タイトルへ</button>
+    <button class="dq-close-btn" style="flex:1;border-color:#ffd700;color:#ffd700" onclick="showScreen('field');updateFieldHUD();startFieldBgm()">ぼうけんを　つづける</button>
+  </div>
 </div>
 
 </div><!-- /app -->
@@ -751,7 +788,7 @@ const WORLD_MAPS = {
   start: {
     name:'アストルティア平原', width:15, height:12,
     hasTown:'granzerdo', hasDungeon:null,
-    encounterRate:10, encounterZone:'north',
+    encounterRate:18, encounterZone:'north',
     exits:{
       north:{toMap:'azuran_field',toX:7,toY:11},
       east: {toMap:'gren_field',  toX:0,toY:5},
@@ -1035,6 +1072,22 @@ const ARMOR_DATA = {
   iron:   {name:'てつのよろい',  def:20, price:1500},
 };
 
+// Equipment items (companion gifts / rare drops)
+const EQUIP_ITEMS = {
+  'みかわしの剣':     { slot:'weapon',    atk:15,      description:'すばやく　かわせる　けん' },
+  'ドラゴンスレイヤー':{ slot:'weapon',   atk:28, mgk:5, description:'ドラゴンに　おおきな　ダメージ' },
+  'まほうの剣':       { slot:'weapon',    atk:20, mgk:10, description:'まほうと　ぶきを　かねそなえる' },
+  'せいなるつえ':     { slot:'weapon',    heal:15, mgk:20, description:'かいふくまほうを　つよめる　つえ' },
+  'けんじゃのつえ':   { slot:'weapon',    mgk:25, heal:20, description:'けんじゃが　もちいる　しんぴの　つえ' },
+  'みかわしのよろい': { slot:'armor',     def:12,      description:'かるくて　うごきやすい　よろい' },
+  'ドラゴンメイル':   { slot:'armor',     def:30,      description:'ドラゴンの　うろこで　できた　よろい' },
+  'まどうしのローブ': { slot:'armor',     def:10, mgk:15, description:'まどうしが　まとう　まほうの　ローブ' },
+  'せいじゃのころも': { slot:'armor',     def:15, heal:10, description:'かいふくりょくを　たかめる　ころも' },
+  'ちからのゆびわ':   { slot:'accessory', atk:8,       description:'ちからを　たかめる　ゆびわ' },
+  'まもりのたて':     { slot:'accessory', def:10,      description:'まほうも　ふせぐ　たて' },
+  'まほうのブローチ': { slot:'accessory', mgk:12,      description:'まほうりょくを　たかめる　ブローチ' },
+};
+
 const TOWN_DATA = {
   4:{name:'アズラン',       innCost:6,  items:['herb','mpWater','monCoin'],
      weapons:['bamboo'], armors:['leather']},
@@ -1201,14 +1254,16 @@ let G = {};
 
 function defaultState() {
   return {
-    hero: {name:'主人公',lv:1,hp:45,maxHp:45,mp:20,maxMp:20,
+    hero: {name:'主人公',lv:1,hp:50,maxHp:50,mp:20,maxMp:20,
            atk:8,def:5,xp:0,xpNext:20,gold:50,weapon:null,armor:null,
-           chikara:12,mimamori:10,subayasa:15,kiyosa:10,atkMagic:8,healMagic:8,
-           spells:[], skills:[], btBuffs:{}},
+           chikara:14,mimamori:12,subayasa:15,kiyosa:10,atkMagic:8,healMagic:8,
+           spells:[], skills:[], btBuffs:{},
+           equip:{ weapon:null, armor:null, accessory:null }},
     inventory: {herb:2,fullHerb:0,mpWater:0,monCoin:0,scoutBook:0,magicCoin:0},
     pos: {x:7,y:9},
     currentMap: 'granzerdo',
-    flags: {castleVisited:false,finalBossDefeated:false,chapter:1,emblems:0,azuranVisited:false,grenVisited:false,gataraVisited:false},
+    flags: {castleVisited:false,finalBossDefeated:false,chapter:1,emblems:0,azuranVisited:false,grenVisited:false,gataraVisited:false,merlinJoined:false,aliceJoined:false,dungeon1Cleared:false,dungeon2Cleared:false,dungeon3Cleared:false,sawNergelCutscene:false},
+    quests: {accepted:[], completed:[]},
     stepsToEnc: ri(8,14),
     totalBattles: 0,
     monsterParty: [],
@@ -1223,6 +1278,8 @@ function defaultState() {
     dungeonFloorCleared: false,
     dungeonBossDefeated: {},
     dungeonEntryPos: null,
+    exitPos: { x: 7, y: 9, mapId: 'granzerdo' },
+    items: [],
   };
 }
 
@@ -1244,10 +1301,24 @@ function loadGame()  {
     if (!G.dungeonName) G.dungeonName = null;
     if (G.dungeonFloorCleared === undefined) G.dungeonFloorCleared = false;
     if (!G.dungeonBossDefeated) G.dungeonBossDefeated = {};
+    // Migration: story flags
+    if (!G.flags) G.flags = {};
+    if (!G.quests) G.quests = {accepted:[], completed:[]};
+    if (!G.quests.accepted) G.quests.accepted = [];
+    if (!G.quests.completed) G.quests.completed = [];
+    if (G.flags.dungeon1Cleared === undefined) G.flags.dungeon1Cleared = false;
+    if (G.flags.dungeon2Cleared === undefined) G.flags.dungeon2Cleared = false;
+    if (G.flags.dungeon3Cleared === undefined) G.flags.dungeon3Cleared = false;
+    if (G.flags.sawNergelCutscene === undefined) G.flags.sawNergelCutscene = false;
+    if (G.flags.merlinJoined === undefined) G.flags.merlinJoined = false;
+    if (G.flags.aliceJoined === undefined) G.flags.aliceJoined = false;
     // Migration: multi-map system
     if (!G.currentMap) G.currentMap = 'granzerdo';
     if (!WORLD_MAPS[G.currentMap]) G.currentMap = 'granzerdo';
     if (G.dungeonEntryPos === undefined) G.dungeonEntryPos = null;
+    if (!G.exitPos) G.exitPos = { x: 7, y: 9, mapId: 'granzerdo' };
+    if (!G.items) G.items = [];
+    if (!G.hero.equip) G.hero.equip = { weapon:null, armor:null, accessory:null };
     // Migration: new party arrays
     if (!G.mainParty) {
       // Merge old companions + monsterParty into mainParty
@@ -1275,6 +1346,11 @@ function loadGame()  {
       if (m.mp === undefined) m.mp = 5;
       if (m.maxMp === undefined) m.maxMp = 5;
       if (!m.charType) m.charType = m.id && MONSTERS[m.id] ? 'monster' : 'companion';
+      if (!m.equip) m.equip = { weapon:null, armor:null, accessory:null };
+    });
+    // Ensure reserveParty members have equip
+    (G.reserveParty||[]).forEach(m => {
+      if (m && !m.equip) m.equip = { weapon:null, armor:null, accessory:null };
     });
     // Migration: new stat fields for hero
     if (!G.hero.chikara) {
@@ -1322,11 +1398,58 @@ function clamp(v,lo,hi) { return Math.min(hi,Math.max(lo,v)); }
 // Town NPC dialogue per tile type (dynamic hero name)
 function getNpcMsg(tile) {
   const n = G.hero ? G.hero.name : '主人公';
-  return {
-    4:`「ここはウェディ族の里\nアズランじゃ。\nグランゼドーラの　王様から\n使命を授かったのか？\n気をつけてな　${n}よ！」`,
-    6:`「オーガ族の王都　グレンへ\nようこそ。\n賢者ホーローから　話は聞いておる。\nエンブレムを　集めているのだな。\n武器を　整えて　進め！」`,
-    7:`「ドワーフの王国　ガタラじゃ。\n我らが　鍛えた武器があれば\n冥王ネルゲルも　恐ろしくない。\nしっかり　装備を　整えよ！」`,
-  }[tile] || '';
+  const chapter = (G.flags && G.flags.chapter) || 1;
+  const emblems = (G.flags && G.flags.emblems) || 0;
+  const d1 = G.flags && G.flags.dungeon1Cleared;
+  const d2 = G.flags && G.flags.dungeon2Cleared;
+  const defeated = G.flags && G.flags.finalBossDefeated;
+
+  if (tile === 4) { // アズラン (ウェディ族)
+    if (defeated) {
+      return `「${n}よ！　ネルゲルを　たおしてくれたのか！\nアストルティアが　救われた。\nわれら　ウェディ族は　いつまでも\nそなたの　勇気を　語り継ぐぞ。\nまことに　ありがとう！」`;
+    }
+    if (emblems >= 3) {
+      return `「三つの　エンブレムが　そろったか！\n${n}よ、今こそ　ネルゲルの居城へ！\nウェディ族一同　祈っているぞ。\nアストルティアの　未来を　頼んだ！」`;
+    }
+    if (d1) {
+      return `「${n}よ！\n死霊の騎士を　たおしてくれたか！\nアズランの　キーエンブレムは\nそなたの　手の中に　ある。\nグレンやガタラへも　急いでくれ！」`;
+    }
+    if (emblems > 0) {
+      return `「冥府の洞窟の　奥に\nキーエンブレムが　眠っている。\n死霊の騎士が　守っているが\n${n}よ、あなたなら　きっと　勝てる！\nわれら　ウェディ族が　応援しているぞ！」`;
+    }
+    return `「ようこそ　ウェディ族の里\nアズランへ。\nわれわれ　ウェディ族は\n海と水を　こよなく　愛する種族じゃ。\nキーエンブレムを　守るため\n古くから　この地で　暮らしてきた。\n${n}よ、はじめて　きたのか？」`;
+  }
+
+  if (tile === 6) { // グレン王都 (オーガ族)
+    if (defeated) {
+      return `「${n}よ！　まことの　勇者よ！\nオーガ族を　代表して　礼を　言う。\nネルゲルを　倒した　その力……\nさすが　われらが　認めた　勇者じゃ！」`;
+    }
+    if (emblems >= 3) {
+      return `「${n}よ！　三つの　エンブレムを　集めたか。\nオーガ族の　誇りに　懸けて　言う——\nネルゲルを　倒してくれ！\nグレンの　名誉を　かけて　応援するぞ！」`;
+    }
+    if (d2) {
+      return `「ダークドラゴンを　打ち倒したか！\nグレンの　キーエンブレムは　守られた。\n${n}よ、あとは　ガタラじゃ。\n南の　山脈を　越えて　急ぐのじゃ！」`;
+    }
+    if (G.flags && G.flags.merlinJoined) {
+      return `「賢者マーリンが　そなたに　同行したと\n聞いたぞ。\n冥王の心臓の　奥には　エンブレムが　ある。\n${n}よ、マーリンの　力を　借りて\nダークドラゴンを　倒してくれ！」`;
+    }
+    return `「オーガ族の王都　グレンへ\nようこそ。\nわれらは　誇り高き　戦士の一族。\n賢者マーリンに　話を　聞くがいい。\n${n}よ、エンブレム収集の\n助けが　きっと　得られるはずじゃ。」`;
+  }
+
+  if (tile === 7) { // ガタラ王国 (ドワーフ族)
+    if (defeated) {
+      return `「${n}よ！　ついに　やり遂げたか！\nアストルティアに　平和が　戻った。\nドワーフの魂をこめた　武器が\n役に立って　よかったぞ。\nいつでも　また　きてくれ！」`;
+    }
+    if (emblems >= 3) {
+      return `「${n}よ！　ついに　三つが　そろったか。\nドワーフの　技術を　結集した\n最高の装備で　ネルゲルを　やっつけてくれ！\nアストルティアの　未来は　そなたに　かかっている！」`;
+    }
+    if (G.flags && G.flags.aliceJoined) {
+      return `「アリスが　そなたに　ついて　行ったか。\n彼女は　腕の立つ　戦士じゃ。\nネルゲルの居城は　この先じゃ。\n最高の　装備を　整えて　挑め！\n${n}よ、ドワーフが　応援しているぞ！」`;
+    }
+    return `「ドワーフの王国　ガタラへ\nようこそ、旅人よ。\nわれらは　鍛冶の技を　誇りとする。\n剣も　鎧も　最高のものが　揃っているぞ。\n${n}よ、装備を　整えて　進むがよい。」`;
+  }
+
+  return '';
 }
 
 // Chapter title card
@@ -1553,87 +1676,109 @@ function drawTile(type, px, py) {
   }
 }
 
-// New world-map tile drawing for the multi-map system
+// New world-map tile drawing for the multi-map system — DQ3-style pixel art
 function drawWorldTile(type, px, py, isTown) {
   const S2 = TSIZE;
+  const cx = px + S2/2, cy = py + S2/2;
   switch(type) {
-    case 0: // GRASS
-      FX.fillStyle='#4a8c28';FX.fillRect(px,py,S2,S2);
-      FX.fillStyle='#5aaa30';
-      [[4,4],[12,8],[20,4],[8,18],[22,20],[2,24],[16,14]].forEach(([dx,dy])=>{FX.fillRect(px+dx,py+dy,2,2);});
+    case 0: { // GRASS — bright green with 3D edge shading
+      FX.fillStyle='#48b034'; FX.fillRect(px,py,S2,S2);
+      FX.fillStyle='#5cd044'; FX.fillRect(px,py,S2,3); FX.fillRect(px,py,3,S2);
+      FX.fillStyle='#2d8020'; FX.fillRect(px,py+S2-3,S2,3); FX.fillRect(px+S2-3,py,3,S2);
+      FX.fillStyle='#3a9828';
+      [[6,6],[S2-8,S2-8],[Math.floor(S2/2),4],[4,Math.floor(S2/2)]].forEach(([dx,dy])=>FX.fillRect(px+dx,py+dy,2,2));
       break;
-    case 1: // WALL — trees in field, stone in town
+    }
+    case 1: { // WALL — trees in field, stone wall in town
       if (isTown) {
-        FX.fillStyle='#3a3a4a';FX.fillRect(px,py,S2,S2);
-        FX.fillStyle='#555566';FX.fillRect(px+2,py+2,S2-4,S2-4);
-        FX.fillStyle='rgba(0,0,0,0.4)';FX.fillRect(px,py+S2-3,S2,3);FX.fillRect(px+S2-3,py,3,S2);
+        FX.fillStyle='#4a4a5a'; FX.fillRect(px,py,S2,S2);
+        FX.fillStyle='#5c5c70'; FX.fillRect(px+2,py+2,S2-4,S2-4);
+        FX.strokeStyle='#333344'; FX.lineWidth=1;
+        for(let r=0;r<3;r++){const off=(r%2===0?0:Math.floor(S2/4));for(let c=-1;c<3;c++){FX.strokeRect(px+c*(S2/2)+off+1,py+r*(S2/3)+1,S2/2-2,S2/3-2);}}
+        FX.fillStyle='rgba(255,255,255,0.07)'; FX.fillRect(px,py,S2,3); FX.fillRect(px,py,3,S2);
       } else {
-        FX.fillStyle='#1a4a10';FX.fillRect(px,py,S2,S2);
-        FX.fillStyle='#0a3008';
-        FX.beginPath();FX.moveTo(px+16,py+3);FX.lineTo(px+28,py+20);FX.lineTo(px+4,py+20);FX.closePath();FX.fill();
-        FX.beginPath();FX.moveTo(px+16,py+10);FX.lineTo(px+28,py+28);FX.lineTo(px+4,py+28);FX.closePath();FX.fill();
-        FX.fillStyle='#3a2010';FX.fillRect(px+13,py+27,6,5);
+        // Round green tree blobs (DQ3 style)
+        FX.fillStyle='#48b034'; FX.fillRect(px,py,S2,S2); // grass base
+        FX.fillStyle='#6b3a1a'; FX.fillRect(px+Math.floor(S2/2)-2, py+Math.floor(S2*0.65), 4, Math.floor(S2*0.35));
+        FX.fillStyle='#1a6610';
+        FX.beginPath(); FX.arc(cx, py+S2*0.45, S2*0.38, 0, Math.PI*2); FX.fill();
+        FX.fillStyle='#2d9922';
+        FX.beginPath(); FX.arc(cx-1, py+S2*0.40, S2*0.30, 0, Math.PI*2); FX.fill();
+        FX.fillStyle='#44cc33';
+        FX.beginPath(); FX.arc(cx-2, py+S2*0.32, S2*0.18, 0, Math.PI*2); FX.fill();
       }
       break;
-    case 2: // WATER
-      FX.fillStyle='#1448aa';FX.fillRect(px,py,S2,S2);
-      FX.fillStyle='#1c58cc';FX.fillRect(px,py+7,S2,4);FX.fillRect(px,py+19,S2,4);
-      FX.fillStyle='rgba(180,230,255,0.4)';FX.fillRect(px+3,py+8,9,2);FX.fillRect(px+16,py+20,9,2);
+    }
+    case 2: { // WATER — DQ blue with animated-style wave lines
+      FX.fillStyle='#1a44bb'; FX.fillRect(px,py,S2,S2);
+      FX.fillStyle='#2255cc'; FX.fillRect(px+2,py+2,S2-4,S2-4);
+      FX.fillStyle='rgba(255,255,255,0.55)';
+      FX.fillRect(px+4, py+Math.floor(S2*0.25), Math.floor(S2*0.4), 2);
+      FX.fillRect(px+Math.floor(S2*0.5), py+Math.floor(S2*0.6), Math.floor(S2*0.35), 2);
+      FX.fillStyle='#1133aa'; FX.fillRect(px,py,S2,2);
       break;
-    case 3: // FLOOR (town cobblestone)
-      FX.fillStyle='#c8a870';FX.fillRect(px,py,S2,S2);
-      FX.strokeStyle='rgba(0,0,0,0.15)';FX.lineWidth=1;
-      FX.strokeRect(px+1,py+1,14,14);FX.strokeRect(px+16,py+8,14,14);
-      FX.strokeRect(px+1,py+17,14,13);FX.strokeRect(px+16,py+1,14,6);
+    }
+    case 3: { // FLOOR (town cobblestone) — warm tan with grout lines
+      FX.fillStyle='#c8a870'; FX.fillRect(px,py,S2,S2);
+      FX.fillStyle='#b89858'; FX.fillRect(px+1,py+1,Math.floor(S2/2)-2,Math.floor(S2/2)-2);
+      FX.fillStyle='#bfa060'; FX.fillRect(px+Math.floor(S2/2)+1,py+1,Math.floor(S2/2)-2,Math.floor(S2/2)-2);
+      FX.fillStyle='#b89858'; FX.fillRect(px+Math.floor(S2/2)+1,py+Math.floor(S2/2)+1,Math.floor(S2/2)-2,Math.floor(S2/2)-2);
+      FX.fillStyle='#bfa060'; FX.fillRect(px+1,py+Math.floor(S2/2)+1,Math.floor(S2/2)-2,Math.floor(S2/2)-2);
+      FX.fillStyle='#a08050'; FX.fillRect(px,py+Math.floor(S2/2),S2,1); FX.fillRect(px+Math.floor(S2/2),py,1,S2);
       break;
-    case 4: // DOOR
+    }
+    case 4: { // DOOR
       if (isTown) {
-        // Building door in town — dark brown arch
-        FX.fillStyle='#3a2010';FX.fillRect(px,py,S2,S2);
-        FX.fillStyle='#7a4a1a';FX.fillRect(px+4,py+4,24,28);
-        FX.fillStyle='#2a1008';
-        FX.beginPath();FX.arc(px+16,py+14,10,Math.PI,0);FX.fill();
-        FX.fillRect(px+6,py+14,20,18);
-        FX.fillStyle='#d4a017';FX.fillRect(px+14,py+20,4,4);
-        FX.fillStyle='rgba(255,200,50,0.4)';
-        FX.beginPath();FX.arc(px+16,py+14,6,Math.PI,0);FX.fill();
+        // Building door in town — dark brown arch with gold handle
+        FX.fillStyle='#c8a870'; FX.fillRect(px,py,S2,S2);
+        FX.fillStyle='#6b3a1a'; FX.fillRect(px+Math.floor(S2*0.25),py+Math.floor(S2*0.3),Math.floor(S2*0.5),Math.floor(S2*0.7));
+        FX.fillStyle='#8b5020'; FX.fillRect(px+Math.floor(S2*0.28),py+Math.floor(S2*0.33),Math.floor(S2*0.44),Math.floor(S2*0.64));
+        FX.fillStyle='#ffd700'; FX.fillRect(px+Math.floor(S2*0.55),py+Math.floor(S2*0.58),3,3);
+        FX.fillStyle='rgba(255,200,80,0.35)';
+        FX.beginPath(); FX.arc(cx, py+Math.floor(S2*0.45), S2*0.18, Math.PI, 0); FX.fill();
       } else {
-        // Town entrance in field — golden gate
-        FX.fillStyle='#6a5020';FX.fillRect(px,py,S2,S2);
-        FX.fillStyle='#c09050';FX.fillRect(px+5,py+10,22,21);
+        // Town entrance in field — golden gate (DQ3 castle entrance style)
+        FX.fillStyle='#4a8c28'; FX.fillRect(px,py,S2,S2); // grass surround
+        FX.fillStyle='#c09050'; FX.fillRect(px+5,py+10,S2-10,S2-10);
         FX.fillStyle='#ffd700';
-        FX.beginPath();FX.moveTo(px+2,py+12);FX.lineTo(px+16,py+2);FX.lineTo(px+30,py+12);FX.closePath();FX.fill();
-        FX.fillStyle='#220800';FX.fillRect(px+12,py+18,8,13);
+        FX.beginPath(); FX.moveTo(px+2,py+12); FX.lineTo(cx,py+2); FX.lineTo(px+S2-2,py+12); FX.closePath(); FX.fill();
+        FX.fillStyle='#331100'; FX.fillRect(px+Math.floor(S2*0.35),py+Math.floor(S2*0.52),Math.floor(S2*0.3),Math.floor(S2*0.48));
       }
       break;
-    case 5: // PATH
+    }
+    case 5: { // PATH — dirt road
       if (isTown) {
-        FX.fillStyle='#b09060';FX.fillRect(px,py,S2,S2);
-        FX.fillStyle='rgba(0,0,0,0.08)';FX.fillRect(px,py+15,S2,2);
+        FX.fillStyle='#b09060'; FX.fillRect(px,py,S2,S2);
+        FX.fillStyle='#c0a070'; FX.fillRect(px+2,py+2,S2-4,S2-4);
+        FX.fillStyle='rgba(0,0,0,0.06)'; FX.fillRect(px,py+Math.floor(S2/2),S2,1);
       } else {
-        FX.fillStyle='#7ab840';FX.fillRect(px,py,S2,S2);
-        FX.fillStyle='#9acd55';FX.fillRect(px+4,py+4,S2-8,S2-8);
+        FX.fillStyle='#b8983a'; FX.fillRect(px,py,S2,S2);
+        FX.fillStyle='#c8aa50'; FX.fillRect(px+3,py+3,S2-6,S2-6);
+        FX.fillStyle='rgba(255,255,200,0.18)'; FX.fillRect(px+3,py+3,S2-6,2);
       }
       break;
-    case 6: // STAIRS (dungeon entrance)
-      FX.fillStyle='#111010';FX.fillRect(px,py,S2,S2);
-      FX.fillStyle='#2a2020';FX.fillRect(px+5,py+5,22,22);
+    }
+    case 6: { // STAIRS (dungeon entrance)
+      FX.fillStyle='#48b034'; FX.fillRect(px,py,S2,S2);
+      FX.fillStyle='#222222'; FX.fillRect(px+4,py+4,S2-8,S2-8);
+      FX.fillStyle='#3a3a3a'; FX.fillRect(px+6,py+6,S2-12,S2-12);
       FX.fillStyle='#000000';
-      FX.beginPath();FX.arc(px+16,py+19,9,Math.PI,0);FX.fill();
-      FX.fillRect(px+7,py+19,18,12);
-      FX.fillStyle='#ff6644';FX.font='bold 8px sans-serif';FX.textAlign='center';
-      FX.fillText('↓',px+16,py+28);
+      FX.beginPath(); FX.arc(cx,py+Math.floor(S2*0.65),S2*0.28,Math.PI,0); FX.fill();
+      FX.fillRect(px+Math.floor(S2*0.22),py+Math.floor(S2*0.65),Math.floor(S2*0.56),Math.floor(S2*0.3));
+      FX.fillStyle='#ff7755'; FX.font='bold 9px sans-serif'; FX.textAlign='center';
+      FX.fillText('↓', cx, py+S2-3);
       break;
+    }
     case 7: case 8: case 9: case 10: { // EXIT tiles
-      const bgColor = isTown ? '#b09060' : '#4a8c28';
-      FX.fillStyle=bgColor;FX.fillRect(px,py,S2,S2);
-      FX.fillStyle='rgba(255,255,100,0.85)';FX.font='bold 13px sans-serif';FX.textAlign='center';
+      const bgColor = isTown ? '#b09060' : '#48b034';
+      FX.fillStyle=bgColor; FX.fillRect(px,py,S2,S2);
+      FX.fillStyle='rgba(255,255,80,0.85)'; FX.font='bold 14px sans-serif'; FX.textAlign='center';
       const arrows={7:'↑',8:'↓',9:'→',10:'←'};
-      FX.fillText(arrows[type]||'?',px+16,py+20);
+      FX.fillText(arrows[type]||'?', cx, py+Math.floor(S2*0.62));
       break;
     }
     default:
-      FX.fillStyle='#888';FX.fillRect(px,py,S2,S2);
+      FX.fillStyle='#888'; FX.fillRect(px,py,S2,S2);
   }
 }
 
@@ -1962,9 +2107,10 @@ function tryMove(dx, dy) {
       // In town: open building
       checkBuildingEntry(G.currentMap, nx, ny);
     } else {
-      // In field: enter town map
+      // In field: enter town map — save overworld exit position first
       const townId = mapData.hasTown;
       if (townId && WORLD_MAPS[townId]) {
+        G.exitPos = { x: nx, y: ny, mapId: G.currentMap };
         const entry = WORLD_MAPS[townId].fieldEntry || {x:7,y:9};
         doMapTransition(townId, entry.x, entry.y);
       }
@@ -2030,19 +2176,32 @@ function enterCastle() {
   const hn = G.hero.name;
   let msg;
   if (defeated) {
-    msg = `「冥王ネルゲルを　たおしてくれた！\nアストルティアに　ふたたび　光が戻った。\nエテーネ村の　${hn}よ\nそなたこそ　まことの　英雄じゃ。\nこの名は　永遠に　語り継がれるであろう。\nまことに　ありがとう！」`;
+    msg = `「${hn}よ……！\n冥王ネルゲルを　たおしてくれた！\nアストルティアに　ふたたび　光が　戻った。\nエテーネ村の　${hn}よ\nそなたこそ　まことの　英雄じゃ。\n五つの種族が　そなたの　勇気を\n永遠に　語り継ぐであろう。\nまことに……まことに　ありがとう！」`;
   } else if (firstVisit) {
-    msg = `「${hn}よ！　よくきてくれた。\n私は　グランゼドーラ王だ。\nそなたの故郷　エテーネ村が\n冥王ネルゲルに　滅ぼされたと\n聞き及んでおる。\n\nネルゲルは　深淵に　潜む冥王じゃ。\n三つの種族が　それぞれ\nキーエンブレムを　守っておる。\n\nアズランは　城の南を出て　北へ進め！\nグレン王都は　東の野原の先じゃ！\nガタラ王国は　南の山脈を越えよ！\n\n各地の　洞窟でエンブレムを集め\nネルゲルの居城へ　乗り込むのじゃ！\n${hn}よ！　頼んだぞ！」`;
+    G.hero.gold = (G.hero.gold || 0) + 1000;
+    saveGame();
+    msg = `「${hn}よ！　よくぞ　きてくれた！\n私は　グランゼドーラ王だ。\nそなたの故郷　エテーネ村が\n冥王ネルゲルに　滅ぼされたと\n聞き及んでおる。\n\nネルゲルは　深淵に　潜む　冥王じゃ。\nアストルティアを　闇に　沈めようと\n企んでいる　恐ろしい存在じゃ。\n\n奴を　倒す方法が　一つ　ある。\n三つの種族が　それぞれ\nキーエンブレムを　守っておる。\nそれを　すべて　集めれば\nネルゲルを　封じる　扉が　開かれるのじゃ。\n\n北のアズラン(ウェディ族)へ　進め！\n東のグレン王都(オーガ族)も　訪れよ！\n南のガタラ王国(ドワーフ族)も　頼む！\n\n各地の　洞窟でエンブレムを集め\nネルゲルの居城へ　乗り込むのじゃ！\n\n旅の　資金として\n1000ゴールドを　授けよう。\n装備を　整えて　出発するのじゃ！\n${hn}よ！　頼んだぞ！」`;
   } else if (emblems >= 3) {
-    msg = `「3つのエンブレムが　そろったか！\n破邪船の力が　目覚めた。\n今こそ　冥王ネルゲルの居城に\n乗り込む時だ！\n南の洞窟の奥を　目指せ！\n${hn}の　武運を　祈っておる！」`;
+    msg = `「${hn}よ！\n三つのエンブレムが　そろったか！\n光の女神ルティアナの　奇跡じゃ……\n破邪の力が　目覚め\nネルゲルの居城への　道が　開かれた！\n\n今こそ　冥王ネルゲルの居城に\n乗り込む時じゃ！\n南のガタラ山脈の先を　目指せ！\n\n${hn}よ——\nアストルティアの　命運は\nそなたに　かかっておる。\nこのグランゼドーラ王も\n全力で　祈っておる！\n武運を……武運を　祈っておるぞ！」`;
+  } else if (emblems === 2) {
+    msg = `「${hn}よ！　二つが　そろったか。\n残りは　あと一つ——\n三つの種族の　中で\nまだ　訪れていない　里へ　急ぐのじゃ。\nアズラン、グレン、ガタラ——\n全て　回ったか？\n教会で　セーブを　忘れるな！」`;
+  } else if (emblems === 1) {
+    msg = `「${hn}よ！　一つを　手に　入れたか。\nよく　頑張ったな。\nしかし　まだ　先は　長い——\n残りの　二つの　エンブレムを\n求めて　旅を　続けるのじゃ。\n三つが　そろえば　道が　開かれる！」`;
   } else {
-    msg = `「エンブレムを　${emblems}個　集めたか。\n北のアズラン、東のグレン、\n南のガタラを　全て訪れるのじゃ。\n3つのエンブレムが　そろえば\nネルゲルの居城への道が　開かれる！\n教会で　セーブを　わすれるな！」`;
+    msg = `「${hn}よ、まだ　エンブレムを\n集めていないのか。\n北のアズラン、東のグレン、\n南のガタラを　全て訪れるのじゃ。\n3つのエンブレムが　そろえば\nネルゲルの居城への道が　開かれる！\n教会で　セーブを　わすれるな！」`;
   }
   document.getElementById('castle-msg').textContent = '';
   showScreen('castle');
-  typewriterMsg('castle-msg', msg, firstVisit
-    ? ()=>setTimeout(()=>showChapterTitle('第二章','キーエンブレムの章','〜五つの種族の絆〜'), 400)
-    : null);
+  const afterMsg = firstVisit
+    ? ()=>{
+        showOverlay('<div class="ov-title" style="color:#ffd700">1000ゴールドを　もらった！</div><div class="ov-btns"><button class="ov-btn" onclick="hideOverlay()">ありがとう</button></div>');
+        setTimeout(()=>{
+          updateFieldHUD();
+          showChapterTitle('第二章','絆の章','〜五つの種族との出会い〜');
+        }, 1200);
+      }
+    : null;
+  typewriterMsg('castle-msg', msg, afterMsg);
 }
 
 function leaveCastle() {
@@ -2084,22 +2243,19 @@ function enterTown(tileType) {
   if (flagKey && !G.flags[flagKey]) {
     G.flags[flagKey] = true;
     G.flags.emblems = (G.flags.emblems||0) + 1;
-    // Check companion join for this tile
-    checkCompanionJoin(tileType, ()=>{
-      if (G.flags.emblems >= 3 && G.flags.chapter < 3) {
-        G.flags.chapter = 3;
-        saveGame();
-        document.getElementById('town-title').textContent = td.name;
-        renderTownMain(tileType);
-        showScreen('town');
-        setTimeout(()=>showChapterTitle('第三章','決戦の章','〜冥王ネルゲルへの挑戦〜'), 700);
-        return;
-      }
+    if (G.flags.emblems >= 3 && G.flags.chapter < 4) {
+      G.flags.chapter = 4;
       saveGame();
       document.getElementById('town-title').textContent = td.name;
       renderTownMain(tileType);
       showScreen('town');
-    });
+      setTimeout(()=>showChapterTitle('第四章','覚醒の章','〜勇者の真実〜'), 700);
+      return;
+    }
+    saveGame();
+    document.getElementById('town-title').textContent = td.name;
+    renderTownMain(tileType);
+    showScreen('town');
     return;
   }
   document.getElementById('town-title').textContent = td.name;
@@ -2180,6 +2336,17 @@ function leaveTown(tileType) {
 function transitionMap(dir) {
   const mapData = WORLD_MAPS[G.currentMap];
   if (!mapData) return;
+  // If exiting a town and we have a saved overworld position, restore it
+  if (mapData.isTown && G.exitPos && G.exitPos.mapId) {
+    const returnMapData = WORLD_MAPS[G.exitPos.mapId];
+    const maxY = returnMapData ? returnMapData.height - 1 : 99;
+    const returnX = G.exitPos.x;
+    const returnY = Math.min(G.exitPos.y + 1, maxY);
+    const savedMapId = G.exitPos.mapId;
+    G.exitPos = { x: returnX, y: returnY, mapId: savedMapId };
+    doMapTransition(savedMapId, returnX, returnY);
+    return;
+  }
   const exit = (mapData.exits||{})[dir];
   if (!exit) return;
   doMapTransition(exit.toMap, exit.toX, exit.toY);
@@ -2210,16 +2377,13 @@ function onMapEnter(mapId, prevMapId) {
     if (flagKey && G.flags && !G.flags[flagKey]) {
       G.flags[flagKey] = true;
       G.flags.emblems = (G.flags.emblems||0) + 1;
-      const tileType = MAP_TILE_TYPE[mapId] || 4;
-      checkCompanionJoin(tileType, () => {
-        if (G.flags.emblems >= 3 && G.flags.chapter < 3) {
-          G.flags.chapter = 3;
-          saveGame();
-          setTimeout(() => showChapterTitle('第三章','決戦の章','〜冥王ネルゲルへの挑戦〜'), 700);
-          return;
-        }
+      if (G.flags.emblems >= 3 && G.flags.chapter < 4) {
+        G.flags.chapter = 4;
         saveGame();
-      });
+        setTimeout(() => showChapterTitle('第四章','覚醒の章','〜勇者の真実〜'), 700);
+      } else {
+        saveGame();
+      }
     }
   }
 }
@@ -2349,7 +2513,7 @@ function startDungeonBattle(dungeonId) {
   if (isBossFloor) {
     mon = { ...dd.boss, currentHp: dd.boss.hp };
   } else {
-    const mult = 1 + floor * 0.15;
+    const mult = 1 + floor * 0.10;
     const table = ENC_TABLE[dd.zone];
     const id = table[Math.floor(Math.random()*table.length)];
     const base = MONSTERS[id];
@@ -2371,10 +2535,11 @@ function startDungeonBattle(dungeonId) {
   if (!mon.healMagic) mon.healMagic = 5;
   mon.btBuffs = {};
   stopField(); stopFieldBgm(); sndFanfare();
-  BT = { mon, zone: dd.zone, over:false, busy:false, isDungeon:true, dungeonId, isBossFloor };
+  BT = { mon, zone: dd.zone, over:false, busy:false, isDungeon:true, dungeonId, isBossFloor, pendingRecruit:null };
   document.getElementById('battle-field').style.background = BATTLE_BG[dd.zone]||BATTLE_BG.dungeon1;
   const clouds = document.getElementById('battle-clouds');
   if (clouds) clouds.style.display = 'none';
+  addBattleClouds();
   document.getElementById('enemy-sprite').innerHTML = SPR[mon.spr]||'';
   updateBattleHUD();
   showScreen('battle');
@@ -2384,10 +2549,54 @@ function startDungeonBattle(dungeonId) {
     setTimeout(()=>{ bEl.style.transition=''; }, 350); }, 30);
   clearCmdPanel();
   G.totalBattles = (G.totalBattles||0)+1;
-  setTimeout(()=>{
-    typeMsg(mon.name + 'が　あらわれた！', ()=>setTimeout(showMainCmd,300));
-  }, 350);
+  if (isBossFloor) {
+    // Mark Nergel cutscene seen if applicable
+    if (dungeonId === 'dun3' && G.flags) G.flags.sawNergelCutscene = true;
+    const cutscene = BOSS_CUTSCENES[dungeonId] || [];
+    setTimeout(()=>{
+      if (cutscene.length > 0) {
+        // Show chapter 5 title before Nergel's cutscene
+        if (dungeonId === 'dun3' && G.flags && G.flags.chapter < 5) {
+          G.flags.chapter = 5;
+          showChapterTitle('第五章','決戦の章','〜冥王ネルゲルへの挑戦〜', ()=>{
+            seqMsg([...cutscene, mon.name + 'が　あらわれた！'], ()=>setTimeout(showMainCmd,300));
+          });
+        } else {
+          seqMsg([...cutscene, mon.name + 'が　あらわれた！'], ()=>setTimeout(showMainCmd,300));
+        }
+      } else {
+        typeMsg(mon.name + 'が　あらわれた！', ()=>setTimeout(showMainCmd,300));
+      }
+    }, 350);
+  } else {
+    setTimeout(()=>{
+      typeMsg(mon.name + 'が　あらわれた！', ()=>setTimeout(showMainCmd,300));
+    }, 350);
+  }
 }
+
+// ============================================================
+// BOSS PRE-BATTLE CUTSCENES (story only — do not modify battle logic)
+// ============================================================
+const BOSS_CUTSCENES = {
+  dun1: [
+    'ネルゲルに　仕える　死霊の騎士が\n行く手を　はばんだ！',
+    '「……ここから先は　ネルゲル様の　領域じゃ。\nエンブレムに　手を　伸ばすなど\n許さぬ！」',
+    '「貴様の　命、ここで　奪ってくれる……！」',
+  ],
+  dun2: [
+    '暗黒の炎に　包まれた　ドラゴンが\n猛烈な　威圧感で　迫りくる！',
+    '「グオオオオ……！！\nここは　ネルゲル様の　聖域じゃ。\n侵入者は　灰にしてやる！」',
+    '「引き返せ……さもなくば\nこの　業火で　焼き尽くすぞ！！」',
+  ],
+  dun3: [
+    '深淵の闇の中から\n冥王ネルゲルが　ゆっくりと　姿を　現した……',
+    '「……よくぞ　ここまで　来た。\nだが　遅かった。\nすでに　アストルティアの命運は\n決まっている。」',
+    '「この世界を　闇に　沈める——\nそれが　わが　悲願……\n封じられし　怒りが　解き放たれた日から\nずっと　望んでいたことだ！」',
+    '「かつて　神は　我を　封じた。\nしかし　もはや　その力も　尽きた。\nアストルティアは　我のものだ！」',
+    '「さあ……神に　選ばれし　勇者よ、\n我が　力を　見るがよい！\n死して　光の　礎となれ！」',
+  ],
+};
 
 // ============================================================
 // ENCOUNTER FLASH (Feature E)
@@ -2639,9 +2848,33 @@ function pickMonster(zone) {
 // STAT SYSTEM HELPERS
 // ============================================================
 function getEffectiveStat(char, stat) {
-  const base = char[stat] || 0;
+  let base = char[stat] || 0;
+  // Add equipment bonuses
+  if (char.equip) {
+    Object.values(char.equip).forEach(item => {
+      if (!item) return;
+      if (stat === 'chikara'   && item.atk)  base += item.atk;
+      if (stat === 'mimamori'  && item.def)  base += item.def;
+      if (stat === 'atkMagic'  && item.mgk)  base += item.mgk;
+      if (stat === 'healMagic' && item.heal) base += item.heal;
+    });
+  }
   if (!char.btBuffs || !char.btBuffs[stat]) return base;
   return Math.max(1, Math.floor(base * char.btBuffs[stat].mult));
+}
+
+// Add decorative clouds to battle screen
+function addBattleClouds() {
+  const bg = document.getElementById('battle-field');
+  if (!bg) return;
+  bg.querySelectorAll('.btl-cloud').forEach(e => e.remove());
+  [{top:'8%',left:'5%',w:60,h:22},{top:'14%',left:'38%',w:80,h:28},{top:'6%',left:'68%',w:55,h:20}]
+    .forEach(({top,left,w,h}) => {
+      const c = document.createElement('div');
+      c.className = 'btl-cloud';
+      c.style.cssText = `top:${top};left:${left};width:${w}px;height:${h}px;background:rgba(255,255,255,0.8);border-radius:50%;box-shadow:${Math.floor(w*0.3)}px 6px 0 rgba(255,255,255,0.65),${-Math.floor(w*0.15)}px 4px 0 rgba(255,255,255,0.55)`;
+      bg.appendChild(c);
+    });
 }
 
 function applyBuff(targetChar, stat, mult, turns) {
@@ -2699,13 +2932,15 @@ function startBattle(zone) {
   sndFanfare();
 
   const mon = pickMonster(zone);
-  BT = { mon, zone, over:false, busy:false };
+  BT = { mon, zone, over:false, busy:false, pendingRecruit:null };
 
   // Set battle background
   document.getElementById('battle-field').style.background = BATTLE_BG[zone]||BATTLE_BG.north;
   // Show/hide clouds (only for outdoor zones)
   const clouds = document.getElementById('battle-clouds');
   if (clouds) clouds.style.display = (zone==='north'||zone==='south') ? 'block' : 'none';
+  // Add decorative clouds
+  addBattleClouds();
   // Render monster sprite
   document.getElementById('enemy-sprite').innerHTML = SPR[mon.spr]||'';
   updateBattleHUD();
@@ -2784,6 +3019,75 @@ function updateBattleHUD() {
       heroNameEl.style.color = '#ffd700';
     }
   }
+  // DQ3-style side panel and companion sprites
+  renderPartyStatusPanel();
+  renderBattlePartySprites();
+}
+
+// ── DQ3-style party status panel ──
+function renderPartyStatusPanel() {
+  const panel = document.getElementById('party-status-panel');
+  if (!panel) return;
+  if (!G.mainParty) G.mainParty = [];
+  const activeTurnIdx = (BT && BT.partyOrder) ? BT.partyActed : -1;
+  const allMembers = [G.hero, ...G.mainParty];
+  let html = '';
+  allMembers.forEach((c, i) => {
+    const isHero = (i === 0);
+    const currentHp = isHero ? G.hero.hp : (c.currentHp || 0);
+    const maxHp = isHero ? G.hero.maxHp : (c.maxHp || 1);
+    const currentMp = isHero ? G.hero.mp : (c.mp || 0);
+    const maxMp = isHero ? G.hero.maxMp : (c.maxMp || 0);
+    const isKo = isHero ? (G.hero.hp <= 0 || G.hero.ko) : (c.ko || currentHp <= 0);
+    const isActive = (i === activeTurnIdx);
+    const hpRatio = clamp(currentHp / maxHp, 0, 1);
+    const hpColor = isKo ? '#ff5555' : (hpRatio > 0.5 ? '#88ff88' : hpRatio > 0.25 ? '#ffee44' : '#ff6644');
+    const name = isHero ? (G.hero.name || '主人公') : c.name;
+    const lv = isHero ? G.hero.lv : (c.lv || '?');
+    const koText = isKo ? ' <span style="color:#ff5555;font-weight:bold">たおれた</span>' : '';
+    html += `<div style="margin-bottom:3px;padding:2px 3px;border-radius:3px;border:1px solid ${isActive?'#ffd700':'rgba(100,80,200,0.3)'};background:${isActive?'rgba(255,215,0,0.08)':'transparent'}">` +
+      `<div style="display:flex;justify-content:space-between;align-items:center">` +
+      `<span style="color:${isActive?'#ffd700':'#d0c0ff'};font-size:11px">${isActive?'▶ ':''}${name}${koText}</span>` +
+      `<span style="color:#aaa;font-size:9px">Lv.${lv}</span></div>` +
+      `<div style="display:flex;gap:4px;font-size:10px;margin-top:1px">` +
+      `<span style="color:#88ff88">HP</span><span style="color:${hpColor};font-weight:bold">${currentHp}</span><span style="color:#666">/${maxHp}</span>` +
+      (maxMp > 0 ? `<span style="color:#88aaff;margin-left:4px">MP</span><span style="color:#aaccff;font-weight:bold">${currentMp}</span><span style="color:#666">/${maxMp}</span>` : '') +
+      `</div></div>`;
+  });
+  panel.innerHTML = html;
+}
+
+// ── DQ3-style companion battle sprites ──
+function getCompBattleSVG(char) {
+  const isComp = char.charType === 'companion';
+  const colors = isComp
+    ? (COMPANION_COLORS[char.id] || {bodyColor:'#4466bb', skinColor:'#f5c87a'})
+    : (MONSTER_COLORS[char.id] || {bodyColor:'#888888', skinColor:'#aaaaaa'});
+  const bc = colors.bodyColor, sc = colors.skinColor;
+  return `<svg viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg" width="40" height="58">
+    <ellipse cx="20" cy="56" rx="11" ry="3.5" fill="rgba(0,0,0,0.3)"/>
+    <ellipse cx="20" cy="17" rx="8" ry="8.5" fill="${sc}"/>
+    <rect x="12" y="24" width="16" height="18" fill="${bc}" rx="3"/>
+    <rect x="7" y="26" width="6" height="13" fill="${bc}" rx="2"/>
+    <rect x="27" y="26" width="6" height="13" fill="${bc}" rx="2"/>
+    <rect x="13" y="41" width="6" height="14" fill="${bc}" rx="2"/>
+    <rect x="21" y="41" width="6" height="14" fill="${bc}" rx="2"/>
+  </svg>`;
+}
+
+function renderBattlePartySprites() {
+  const wrap = document.getElementById('battle-companions-wrap');
+  if (!wrap) return;
+  if (!G.mainParty) G.mainParty = [];
+  // Companion slots: positions 22%, 42%, 62% from left
+  const positions = ['22%', '42%', '62%'];
+  let html = '';
+  G.mainParty.slice(0, 3).forEach((comp, i) => {
+    const isKo = comp.ko || (comp.currentHp !== undefined && comp.currentHp <= 0);
+    html += `<div class="battle-party-sprite${isKo?' ko-sprite':''}" style="left:${positions[i]}">` +
+      getCompBattleSVG(comp) + `</div>`;
+  });
+  wrap.innerHTML = html;
 }
 
 // Typewriter
@@ -2874,6 +3178,7 @@ function initBattleTurns() {
   BT.partyActed = 0;
   BT.defends  = new Set();
   BT.atkBuffs = new Set();
+  BT.pendingSwaps = [];
   BT.busy = false;
   doCurrentTurn();
 }
@@ -2890,8 +3195,11 @@ function doCurrentTurn() {
     doEnemyTurn();
   } else {
     const {char, idx} = entry;
-    // Skip KO'd companions
-    if (idx > 0 && (char.ko || (char.currentHp !== undefined && char.currentHp <= 0))) {
+    // Skip KO'd characters (companions and hero)
+    const isCharKo = idx === 0
+      ? (G.hero.ko || G.hero.hp <= 0)
+      : (char.ko || (char.currentHp !== undefined && char.currentHp <= 0));
+    if (isCharKo) {
       BT.turnCurrent++;
       doCurrentTurn();
       return;
@@ -2933,21 +3241,65 @@ function showCharCmd() {
   const idx  = BT.partyActed;
   const char = BT.partyOrder[idx];
   const isHero = (idx === 0);
-  const hasItems = isHero && Object.entries(G.inventory).some(([k,v]) => v > 0);
+  const hasItems = isHero && Object.entries(G.inventory).some(([k,v]) => v > 0 && ITEM_DATA[k] && ITEM_DATA[k].effect !== 'scout');
   const magicSkills = (char.skills || []).filter(k => ALL_SKILLS[k] && ALL_SKILLS[k].cost > 0);
+  const isBoss = BT.mon && BT.mon.boss;
+  const hasReserve = G.reserveParty && G.reserveParty.some(m => m && !m.ko && !(m.currentHp !== undefined && m.currentHp <= 0));
   const indicator = `<div class="turn-indicator">▶ ${char.name}の　ターン</div>`;
-  let html = indicator + '<div class="dq-cmd-grid">';
-  html += `<button class="dq-cmd-btn" onclick="cmdCharAttack()">たたかう</button>`;
-  html += `<button class="dq-cmd-btn" onclick="cmdCharMahou()" ${magicSkills.length === 0 ? 'disabled' : ''}>じゅもん</button>`;
+  // 2×2 main grid (DQ5 style)
+  const swapDisabled = !hasReserve ? 'disabled style="opacity:0.4"' : '';
+  const swapClick    = hasReserve ? `onclick="showSwapMenu(${idx})"` : '';
+  let html = indicator + `<div class="dq-cmd-grid">
+    <button class="dq-cmd-btn" onclick="cmdCharAttack()">▶ たたかう</button>
+    <button class="dq-cmd-btn" ${swapDisabled} ${swapClick}>いれかえ</button>
+    <button class="dq-cmd-btn" onclick="cmdCharMahou()" ${magicSkills.length === 0 ? 'disabled' : ''}>じゅもん</button>
+    <button class="dq-cmd-btn" onclick="cmdDougu()" ${!hasItems ? 'disabled' : ''}>どうぐ</button>
+    <button class="dq-cmd-btn" onclick="cmdCharDefend()">ぼうぎょ</button>`;
   if (isHero) {
-    html += `<button class="dq-cmd-btn" onclick="cmdDougu()" ${!hasItems ? 'disabled' : ''}>どうぐ</button>`;
     html += `<button class="dq-cmd-btn" onclick="cmdNigeru()">にげる</button>`;
-  } else {
-    html += `<button class="dq-cmd-btn" onclick="cmdDougu()" ${!hasItems ? 'disabled' : ''}>どうぐ</button>`;
-    html += `<button class="dq-cmd-btn" onclick="cmdCharDefend()">ぼうぎょ</button>`;
+    html += `<button class="dq-cmd-btn" onclick="cmdScoutFree()" ${isBoss ? 'disabled' : ''}>スカウト</button>`;
   }
   html += '</div>';
   document.getElementById('cmd-panel').innerHTML = html;
+}
+
+// Show reserve member selection for swap
+function showSwapMenu(charIdx) {
+  if (BT.over || BT.busy) return;
+  const reserves = (G.reserveParty || []).map((m, i) => ({m, i}))
+    .filter(({m}) => m && !m.ko && !(m.currentHp !== undefined && m.currentHp <= 0));
+  let html = '<div style="color:#ffd700;font-size:11px;padding:2px 0 4px;text-align:center">だれと　いれかえる？</div>';
+  reserves.forEach(({m, i}) => {
+    const hp = m.currentHp !== undefined ? m.currentHp : (m.maxHp || 0);
+    html += `<button class="dq-cmd-btn" onclick="doSwapAction(${charIdx},${i})">${m.name} Lv${m.lv||'?'} HP${hp}</button>`;
+  });
+  html += `<div class="dq-back" onclick="showCharCmd()">◀ もどる</div>`;
+  document.getElementById('cmd-panel').innerHTML = html;
+}
+
+// Execute a party swap as the current character's battle action
+function doSwapAction(charIdx, reserveIdx) {
+  if (BT.over || BT.busy) return;
+  BT.busy = true;
+  clearCmdPanel();
+  const outChar = BT.partyOrder[charIdx];
+  const inChar  = G.reserveParty[reserveIdx];
+  if (!inChar) { BT.busy = false; showCharCmd(); return; }
+  // Perform the swap in G state
+  if (charIdx === 0) {
+    // Hero cannot be swapped (shouldn't be reachable normally)
+    BT.busy = false; showCharCmd(); return;
+  }
+  const partySlot = charIdx - 1; // index into G.mainParty
+  G.mainParty[partySlot] = inChar;
+  G.reserveParty[reserveIdx] = outChar;
+  // Update BT.partyOrder to reflect new lineup
+  BT.partyOrder = [G.hero, ...G.mainParty];
+  typeMsg(`${outChar.name}と　${inChar.name}が　いれかわった！`, () => {
+    updateBattleHUD();
+    if (typeof renderBattlePartySprites === 'function') renderBattlePartySprites();
+    nextPartyTurn();
+  });
 }
 
 // Alias for old code that calls showMainCmd
@@ -3147,24 +3499,17 @@ function cmdCharDefend() {
 // ── どうぐ ──
 function cmdDougu() {
   if (BT.busy||BT.over) return;
-  const items = Object.entries(ITEM_DATA).filter(([id])=>(G.inventory[id]||0)>0);
+  // Exclude scout items (scout is now a permanent command button)
+  const items = Object.entries(ITEM_DATA).filter(([id,it])=>(G.inventory[id]||0)>0 && it.effect !== 'scout');
   if (!items.length) { showCharCmd(); return; }
-  // Scout items only show on hero's turn (index 0)
   const isHeroTurn = (!BT.partyOrder || BT.partyActed === 0);
   let h = '<div class="dq-submenu">';
   for (const [id, it] of items) {
-    if (it.effect === 'scout') {
-      if (!isHeroTurn) continue; // only hero can scout
-      h += `<div class="dq-subitem" onclick="cmdScout('${id}')">
-        <span>スカウト <span style="color:#aaa;font-size:10px">[${it.name}]</span></span>
-        <span style="color:#aaa;font-size:11px">${G.inventory[id]}個</span>
-      </div>`;
-    } else {
-      h += `<div class="dq-subitem" onclick="useItem('${id}')">
-        <span>${it.name}</span>
-        <span style="color:#aaa;font-size:11px">${G.inventory[id]}個</span>
-      </div>`;
-    }
+    if (it.effect === 'scout') continue; // scout is now a permanent command button — skip here
+    h += `<div class="dq-subitem" onclick="useItem('${id}')">
+      <span>${it.name}</span>
+      <span style="color:#aaa;font-size:11px">${G.inventory[id]}個</span>
+    </div>`;
   }
   h += '</div><div class="dq-back" onclick="showCharCmd()">◀ もどる</div>';
   document.getElementById('cmd-panel').innerHTML = h;
@@ -3220,6 +3565,57 @@ function cmdScout(itemId) {
     } else {
       typeMsg('スカウトは　しっぱいした……', () => {
         BT.busy=false; doEnemyTurn();
+      });
+    }
+  });
+}
+
+// ── スカウト（フリー：アイテム不要） ──
+function cmdScoutFree() {
+  if (BT.busy||BT.over) return;
+  const mon = BT.mon;
+  if (mon.boss) { typeMsg(`${mon.name}は　スカウトできない！`, ()=>showCharCmd()); return; }
+  BT.busy = true; clearCmdPanel();
+  const hpPercent = mon.currentHp / mon.hp;
+  const rate = (1 - hpPercent) * 0.5;
+  typeMsg(`${mon.name}に　スカウトを　こころみた！`, () => {
+    if (Math.random() < rate) {
+      const mc = MONSTER_COLORS[mon.id] || {};
+      const monLv = mon.lv || 1;
+      const newMon = {
+        id: mon.id, name: mon.name, currentHp: mon.currentHp, maxHp: mon.hp,
+        atk: mon.atk, def: mon.def||0, lv: monLv,
+        ko: false, charType: 'monster', skills: [], mp: 5, maxMp: 5,
+        chikara:  mon.chikara  || Math.max(5, Math.floor(mon.atk * 1.5)),
+        mimamori: mon.mimamori || Math.max(3, Math.floor((mon.def||0) * 2)),
+        subayasa: mon.subayasa || (monLv * 3 + 8),
+        kiyosa:   mon.kiyosa   || (monLv * 2 + 5),
+        atkMagic: mon.atkMagic || 5,
+        healMagic:mon.healMagic|| 5,
+        btBuffs:{},
+        bodyColor: mc.bodyColor||'#4466bb', skinColor: mc.skinColor||'#f5c87a'
+      };
+      if (!G.mainParty) G.mainParty = [];
+      if (!G.reserveParty) G.reserveParty = [];
+      if (!G.daycare) G.daycare = [];
+      let dest;
+      if (G.mainParty.length < 3) {
+        G.mainParty.push(newMon); dest = 'main';
+      } else if (G.reserveParty.length < 4) {
+        G.reserveParty.push(newMon); dest = 'reserve';
+      } else {
+        G.daycare.push(newMon); dest = 'daycare';
+      }
+      saveGame(); updateFieldHUD(); sndFanfare();
+      const destMsg = dest==='daycare'
+        ? `${mon.name}は　そだてやに　あずけられた！`
+        : dest==='reserve'
+        ? `${mon.name}は　ひかえメンバーに　なった！`
+        : `${mon.name}は　なかまに　なった！`;
+      typeMsg(destMsg, () => { BT.over=true; showVictoryPanel(); });
+    } else {
+      typeMsg('スカウトは　しっぱいした……', () => {
+        BT.busy=false; nextPartyTurn();
       });
     }
   });
@@ -3308,9 +3704,11 @@ function doEnemyAttack() {
 
   const afterAttack = () => { BT.busy=false; nextPartyTurn(); };
 
-  // 30% chance to target a party member
+  // If hero is already KO'd, always target a companion
+  const heroAlreadyKo = G.hero.ko || G.hero.hp <= 0;
+  // 30% chance (or 100% if hero KO'd) to target a party member
   const aliveCompanions = G.mainParty.filter(c => !c.ko && c.currentHp > 0);
-  if (aliveCompanions.length > 0 && Math.random() < 0.30) {
+  if (aliveCompanions.length > 0 && (heroAlreadyKo || Math.random() < 0.30)) {
     const companion = aliveCompanions[Math.floor(Math.random() * aliveCompanions.length)];
     const partyIdx  = G.mainParty.indexOf(companion) + 1;
     const isDefending = BT.defends && BT.defends.has(partyIdx);
@@ -3323,7 +3721,16 @@ function doEnemyAttack() {
       if (companion.currentHp <= 0) {
         companion.ko = true;
         updateFieldHUD(); updateBattleHUD();
-        typeMsg(companion.name + 'は　たおれた……', afterAttack);
+        typeMsg(companion.name + 'は　たおれた……', () => {
+          // Check if all party members are now KO'd
+          const heroDown = G.hero.hp <= 0 || G.hero.ko;
+          const aliveLeft = (G.mainParty||[]).filter(c => !c.ko && c.currentHp > 0);
+          if (heroDown && aliveLeft.length === 0) {
+            doDefeat();
+          } else {
+            afterAttack();
+          }
+        });
       } else {
         afterAttack();
       }
@@ -3331,7 +3738,8 @@ function doEnemyAttack() {
     return;
   }
 
-  // Attack hero
+  // Attack hero (only if not already KO'd)
+  if (heroAlreadyKo) { afterAttack(); return; }
   const heroMimamori = getEffectiveStat(h, 'mimamori') || heroDef();
   const isHeroDefending = BT.defends && BT.defends.has(0);
   let dmg = Math.max(1, Math.floor(monAtk * rand01() - heroMimamori * 0.25));
@@ -3340,7 +3748,7 @@ function doEnemyAttack() {
   G.hero.hp = Math.max(0, G.hero.hp-dmg);
   sndHit(); showFloatDmg(dmg,'player'); flashHero(); updateBattleHUD();
   typeMsg(`${mon.name}の　こうげき！\n${h.name}に　${dmg}の　ダメージ！` + (isHeroDefending?' （ぼうぎょ中）':''), () => {
-    if (G.hero.hp <= 0) { doDefeat(); }
+    if (G.hero.hp <= 0) { checkBattleDefeat(afterAttack); }
     else { afterAttack(); }
   });
 }
@@ -3362,14 +3770,19 @@ function doVictory() {
 
   // Final boss (冥王ネルゲル) — triggers ending
   if (mon.boss && mon.id==='demonLord') {
-    G.flags.finalBossDefeated=true; saveGame();
+    G.flags.finalBossDefeated=true; G.flags.dungeon3Cleared=true; saveGame();
     G.dungeonFloor=0; G.dungeonName=null;
+    const hn = G.hero.name;
     seqMsg([
       `${mon.name}を　たおした！`,
       `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
       ...lvMsgs,
+      '「……そんな　馬鹿な……\nわが　永遠の　野望が……」',
+      '冥王ネルゲルは　光に　包まれ\nゆっくりと　消えていった……',
+      'アストルティアを　覆っていた　闇が\nすっと　晴れていく……',
+      '「${hn}……ありがとう……」\n遠くから　誰かの声が　聞こえた気がした。'.replace('${hn}', hn),
       '冥王ネルゲルは　ほろびた！',
-      'アストルティアに　へいわが　もどった！！'
+      'アストルティアに　ふたたび　光が　もどった！！',
     ], ()=>showEnding());
     return;
   }
@@ -3378,25 +3791,69 @@ function doVictory() {
   if (BT.isDungeon && BT.isBossFloor) {
     G.dungeonBossDefeated = G.dungeonBossDefeated||{};
     G.dungeonBossDefeated[BT.dungeonId] = true;
+    if (!G.flags) G.flags = {};
+    const _dungeonId = BT.dungeonId;
+    // Set dungeon cleared flags for side quest tracking
+    if (_dungeonId === 'dun1') G.flags.dungeon1Cleared = true;
+    if (_dungeonId === 'dun2') G.flags.dungeon2Cleared = true;
     saveGame();
-    const dd = DUNGEON_DATA[BT.dungeonId]||{};
-    seqMsg([
-      `${mon.name}を　たおした！`,
-      `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
-      ...lvMsgs,
-      (dd.name||'ダンジョン') + '　B' + G.dungeonFloor + 'F　を　クリアした！',
-      '出口への　階段が　あらわれた…'
-    ], ()=>{
-      G.dungeonFloor=0; G.dungeonName=null;
-      // Restore field map position (dungeon entrance)
-      if (G.dungeonEntryPos) {
-        G.pos = {x: G.dungeonEntryPos.x, y: G.dungeonEntryPos.y};
-        G.currentMap = G.dungeonEntryPos.map;
-        G.dungeonEntryPos = null;
-      }
-      hideDungeonHUD();
-      returnToField();
-    });
+    const dd = DUNGEON_DATA[_dungeonId]||{};
+    const hn = G.hero.name;
+    // Build story-specific messages per dungeon boss
+    const storyMsgs = {
+      dun1: [
+        '死霊の騎士の　甲冑が　砕け\n光の欠片が　舞い散った……',
+        'その光が　集まり\nキーエンブレムが　姿を　現した！',
+        '「アズランの　キーエンブレム——\n水の神の　加護を　宿す　聖なる紋章。\nウェディ族が　代々　守り続けた　宝じゃ。」',
+        '——その夜、' + hn + ' は　夢を　見た。\nエテーネ村の　懐かしい風景……\n家族の笑顔……\nそして　遠くに　輝く　光の導き……',
+        'まだ　二つ……\nグレンとガタラへ　急げ！',
+      ],
+      dun2: [
+        'ダークドラゴンが　断末魔の叫びを　あげ\n崩れ落ちていった……',
+        '闇に　包まれていた　エンブレムが\nふたたび　輝きを　取り戻した！',
+        '「グレンの　キーエンブレム——\nオーガ族の　勇気と　誇りが\n刻み込まれた　力の紋章。\n代々の　武神が　守り続けた　聖物じゃ。」',
+        'マーリンが　静かに　語りかけた。\n「……実は　わたしは\nあなたの　前任の勇者を　知っている。\n彼も……アストルティアを　救おうと\n戦い続けた。\nあなたは……彼に　とても　よく　似ている。」',
+        '残るは　ガタラの　エンブレム——\n南の　山脈を　越えよ！',
+      ],
+    }[_dungeonId] || [
+      (dd.name||'ダンジョン') + 'の　ボスを　倒した！',
+      'キーエンブレムを　手に　入れた！',
+    ];
+    // Companion intro messages
+    const compIntroMsgs = [];
+    if (_dungeonId === 'dun1' && !G.flags.merlinJoined) compIntroMsgs.push('そこに　白髭の　老賢者が　現れた……');
+    if (_dungeonId === 'dun2' && !G.flags.aliceJoined) compIntroMsgs.push('赤い髪の　戦士アリスが　駆け寄ってきた！\n「あたしも　ネルゲルを　許せない。\n一緒に　連れてって！」');
+    // Chapter 3 trigger on first dungeon boss clear
+    const doStoryMsgs = () => {
+      seqMsg([
+        `${mon.name}を　たおした！`,
+        `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
+        ...lvMsgs,
+        ...storyMsgs,
+        '出口への　階段が　あらわれた…',
+        ...compIntroMsgs
+      ], ()=>{
+        const doReturn = () => {
+          G.dungeonFloor=0; G.dungeonName=null;
+          if (G.dungeonEntryPos) {
+            G.pos = {x: G.dungeonEntryPos.x, y: G.dungeonEntryPos.y};
+            G.currentMap = G.dungeonEntryPos.map;
+            G.dungeonEntryPos = null;
+          }
+          hideDungeonHUD();
+          returnToField();
+        };
+        checkCompanionJoin(_dungeonId, doReturn);
+      });
+    };
+    // Show chapter 3 title on first dungeon boss clear if not yet shown
+    if (_dungeonId === 'dun1' && G.flags.chapter < 3) {
+      G.flags.chapter = 3;
+      saveGame();
+      showChapterTitle('第三章','試練の章','〜キーエンブレムを求めて〜', doStoryMsgs);
+    } else {
+      doStoryMsgs();
+    }
     return;
   }
 
@@ -3407,7 +3864,7 @@ function doVictory() {
       `${mon.name}を　たおした！`,
       `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
       ...lvMsgs
-    ], ()=>showVictoryPanel());
+    ], ()=>checkRecruitOffer(mon, ()=>showVictoryPanel()));
     return;
   }
 
@@ -3415,7 +3872,66 @@ function doVictory() {
     `${mon.name}を　たおした！`,
     `${mon.xp}けいけんちと　${mon.gold}Gを　てにいれた！`,
     ...lvMsgs
-  ], ()=>showVictoryPanel());
+  ], ()=>checkRecruitOffer(mon, ()=>showVictoryPanel()));
+}
+
+// Post-battle monster recruitment check
+function checkRecruitOffer(mon, onDecline) {
+  if (!mon || mon.boss || mon.metal) { onDecline(); return; }
+  // Only recruit each monster type once
+  const alreadyHave = [...(G.mainParty||[]), ...(G.reserveParty||[])].some(m => m && m.sourceId === mon.id);
+  if (alreadyHave || Math.random() > 0.25) { onDecline(); return; }
+  BT.pendingRecruit = mon;
+  BT._recruitDecline = onDecline;
+  typeMsg(`${mon.name}は　なかまに　なりたそうに　こちらを　みている。`, () => {
+    document.getElementById('cmd-panel').innerHTML = `
+      <div class="result-panel">
+        <div style="font-family:monospace;font-size:13px;color:#fff;margin-bottom:10px;text-align:center">なかまに　しますか？</div>
+        <div class="result-btns">
+          <button class="dq-cmd-btn" style="padding:9px 12px" onclick="acceptMonsterRecruit()">なかまにする</button>
+          <button class="dq-cmd-btn" style="padding:9px 12px" onclick="declineMonsterRecruit()">ことわる</button>
+        </div>
+      </div>`;
+  });
+}
+
+function acceptMonsterRecruit() {
+  const mon = BT.pendingRecruit;
+  if (!mon) { returnToField(); return; }
+  BT.pendingRecruit = null;
+  const newMember = {
+    id: mon.id, name: mon.name, isMonster: true, sourceId: mon.id,
+    lv: mon.lv || 1, maxHp: mon.hp || mon.maxHp || 20,
+    currentHp: mon.hp || mon.maxHp || 20,
+    atk: mon.atk || 8, def: mon.def || 3,
+    maxMp: mon.maxMp || 0, mp: 0, ko: false, charType: 'monster',
+    chikara: mon.chikara || Math.max(5, Math.floor((mon.atk||8)*1.5)),
+    mimamori: mon.mimamori || Math.max(2, Math.floor((mon.def||3)*2)),
+    subayasa: mon.subayasa || (mon.lv||1)*3+8,
+    kiyosa: mon.kiyosa || 8,
+    atkMagic: mon.atkMagic || 5, healMagic: mon.healMagic || 0,
+    btBuffs: {}, equip: { weapon:null, armor:null, accessory:null },
+    skills: mon.skills || [],
+    bodyColor: (MONSTER_COLORS[mon.id]||{}).bodyColor || '#2255ee',
+    skinColor:  (MONSTER_COLORS[mon.id]||{}).skinColor || '#5588ff',
+  };
+  const mainCount = (G.mainParty||[]).filter(m=>m).length;
+  if (mainCount < 3) {
+    if (!G.mainParty) G.mainParty = [];
+    G.mainParty.push(newMember);
+  } else {
+    if (!G.reserveParty) G.reserveParty = [];
+    G.reserveParty.push(newMember);
+  }
+  saveGame();
+  typeMsg(`${mon.name}は　なかまに　なった！`, () => showVictoryPanel());
+}
+
+function declineMonsterRecruit() {
+  BT.pendingRecruit = null;
+  const onDec = BT._recruitDecline;
+  BT._recruitDecline = null;
+  typeMsg('そうか……またいつか　あおう。', () => { if(onDec) onDec(); else showVictoryPanel(); });
 }
 
 function checkLevelUp() {
@@ -3460,11 +3976,40 @@ function showVictoryPanel() {
   </div>`;
 }
 
+// ── Check if battle is truly lost (all party KO'd) ──
+function checkBattleDefeat(continueCallback) {
+  const heroDown = G.hero.hp <= 0 || G.hero.ko;
+  const aliveCompanions = (G.mainParty || []).filter(c => !c.ko && (c.currentHp === undefined || c.currentHp > 0));
+  if (!heroDown) {
+    // Hero still alive, continue normally
+    if (continueCallback) continueCallback();
+    return;
+  }
+  if (aliveCompanions.length > 0) {
+    // Hero KO'd but companions alive — battle continues
+    if (!G.hero.ko) {
+      G.hero.ko = true;
+      G.hero.hp = 0;
+      updateBattleHUD();
+      typeMsg(`${G.hero.name}は　たおれた…\nしかし　なかまが　たたかっている！`, () => {
+        if (continueCallback) continueCallback();
+      });
+    } else {
+      if (continueCallback) continueCallback();
+    }
+  } else {
+    // All KO'd — true defeat
+    doDefeat();
+  }
+}
+
 // ── Defeat ──
 function doDefeat() {
   BT.over=true; sndGameOver();
-  if (G.mainParty) G.mainParty.forEach(c=>{ if(c.currentHp<=0) c.ko=true; });
-  typeMsg((G.hero.name||'ゆうしゃ')+'は　しんでしまった...', ()=>{
+  G.hero.ko = true; G.hero.hp = 0;
+  if (G.mainParty) G.mainParty.forEach(c=>{ c.ko=true; c.currentHp=0; });
+  updateBattleHUD();
+  typeMsg('パーティは　全滅してしまった…', ()=>{
     document.getElementById('cmd-panel').innerHTML=`<div class="result-panel">
       <div class="result-title" style="color:#ff5555">ゲームオーバー</div>
       <div style="font-family:monospace;font-size:11px;color:#888;text-align:center;margin-bottom:8px">教会へ　もどります…</div>
@@ -3481,9 +4026,13 @@ function continueFromDefeat() {
   // Gold penalty: 20%
   const goldLost = Math.floor(G.hero.gold * 0.2);
   G.hero.gold = Math.max(0, G.hero.gold - goldLost);
-  // HP restore: 30% of max
+  // Revive hero with 30% HP
+  G.hero.ko = false;
   G.hero.hp = Math.max(1, Math.floor(G.hero.maxHp * 0.3));
   G.hero.mp = Math.floor(G.hero.maxMp * 0.3);
+  // Revive all companions with 1 HP
+  if (G.mainParty) G.mainParty.forEach(c => { c.ko = false; c.currentHp = 1; });
+  if (G.reserveParty) G.reserveParty.forEach(c => { c.ko = false; c.currentHp = Math.max(1, Math.floor((c.maxHp||10)*0.1)); });
   // Return to last church (in world map)
   G.pos = {x: church.x||3, y: church.y||6};
   G.currentMap = church.mapId || 'granzerdo';
@@ -3529,36 +4078,102 @@ function returnToField() {
 // ── Ending ──
 function showEnding() {
   showScreen('ending');
+  stopFieldBgm();
+  sndFanfare();
   const h = G.hero;
+  // Check which companions joined
+  const hasMerlin = (G.mainParty||[]).concat(G.reserveParty||[]).some(c=>c.id==='merlin');
+  const hasAlice  = (G.mainParty||[]).concat(G.reserveParty||[]).some(c=>c.id==='alice');
+  const companionEpilogue = [
+    hasMerlin ? '<div style="margin-top:6px;color:#b898ff">マーリン：賢者として　旅を　続け\nアストルティアの　知恵を　広めた。</div>' : '',
+    hasAlice  ? '<div style="margin-top:6px;color:#ff9988">アリス：新たな　道場を　開き\n若き　戦士を　育て続けた。</div>' : '',
+  ].filter(Boolean).join('');
   document.getElementById('ending-stats').innerHTML = `
+    <div style="color:#ffd700;font-family:monospace;text-align:center;margin-bottom:10px;letter-spacing:2px">— 冒険の記録 —</div>
     <div><span style="color:#888">なまえ</span>　　${h.name}</div>
     <div><span style="color:#888">レベル</span>　　${h.lv}</div>
     <div><span style="color:#888">たたかい</span>　${G.totalBattles}かい</div>
     <div><span style="color:#888">もちきん</span>　${h.gold}G</div>
     <div><span style="color:#888">ぶき</span>　　　${h.weapon?WEAPON_DATA[h.weapon].name:'なし'}</div>
-    <div><span style="color:#888">よろい</span>　　${h.armor?ARMOR_DATA[h.armor].name:'なし'}</div>`;
+    <div><span style="color:#888">よろい</span>　　${h.armor?ARMOR_DATA[h.armor].name:'なし'}</div>
+    <div><span style="color:#888">エンブレム</span>　${G.flags.emblems||0}/3</div>
+    <div style="margin-top:10px;border-top:1px solid #2a1060;padding-top:8px;color:#aaaacc;font-size:11px;line-height:1.8">
+      <div style="color:#ffd700;margin-bottom:4px">— その後のアストルティア —</div>
+      <div>冥王ネルゲルが　ほろび、アストルティアには\nふたたび　光と　安らぎが　戻った。</div>
+      <div style="margin-top:4px">ウェディ族のアズランは　海に　恵みが　戻り、\nオーガ族のグレンは　誇りある　平和を　取り戻した。\nドワーフ族のガタラは　鎚の音を　高らかに　響かせた。</div>
+      ${companionEpilogue}
+      <div style="margin-top:6px">そして　${h.name}は……\n故郷　エテーネ村の　空を　見上げながら\n散った命への　誓いを　胸に　刻んだ。</div>
+      <div style="margin-top:8px;text-align:center;color:#ffd700;letter-spacing:4px;font-size:13px">〜 Fin 〜</div>
+    </div>`;
+  // Play a victory fanfare sequence
+  setTimeout(()=>[784,880,1047,880,1047,1175].forEach((f,i)=>beep(f,0.2,'sine',0.08,i*0.18)), 400);
 }
 
 // ============================================================
 // COMPANION SYSTEM (Feature 8)
 // ============================================================
-function checkCompanionJoin(tileType, cb) {
+function checkCompanionJoin(dungeonId, cb) {
+  if (!G.flags) G.flags = {};
   if (!G.mainParty) G.mainParty = [];
-  const compEntry = Object.values(COMPANION_DATA).find(c => c.joinTile === tileType);
-  if (!compEntry) { if(cb)cb(); return; }
+  let compId = null;
+  if (dungeonId === 'dun1' && !G.flags.merlinJoined) {
+    compId = 'merlin';
+    G.flags.merlinJoined = true;
+  } else if (dungeonId === 'dun2' && !G.flags.aliceJoined) {
+    compId = 'alice';
+    G.flags.aliceJoined = true;
+  }
+  if (!compId) { if(cb)cb(); return; }
   // Check if already in any party list
   const allLists = [...G.mainParty, ...(G.reserveParty||[]), ...(G.daycare||[])];
-  if (allLists.find(c => c.id === compEntry.id)) { if(cb)cb(); return; }
-  // Show join scene
-  setTimeout(()=>{
-    showOverlay(
-      '<div class="ov-title" style="color:#d0c0ff">' + compEntry.name + '</div>' +
-      '<div style="display:flex;justify-content:center;margin-bottom:12px">' + compEntry.portrait + '</div>' +
-      '<p style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:#ddd">' + compEntry.joinText.replace('{name}', G.hero.name) + '</p>' +
-      '<div class="ov-btns"><button class="ov-btn" onclick="joinCompanion(\'' + compEntry.id + '\')" style="border-color:#d0a0ff;color:#d0c0ff">なかまにする</button></div>'
-    );
-    if(cb)cb();
-  }, 600);
+  if (allLists.find(c => c.id === compId)) { if(cb)cb(); return; }
+  const compEntry = COMPANION_DATA[compId];
+  window._afterJoinCb = cb || null;
+  showOverlay(
+    '<div class="ov-title" style="color:#d0c0ff">' + compEntry.name + '</div>' +
+    '<div style="display:flex;justify-content:center;margin-bottom:12px">' + compEntry.portrait + '</div>' +
+    '<p style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:#ddd">' + compEntry.joinText.replace('{name}', G.hero.name) + '</p>' +
+    '<div class="ov-btns"><button class="ov-btn" onclick="joinCompanionThenContinue(\'' + compId + '\')" style="border-color:#d0a0ff;color:#d0c0ff">なかまにする</button></div>'
+  );
+}
+
+function joinCompanionThenContinue(id) {
+  joinCompanion(id); // calls hideOverlay() internally
+  const cb = window._afterJoinCb;
+  window._afterJoinCb = null;
+  // Give join gifts with message sequence
+  giveCompanionJoinGift(id, () => {
+    if (cb) setTimeout(cb, 300);
+  });
+}
+
+// Give companion join equipment gifts
+function giveCompanionJoinGift(companionId, next) {
+  if (!G.items) G.items = [];
+  const allParty = [...(G.mainParty||[]), ...(G.reserveParty||[])];
+  const comp = allParty.find(m => m && m.id === companionId);
+  if (companionId === 'merlin') {
+    const w = { name:'まほうの剣',   ...EQUIP_ITEMS['まほうの剣'] };
+    const a = { name:'まどうしのローブ', ...EQUIP_ITEMS['まどうしのローブ'] };
+    if (comp) comp.equip = { weapon: w, armor: a, accessory: null };
+    seqMsg([
+      'マーリン「わしが　もっていた　そうびを　わたそう」',
+      'マーリン「その　けんは　まほうも　こもっておる」',
+      '「まほうの剣」と「まどうしのローブ」を　てにいれた！',
+    ], next || (()=>{}));
+  } else if (companionId === 'alice') {
+    const w = { name:'ドラゴンスレイヤー', ...EQUIP_ITEMS['ドラゴンスレイヤー'] };
+    const a = { name:'ドラゴンメイル',     ...EQUIP_ITEMS['ドラゴンメイル'] };
+    if (comp) comp.equip = { weapon: w, armor: a, accessory: null };
+    seqMsg([
+      'アリス「このたびは　すくってくれて　ありがとう！」',
+      'アリス「わたしの　そうびを　つかって！　きっと　やくにたつわ」',
+      '「ドラゴンスレイヤー」と「ドラゴンメイル」を　てにいれた！',
+    ], next || (()=>{}));
+  } else {
+    if (next) next();
+  }
+  saveGame();
 }
 
 const COMPANION_COLORS = {
@@ -3594,6 +4209,7 @@ function joinCompanion(id) {
     atkMagic: cd.atkMagic || 8,
     healMagic:cd.healMagic|| 8,
     btBuffs:{},
+    equip:{ weapon:null, armor:null, accessory:null },
     bodyColor:colors.bodyColor||'#4466bb', skinColor:colors.skinColor||'#f5c87a'
   };
   if (G.mainParty.length < 3) {
@@ -3610,6 +4226,98 @@ function joinCompanion(id) {
 function doCompanionAutoAttacks(cb) { if (cb) cb(); }
 // doPartyAutoAttack — replaced by turn-based system; kept as no-op for safety
 function doPartyAutoAttack(cb) { if (cb) cb(); }
+
+// ============================================================
+// EQUIPMENT MENU (そうびがめん)
+// ============================================================
+function showEquipMenu() {
+  const members = [G.hero, ...(G.mainParty||[]), ...(G.reserveParty||[])].filter(m => m);
+  let html = `<div id="equip-overlay" style="position:fixed;inset:0;z-index:650;background:rgba(0,0,0,0.97);display:flex;flex-direction:column;overflow:hidden;">
+    <div style="max-width:480px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="background:linear-gradient(90deg,#884400,#cc8800,#ffd700,#cc8800,#884400);color:#3a1a00;font-weight:900;font-size:13px;padding:6px 12px;text-align:center;letter-spacing:2px;font-family:'Courier New',monospace;">⚔ そうびがめん</div>
+      <div style="flex:1;overflow-y:auto;padding:8px;">`;
+  members.forEach((m, i) => {
+    const eq = m.equip || {};
+    html += `<div onclick="showEquipForChar(${i})" style="background:#0a0520;border:1px solid #2a1060;border-radius:3px;padding:8px 10px;margin-bottom:6px;cursor:pointer;">
+      <div style="color:#ffd700;font-family:monospace;font-size:12px;font-weight:bold;">${m.name} Lv${m.lv||1}</div>
+      <div style="font-size:10px;color:#aaa;font-family:monospace;margin-top:2px;">
+        ぶき: ${eq.weapon?.name||'なし'} ｜ よろい: ${eq.armor?.name||'なし'} ｜ アクセ: ${eq.accessory?.name||'なし'}
+      </div>
+    </div>`;
+  });
+  html += `</div>
+      <button onclick="document.getElementById('equip-overlay').remove()" style="padding:10px;font-family:monospace;font-size:13px;background:#0d0828;border:none;border-top:1px solid #2a1060;color:#8888cc;cursor:pointer;text-align:center;">とじる</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showEquipForChar(memberIdx) {
+  document.getElementById('equip-slot-overlay')?.remove();
+  const members = [G.hero, ...(G.mainParty||[]), ...(G.reserveParty||[])].filter(m => m);
+  const char = members[memberIdx];
+  if (!char) return;
+  if (!char.equip) char.equip = { weapon:null, armor:null, accessory:null };
+  const allItems = G.items || [];
+  const slots = ['weapon','armor','accessory'];
+  const slotNames = { weapon:'ぶき', armor:'よろい', accessory:'アクセサリー' };
+  let html = `<div id="equip-slot-overlay" style="position:fixed;inset:0;z-index:660;background:rgba(0,0,0,0.97);display:flex;flex-direction:column;overflow:hidden;">
+    <div style="max-width:480px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="background:linear-gradient(90deg,#884400,#cc8800,#ffd700,#cc8800,#884400);color:#3a1a00;font-weight:900;font-size:13px;padding:6px 12px;text-align:center;letter-spacing:2px;font-family:'Courier New',monospace;">${char.name} の そうび</div>
+      <div style="flex:1;overflow-y:auto;padding:8px;">`;
+  slots.forEach(slot => {
+    const current = char.equip[slot];
+    const candidates = allItems.filter(it => it && it.slot === slot);
+    html += `<div style="background:#0a0520;border:1px solid #2a1060;border-radius:3px;padding:8px 10px;margin-bottom:6px;">
+      <div style="color:#ffd700;font-family:monospace;font-size:12px;margin-bottom:4px;">${slotNames[slot]}</div>
+      <div style="font-family:monospace;font-size:11px;color:#ccc;margin-bottom:4px;">現在: ${current ? current.name : 'なし'}`;
+    if (current) html += ` <button onclick="unequipItem(${memberIdx},'${slot}')" style="font-size:10px;padding:2px 6px;background:#380808;border:1px solid #8a2020;border-radius:2px;color:#ff8888;cursor:pointer;font-family:monospace;">はずす</button>`;
+    html += `</div>`;
+    if (candidates.length > 0) {
+      candidates.forEach((item, ci) => {
+        html += `<button onclick="equipItem(${memberIdx},'${slot}',${allItems.indexOf(item)})" style="display:block;width:100%;text-align:left;padding:4px 8px;font-size:11px;font-family:monospace;background:#160940;border:1px solid #3a2070;border-radius:2px;color:#ddd;cursor:pointer;margin-bottom:3px;">${item.name}${item.atk?'　こうげき+'+item.atk:''}${item.def?'　みまもり+'+item.def:''}${item.mgk?'　まほう+'+item.mgk:''}${item.heal?'　かいふく+'+item.heal:''}</button>`;
+      });
+    } else {
+      html += `<div style="font-size:10px;color:#555;font-family:monospace;">そうびできる アイテムが　ない</div>`;
+    }
+    html += `</div>`;
+  });
+  html += `</div>
+      <button onclick="document.getElementById('equip-slot-overlay').remove()" style="padding:10px;font-family:monospace;font-size:13px;background:#0d0828;border:none;border-top:1px solid #2a1060;color:#8888cc;cursor:pointer;text-align:center;">もどる</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function equipItem(memberIdx, slot, itemIdx) {
+  const members = [G.hero, ...(G.mainParty||[]), ...(G.reserveParty||[])].filter(m => m);
+  const char = members[memberIdx];
+  if (!char) return;
+  if (!char.equip) char.equip = { weapon:null, armor:null, accessory:null };
+  if (!G.items) G.items = [];
+  const item = G.items[itemIdx];
+  if (!item) return;
+  // Return current equipped item to inventory
+  if (char.equip[slot]) G.items.push(char.equip[slot]);
+  // Equip new item (remove from inventory)
+  char.equip[slot] = item;
+  G.items.splice(itemIdx, 1);
+  saveGame();
+  document.getElementById('equip-slot-overlay')?.remove();
+  showEquipForChar(memberIdx);
+}
+
+function unequipItem(memberIdx, slot) {
+  const members = [G.hero, ...(G.mainParty||[]), ...(G.reserveParty||[])].filter(m => m);
+  const char = members[memberIdx];
+  if (!char?.equip?.[slot]) return;
+  if (!G.items) G.items = [];
+  G.items.push(char.equip[slot]);
+  char.equip[slot] = null;
+  saveGame();
+  document.getElementById('equip-slot-overlay')?.remove();
+  showEquipForChar(memberIdx);
+}
 
 // ============================================================
 // NAME ENTRY + OPENING STORY (Feature 1)
@@ -3634,11 +4342,16 @@ function confirmName() {
 }
 
 const OPENING_SCREENS = [
-  function(n) { return 'アストルティア——\n神と人とが　共に生きる　不思議な世界。\nその世界には　五つの種族が　くらしていた。'; },
-  function(n) { return n + 'は　エテーネ村に　すむ　ふつうの若者だった。\n平和な日々が　続くはずだった——\nその日が　くるまでは。'; },
-  function(n) { return '突然、村に　冥王ネルゲルの　手下が　おそいかかった！\n' + n + 'は　抵抗したが……\n気がついたときには　異世界に　飛ばされていた。'; },
-  function(n) { return '目を覚ますと　見知らぬ土地。\n近くの　グランゼドーラ城の　兵士に　声をかけられた。\n"あなたが　勇者　' + n + 'ですか？"'; },
-  function(n) { return 'こうして　' + n + 'の　大冒険が　はじまった。\n冥王ネルゲルを　倒し、アストルティアに　平和を！'; },
+  function(n) { return 'アストルティア——\n神と人とが　共に生きる　不思議な世界。\nその世界には　五つの種族が　くらしていた。\n人間族、ウェディ族、オーガ族、\nドワーフ族、そして　エルフ族……\n長い時をへて　積み重ねた　彼らの絆が\nいま　試されようとしていた。'; },
+  function(n) { return n + 'が　育った　エテーネ村は\n山あいに　ひっそりと　佇む\n小さな　里だった。\n幼なじみと　野原を　駆け回り、\n家族とともに　食卓を　囲む——\nそんな　穏やかな毎日が\nずっと　続くはずだった。'; },
+  function(n) { return '収穫の秋——\nいつもと　変わらない　朝のはずだった。\nしかし　空が　突然　暗くなり\n大地が　音を　立てて　揺れた。\n「村長！　北から　おかしな　奴らが……！」\n見張りの　叫び声が　村に　響いた。'; },
+  function(n) { return '黒い甲冑に　身を包んだ　兵士たちが\n村を　取り囲んだ。\n「ネルゲル様の　御名の下に——\nこの村の　者たちを　全員　捕らえよ！」\n隊長と　思わしき　影が　低く　命じた。\n「抵抗する者は……消えてもらう。」'; },
+  function(n) { return n + 'は　家族を　かばいながら\n必死に　立ち向かった。\nしかし——冥王の　手下たちには\n到底　かなわなかった。\nいくつもの　命が　散っていく中\n闇の力が　' + n + ' を　包み込み\nすべての　記憶が　遠のいていった……'; },
+  function(n) { return '——気がつくと　知らない　土地にいた。\n体が　重く　頭が　ぼんやりしている。\nここは　どこだろう？\nエテーネ村は……家族は……\nすべてが　霞のように　遠くに　感じた。'; },
+  function(n) { return '蒼い制服を　まとった　兵士が\n近づいて　きた。\n「もしかして……あなたが\n伝説の　勇者　' + n + ' 様で　ございますか？」\n兵士の目が　驚きで　見開かれた。\n「グランゼドーラ城の　王様が\nお待ちで　ございます！」'; },
+  function(n) { return '城へと　向かう道すがら\n兵士は　語ってくれた。\n「冥王ネルゲルが　各地を　侵略しています。\nウェディ族のアズラン、\nオーガ族のグレン、\nドワーフ族のガタラ——\nどの種族も　苦しんでいます。」'; },
+  function(n) { return '「しかし　希望が　あります。\n三つの種族が　それぞれ　守る\nキーエンブレム——\nそれを　集めれば\nネルゲルを　封じる　扉が　開かれる、\nと　伝説に　記されているのです。」'; },
+  function(n) { return 'こうして　' + n + 'の\n運命の旅が　はじまった。\n傷ついたアストルティアを　救い\n散った命への　誓いを　胸に——\n冥王ネルゲルを　倒し\n世界に　ふたたび　光を！'; },
 ];
 let _openingIdx = 0;
 let _openingTypeTimer = null;
@@ -3701,13 +4414,133 @@ function finishOpening() {
 // MISSION SYSTEM (Feature 4)
 // ============================================================
 const MISSIONS = {
-  0: { title: '旅のはじまり', desc: 'グランゼドーラ城を訪ねよう。\n城の中の「城」の扉から王様に会える！\n城を出て　南の広場から冒険へ。' },
-  1: { title: 'アズランへ', desc: '平原を北へ進んだ先の\nアズランを目指せ！\n→ 平原の北出口を抜けよう。\n冥府の洞窟でエンブレムを！' },
-  2: { title: 'グレン王都へ', desc: '平原から東へ進め！\nグレン王都でマーリンが待つ。\n→ 平原の東出口を抜けよう。\n冥王の心臓を踏破せよ！' },
-  3: { title: 'ガタラ王国へ', desc: '平原から南へ進め！\nガタラ王国でアリスが待つ。\n→ 平原の南出口を抜けよう。\nネルゲルの居城へ挑め！' },
-  4: { title: '決戦！冥王ネルゲル', desc: '全エンブレムが揃った！\n南のガタラ山脈にある\n居城の最深部へ向かえ！' },
-  5: { title: 'アストルティアに平和を！', desc: 'おめでとう！\nアストルティアに平和が戻った。\n世界を自由に探索しよう。' },
+  0: { title: '旅のはじまり', desc: 'まず　グランゼドーラ城を　訪ねよう。\n城の中の　「城」マークの扉から\n王様に　会うことが　できる！\n\n王様が　旅の資金として\n1000ゴールドを　くれるぞ！\n\n城を出て　まず　装備を　整えよう。\nどうぐやで　武器と　防具を　買い\n冒険の準備を　万端に！' },
+  1: { title: 'アズランへ向かえ！', desc: '【第一の目標】ウェディ族の里\nアズランへ　向かおう！\n\n→ 平原の　北出口を　抜けよう。\n\nアズランに　到着したら\n冥府の洞窟(北の草原にある)を\n探索し　最深部の\n死霊の騎士を　倒して\nキーエンブレムを　手に入れよ！\n\n洞窟は　階段で　どんどん　深く\n潜ることが　できる。\n教会で　こまめに　セーブ！' },
+  2: { title: 'グレン王都へ！', desc: '【第二の目標】オーガ族の王都\nグレンへ　向かおう！\n\n→ 平原の　東出口を　抜けよう。\n\nグレンには　賢者マーリンが　いる。\n冥王の心臓(東の野原)を　踏破し\nダークドラゴンを　倒して\nエンブレムを　手に入れよ！\n\nマーリンが　なかまに　なってくれるぞ。\n呪文を　駆使して　戦え！' },
+  3: { title: 'ガタラ王国へ！', desc: '【第三の目標】ドワーフの王国\nガタラへ　向かおう！\n\n→ 平原の　南出口を　抜けよう。\n\nガタラには　戦士アリスが　いる。\nネルゲルの居城(南の山脈)の\n最深部を　目指し\nボスを　倒して　エンブレムを！\n\nガタラの　武器防具は　最強クラス。\n装備を　しっかり　整えよ！' },
+  4: { title: '決戦！冥王ネルゲル', desc: '三つのエンブレムが　そろった！\nいよいよ　最終決戦の　時！\n\n→ 南のガタラ山脈を　越え\n　 ネルゲルの居城　最深部へ！\n\n冥王ネルゲルは　強大な敵じゃ。\n・レベルは　10以上を　目指そう\n・HPを　回復アイテムで　十分に\n・マーリンの呪文で　一気に攻撃！\n\nアストルティアの　運命が\nそなたの　手に　かかっている！' },
+  5: { title: 'アストルティアに平和を！', desc: 'おめでとう！\n冥王ネルゲルを　倒し\nアストルティアに　平和が　戻った！\n\n終わりなき　冒険の　扉が　開いた。\nアストルティアを　自由に　探索し\n最強の　装備を　集めよう！\n\n伝道師から　強力な呪文を　習い\nモンスターを　スカウトして\n夢の　パーティを　組もう！' },
 };
+
+// ============================================================
+// SIDE QUEST SYSTEM (サブクエスト)
+// ============================================================
+const SIDE_QUESTS = [
+  {
+    id: 'sq1',
+    title: '薬草を　届けてほしい',
+    giver: 'アズランの老婆',
+    town: 'azuran_town',
+    desc: 'アズランの老婆から　頼みごとを　された。\nやくそうを　3個　持っていれば\n達成できる。\nどうぐやで　購入して　届けよう！',
+    condition: () => (G.inventory && (G.inventory.herb||0) >= 3),
+    reward: () => { G.inventory.fullHerb = (G.inventory.fullHerb||0) + 1; },
+    rewardText: 'まんどらごらを　もらった！\n(まんどらごら +1)',
+    available: () => G.flags && G.flags.castleVisited,
+  },
+  {
+    id: 'sq2',
+    title: '冥府の洞窟を　攻略せよ',
+    giver: 'グレンの兵士',
+    town: 'gren_town',
+    desc: '「冥府の洞窟の　ボスを　倒したら\n勇者の　証明に　なる。\n達成したら　報告に　来てくれ！」\n→ 冥府の洞窟で　死霊の騎士を　倒せ！',
+    condition: () => G.flags && G.flags.dungeon1Cleared,
+    reward: () => { G.hero.gold = (G.hero.gold||0) + 300; saveGame(); },
+    rewardText: '300ゴールドを　もらった！',
+    available: () => G.flags && G.flags.castleVisited,
+  },
+  {
+    id: 'sq3',
+    title: '伝説の　鍛冶師の依頼',
+    giver: 'ガタラの鍛冶師',
+    town: 'gatara_town',
+    desc: '「全ての　エンブレムを　集めた者に\n最高の　武器を　授けよう。\nアストルティアを　救う者に　ふさわしい。」\n→ 三つのエンブレムを　すべて　集めよ！',
+    condition: () => G.flags && (G.flags.emblems||0) >= 3,
+    reward: () => {
+      if (!G.hero.weapon || WEAPON_DATA[G.hero.weapon]?.atk < WEAPON_DATA['steel']?.atk) {
+        G.hero.weapon = 'steel';
+      }
+      saveGame();
+    },
+    rewardText: 'はがねのつるぎを　もらった！\n(攻撃力 +20)',
+    available: () => G.flags && G.flags.gataraVisited,
+  },
+  {
+    id: 'sq4',
+    title: '呪文の　修行',
+    giver: 'アズランの魔法使い',
+    town: 'azuran_town',
+    desc: '「勇者よ、呪文の　修行を　積むがよい。\nレベル10に　達したとき\n特別な　恩恵を　授けよう。」\n→ 主人公を　レベル10以上に　しよう！',
+    condition: () => G.hero && G.hero.lv >= 10,
+    reward: () => { G.hero.mp = G.hero.maxMp; G.hero.maxMp = Math.min(G.hero.maxMp + 20, 200); saveGame(); },
+    rewardText: '最大MPが　20　上がった！',
+    available: () => G.flags && G.flags.azuranVisited,
+  },
+  {
+    id: 'sq5',
+    title: '勇者の　凱旋',
+    giver: 'グランゼドーラの騎士',
+    town: 'granzerdo',
+    desc: '「ネルゲルを　たおしたら\n城に　帰ってきてくれ！\n王様が　最高の　報酬を　用意するぞ。」\n→ 冥王ネルゲルを　倒して　城へ！',
+    condition: () => G.flags && G.flags.finalBossDefeated,
+    reward: () => { G.hero.gold = (G.hero.gold||0) + 2000; saveGame(); },
+    rewardText: '2000ゴールドを　もらった！\n英雄への　褒賞じゃ！',
+    available: () => G.flags && G.flags.castleVisited,
+  },
+];
+
+function showQuestOverlay() {
+  if (!G.quests) G.quests = {accepted:[], completed:[]};
+  const available = SIDE_QUESTS.filter(q =>
+    q.available && q.available() &&
+    !G.quests.completed.includes(q.id)
+  );
+  let h = '<div class="ov-title">📜 サブクエスト</div>';
+  if (available.length === 0) {
+    h += '<p style="color:#aaa;font-size:12px;text-align:center">現在　受けられる\nクエストは　ありません。</p>';
+  } else {
+    available.forEach(q => {
+      const accepted = G.quests.accepted.includes(q.id);
+      const complete = accepted && q.condition && q.condition();
+      const color = complete ? '#ffd700' : accepted ? '#88aaff' : '#ddd';
+      const badge = complete ? '✅ 達成！' : accepted ? '📋 進行中' : '❔ 新規';
+      h += `<div style="background:#0a0520;border:1px solid #2a1060;border-radius:3px;padding:8px 10px;margin-bottom:6px;font-family:monospace;font-size:11px">
+        <div style="color:${color};font-weight:bold;font-size:12px;margin-bottom:2px">${badge} ${q.title}</div>
+        <div style="color:#888;font-size:10px;margin-bottom:4px">依頼者: ${q.giver}</div>
+        <div style="color:#ccc;line-height:1.5;white-space:pre-wrap">${q.desc}</div>
+        ${complete && accepted ? `<button class="dq-close-btn" style="margin-top:6px;padding:4px;font-size:11px" onclick="claimQuestReward('${q.id}')">報酬を　うけとる</button>` :
+          !accepted ? `<button class="dq-close-btn" style="margin-top:6px;padding:4px;font-size:11px" onclick="acceptQuest('${q.id}')">うける</button>` : ''}
+      </div>`;
+    });
+  }
+  h += '<div class="ov-btns"><button class="ov-btn" onclick="hideOverlay()">とじる</button></div>';
+  showOverlay(h);
+}
+
+function acceptQuest(id) {
+  if (!G.quests) G.quests = {accepted:[], completed:[]};
+  if (!G.quests.accepted.includes(id)) {
+    G.quests.accepted.push(id);
+    saveGame();
+  }
+  showQuestOverlay();
+}
+
+function claimQuestReward(id) {
+  const q = SIDE_QUESTS.find(q => q.id === id);
+  if (!q) return;
+  if (!G.quests.completed.includes(id)) {
+    G.quests.completed.push(id);
+    q.reward && q.reward();
+    updateFieldHUD();
+    saveGame();
+  }
+  hideOverlay();
+  showOverlay(
+    `<div class="ov-title" style="color:#ffd700">クエスト達成！</div>` +
+    `<p style="white-space:pre-wrap;font-size:13px;color:#ffd700">${q.rewardText}</p>` +
+    `<div class="ov-btns"><button class="ov-btn" onclick="hideOverlay()">やった！</button></div>`
+  );
+}
 
 function getMissionIndex() {
   if (!G.flags) return 0;
