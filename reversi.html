@@ -594,6 +594,7 @@ async function doPlayerMove(r, c) {
   setTimeout(async () => {
     await doCpuMove();
     cpuThinking = false;
+    updateStatus();
   }, delay + Math.random() * 200);
 }
 
@@ -633,6 +634,7 @@ async function doCpuMove() {
     setTimeout(async () => {
       await doCpuMove();
       cpuThinking = false;
+      updateStatus();
     }, 600);
     return;
   }

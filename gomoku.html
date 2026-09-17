@@ -443,7 +443,7 @@ function placeStone(r, c) {
   drawBoard();
 
   const delay = difficulty === 'easy' ? 250 : difficulty === 'normal' ? 450 : 550;
-  setTimeout(() => { doCpuMove(); cpuThinking = false; }, delay + Math.random() * 150);
+  setTimeout(() => { doCpuMove(); cpuThinking = false; updateStatus(); }, delay + Math.random() * 150);
 }
 
 function doCpuMove() {
