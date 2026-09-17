@@ -205,6 +205,7 @@ body{padding-top:44px!important;}
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 シャッフル</button>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
   <button class="act-btn" onclick="manualSave()">💾 保存</button>
 </div>
@@ -311,6 +312,7 @@ if (window.visualViewport) {
 // Game logic
 let tiles = [];
 let moves = 0;
+let moveHistory = [];
 let timerInterval = null;
 let startTime = null;
 let elapsed = 0;
@@ -357,10 +359,12 @@ function newGame() {
   clearInterval(timerInterval);
   tiles = shuffleTiles();
   moves = 0; elapsed = 0; gameActive = true;
+  moveHistory = [];
   document.getElementById('led-moves').textContent = '0';
   document.getElementById('led-time').textContent = '0:00';
   render();
   startTimer();
+  updateUndoBtn();
 }
 
 function startTimer() {
@@ -385,12 +389,15 @@ function canMove(idx) {
 
 function moveTile(idx) {
   if (!gameActive || !canMove(idx)) return;
+  moveHistory.push([...tiles]);
+  if (moveHistory.length > 10) moveHistory.shift();
   const empty = getEmptyIdx();
   [tiles[idx], tiles[empty]] = [tiles[empty], tiles[idx]];
   moves++;
   document.getElementById('led-moves').textContent = moves;
   render();
   autoSave();
+  updateUndoBtn();
   if (isGoal(tiles)) onWin();
 }
 
@@ -447,6 +454,24 @@ function onWin() {
     <br><button class="act-btn" style="width:100%;padding:10px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
   `;
   showModal('win-modal');
+}
+
+// ── Undo ──
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (!btn) return;
+  const disabled = moveHistory.length === 0 || !gameActive;
+  btn.disabled = disabled;
+  btn.style.opacity = disabled ? '0.4' : '';
+}
+
+function undoMove() {
+  if (moveHistory.length === 0 || !gameActive) return;
+  tiles = moveHistory.pop();
+  moves = Math.max(0, moves - 1);
+  document.getElementById('led-moves').textContent = moves;
+  render();
+  updateUndoBtn();
 }
 
 function showHighScore() {
@@ -532,11 +557,13 @@ function tryLoadSave(){
     moves=data.moves;
     elapsed=0;
     gameActive=true;
+    moveHistory=[];
     document.getElementById('led-moves').textContent=moves;
     document.getElementById('led-time').textContent='0:00';
     render();
     startTimer();
     updateBestDisplay();
+    updateUndoBtn();
     return true;
   }catch(e){return false;}
 }

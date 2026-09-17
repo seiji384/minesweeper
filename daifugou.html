@@ -1171,7 +1171,13 @@ function confirmCardAction(){
     [...indices].sort((a,b)=>b-a).forEach(i=>S.hands[0].splice(i,1));
     addLog('🗑️ 10捨て：'+pa.count+'枚廃棄');
   }
+  // 7渡し・10捨てで手札が空になったら上がり
+  if(S.hands[0].length===0&&!S.rankings.includes(0)){
+    S.rankings.push(0);
+    addLog('🎉 '+PNAMES_BASE[0]+' が上がり！');
+  }
   pendingCardAction=null;
+  if(checkGameOver())return;
   advanceTurn(0,pa.skip5Count||0);
 }
 function cpuGive7(p,cnt,toP,skip){
@@ -1180,14 +1186,26 @@ function cpuGive7(p,cnt,toP,skip){
   S.hands[p].splice(0,cnt);
   S.hands[toP].push(...give);S.hands[toP].sort((a,b)=>(a.isJoker?999:a.rank)-(b.isJoker?999:b.rank));
   addLog('👐 7渡し(CPU'+p+')：'+PNAMES_BASE[toP]+'に'+cnt+'枚');
+  // 7渡しで手札が空になったら上がり
+  if(S.hands[p].length===0&&!S.rankings.includes(p)){
+    S.rankings.push(p);
+    addLog('🎉 '+PNAMES_BASE[p]+' が上がり！');
+  }
   pendingCardAction=null;
+  if(checkGameOver())return;
   advanceTurn(p,skip);
 }
 function cpuTrash10(p,cnt,skip){
   // Trash lowest cnt cards
   S.hands[p].splice(0,cnt);
   addLog('🗑️ 10捨て(CPU'+p+')：'+cnt+'枚廃棄');
+  // 10捨てで手札が空になったら上がり
+  if(S.hands[p].length===0&&!S.rankings.includes(p)){
+    S.rankings.push(p);
+    addLog('🎉 '+PNAMES_BASE[p]+' が上がり！');
+  }
   pendingCardAction=null;
+  if(checkGameOver())return;
   advanceTurn(p,skip);
 }
 

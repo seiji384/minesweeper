@@ -21,7 +21,7 @@ body {
   background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
   border: 2px solid #7060ff; border-radius: 16px;
   box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
-  max-width: 460px; width: 100%; overflow: hidden;
+  max-width: 460px; width: 100%; overflow: clip;
 }
 .titlebar {
   background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
@@ -110,8 +110,10 @@ body {
 /* Card grid */
 .card-grid {
   display: grid; gap: 6px; padding: 4px;
+  overflow-x: auto; overflow-y: hidden;
+  touch-action: pan-x pan-y;
 }
-.card { perspective: 600px; cursor: pointer; touch-action: manipulation; }
+.card { perspective: 600px; cursor: pointer; touch-action: manipulation; aspect-ratio: 1; }
 .card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.4s; }
 .card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
 .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
@@ -374,20 +376,19 @@ function buildGrid() {
   cards = deck.map((emoji, idx) => ({ emoji, id: idx, matched: false }));
 
   const grid = document.getElementById('card-grid');
-  grid.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
+  grid.style.gridTemplateColumns = `repeat(${cfg.cols}, minmax(58px, 1fr))`;
 
-  // Compute card size
-  const maxW = 444; // window max-width minus padding
-  const cellW = Math.floor((maxW - cfg.cols * 6) / cfg.cols);
-  const cardSize = Math.max(50, cellW);
-  const fontSize = Math.max(20, Math.floor(cardSize * 0.45));
+  // Compute card size based on actual container width (for font sizing)
+  const contentEl = document.querySelector('.content');
+  const availW = contentEl ? contentEl.clientWidth - 8 : 436; // subtract grid padding (4px each side)
+  const cellW = Math.floor((availW - cfg.cols * 6) / cfg.cols);
+  const cardSize = Math.max(58, cellW);
+  const fontSize = Math.max(16, Math.floor(cardSize * 0.45));
 
   grid.innerHTML = '';
   cards.forEach((card, i) => {
     const el = document.createElement('div');
     el.className = 'card';
-    el.style.width = cardSize + 'px';
-    el.style.height = cardSize + 'px';
     el.innerHTML = `
       <div class="card-inner">
         <div class="card-front" style="font-size:${Math.floor(cardSize*0.35)}px">？</div>
@@ -511,17 +512,16 @@ function rebuildGridFromSave(emojiArr,matchedArr){
   const cfg=DIFF[currentDiff];
   cards=emojiArr.map((emoji,idx)=>({emoji,id:idx,matched:matchedArr[idx]||false}));
   const grid=document.getElementById('card-grid');
-  grid.style.gridTemplateColumns=`repeat(${cfg.cols},1fr)`;
-  const maxW=444;
-  const cellW=Math.floor((maxW-cfg.cols*6)/cfg.cols);
-  const cardSize=Math.max(50,cellW);
-  const fontSize=Math.max(20,Math.floor(cardSize*0.45));
+  grid.style.gridTemplateColumns=`repeat(${cfg.cols},minmax(58px,1fr))`;
+  const contentEl2=document.querySelector('.content');
+  const availW2=contentEl2?contentEl2.clientWidth-8:436;
+  const cellW=Math.floor((availW2-cfg.cols*6)/cfg.cols);
+  const cardSize=Math.max(58,cellW);
+  const fontSize=Math.max(16,Math.floor(cardSize*0.45));
   grid.innerHTML='';
   cards.forEach((card,i)=>{
     const el=document.createElement('div');
     el.className='card'+(card.matched?' matched flipped':'');
-    el.style.width=cardSize+'px';
-    el.style.height=cardSize+'px';
     el.innerHTML=`<div class="card-inner"><div class="card-front" style="font-size:${Math.floor(cardSize*0.35)}px">？</div><div class="card-back" style="font-size:${fontSize}px">${card.emoji}</div></div>`;
     el.addEventListener('click',()=>onCardClick(i,el));
     let sX=0,sY=0,mv=false;

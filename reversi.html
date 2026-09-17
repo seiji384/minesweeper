@@ -166,6 +166,7 @@ body{padding-top:44px!important;}
     <option value="normal" selected>ふつう</option>
     <option value="hard">つよい</option>
   </select>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
 </div>
 
@@ -251,6 +252,7 @@ let board, currentTurn, gameOver;
 let difficulty = 'normal';
 let cpuThinking = false;
 let animating = false;
+let moveHistory = [];
 let flashCells = []; // cells being animated
 let flashProgress = 0;
 let flashColor = 0;
@@ -523,6 +525,7 @@ function initBoard() {
   cpuThinking = false;
   animating = false;
   flashCells = [];
+  moveHistory = [];
   updateStatus();
   const validMoves = getValidMoves(board, currentTurn);
   drawBoard(validMoves);
@@ -536,6 +539,7 @@ function updateStatus() {
   if (gameOver) td.textContent = '終了';
   else if (cpuThinking) td.textContent = 'CPU思考中...';
   else td.textContent = currentTurn === PLAYER ? 'あなた ⚫' : 'CPU ⚪';
+  updateUndoBtn();
 }
 
 function showPass(msg) {
@@ -554,6 +558,8 @@ async function doPlayerMove(r, c) {
   const isValid = validMoves.some(m => m.r === r && m.c === c);
   if (!isValid) return;
 
+  moveHistory.push({ board: board.map(row => [...row]) });
+  if (moveHistory.length > 10) moveHistory.shift();
   const flipped = getFlipped(board, r, c, PLAYER);
   board[r][c] = PLAYER;
 
@@ -691,6 +697,28 @@ function endGame() {
     document.getElementById('resultSub').textContent = sub;
     document.getElementById('resultModal').classList.add('visible');
   }, 400);
+}
+
+// ===== UNDO =====
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (!btn) return;
+  const disabled = moveHistory.length === 0 || cpuThinking || animating || gameOver;
+  btn.disabled = disabled;
+  btn.style.opacity = disabled ? '0.4' : '';
+}
+
+function undoMove() {
+  if (moveHistory.length === 0 || cpuThinking || animating || gameOver) return;
+  const prev = moveHistory.pop();
+  board = prev.board;
+  currentTurn = PLAYER;
+  gameOver = false;
+  cpuThinking = false;
+  animating = false;
+  flashCells = [];
+  updateStatus();
+  drawBoard(getValidMoves(board, PLAYER));
 }
 
 // ===== UI =====

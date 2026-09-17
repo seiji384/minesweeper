@@ -157,6 +157,7 @@ body{padding-top:44px!important;}
     <option value="normal" selected>ふつう</option>
     <option value="hard">つよい</option>
   </select>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
 </div>
 
@@ -231,6 +232,7 @@ let board, currentTurn, gameOver, winCells;
 let playerWinsTotal = 0, cpuWinsTotal = 0;
 let difficulty = 'normal';
 let cpuThinking = false;
+let moveHistory = [];
 let hoverCol = -1;
 let pulsePhase = 0;
 let pulseTimer = null;
@@ -607,6 +609,7 @@ function initBoard() {
   hoverCol = -1;
   dropAnim = null;
   if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+  moveHistory = [];
   updateStatus();
   drawBoard();
 }
@@ -618,6 +621,7 @@ function updateStatus() {
   if (gameOver) td.textContent = '終了';
   else if (cpuThinking) td.textContent = 'CPU思考中...';
   else td.textContent = currentTurn === PLAYER ? 'あなた 🔴' : 'CPU 🟡';
+  updateUndoBtn();
 }
 
 function handleColumnDrop(col) {
@@ -627,6 +631,8 @@ function handleColumnDrop(col) {
   const row = getDropRow(board, col);
   if (row < 0) return;
 
+  moveHistory.push({ board: board.map(r => [...r]) });
+  if (moveHistory.length > 10) moveHistory.shift();
   board[row][col] = PLAYER;
   cpuThinking = true;
 
@@ -688,6 +694,28 @@ function handleColumnDrop(col) {
       });
     }, delay + Math.random() * 150);
   });
+}
+
+// ===== UNDO =====
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (!btn) return;
+  const disabled = moveHistory.length === 0 || cpuThinking || gameOver || dropAnim !== null;
+  btn.disabled = disabled;
+  btn.style.opacity = disabled ? '0.4' : '';
+}
+
+function undoMove() {
+  if (moveHistory.length === 0 || cpuThinking || gameOver || dropAnim !== null) return;
+  const prev = moveHistory.pop();
+  board = prev.board;
+  currentTurn = PLAYER;
+  gameOver = false;
+  winCells = null;
+  cpuThinking = false;
+  if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+  updateStatus();
+  drawBoard();
 }
 
 function showResult(msg, sub, color) {

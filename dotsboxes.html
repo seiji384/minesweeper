@@ -130,6 +130,12 @@ body{padding-top:44px!important;}
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <select class="act-btn" id="diffSelect" onchange="setCpuDifficulty(this.value)" style="-webkit-appearance:none;appearance:none;text-align:center;">
+    <option value="easy">かんたん</option>
+    <option value="normal" selected>ふつう</option>
+    <option value="hard">つよい</option>
+  </select>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
 </div>
 
@@ -193,6 +199,8 @@ let selectedDot=null; // {r,c}
 let gameOver=false;
 let wins=0, losses=0, draws=0;
 let cpuBusy=false;
+let cpuDifficulty='normal';
+let moveHistory=[];
 
 function dotXY(r,c){ return {x:PAD+c*STEP, y:PAD+r*STEP}; }
 
@@ -204,10 +212,12 @@ function initGame(){
   boxes=Array.from({length:GRID-1},()=>Array(GRID-1).fill(null));
   playerScore=0; cpuScore=0;
   turn='p'; selectedDot=null; gameOver=false; cpuBusy=false;
+  moveHistory=[];
   updateLEDs();
   updateTurnLabel();
   render();
   flash('');
+  updateUndoBtn();
 }
 
 function updateLEDs(){
@@ -308,12 +318,22 @@ function cpuChoose(){
   const available=getAllLines();
   if(available.length===0) return null;
 
-  // 1. Complete a box if possible
+  // Easy: 80% random
+  if(cpuDifficulty==='easy'&&Math.random()<0.8){
+    return available[Math.floor(Math.random()*available.length)];
+  }
+
+  // 1. Complete a box if possible (normal + hard)
   for(const line of available){
     const adj=cpuAffectedBoxes(line.type,line.r,line.c);
     for(const [br,bc] of adj){
       if(!boxes[br][bc]&&countSides(br,bc)===3) return line;
     }
+  }
+
+  // Easy: random after trying to complete boxes
+  if(cpuDifficulty==='easy'){
+    return available[Math.floor(Math.random()*available.length)];
   }
 
   // 2. Avoid giving opponent a box (don't draw 3rd side)
@@ -326,12 +346,34 @@ function cpuChoose(){
   });
 
   if(safe.length>0){
+    if(cpuDifficulty==='hard'){
+      // Hard: among safe, prefer moves that don't create 2-sided boxes (slow opponent buildup)
+      const safer=safe.filter(line=>{
+        const adj=cpuAffectedBoxes(line.type,line.r,line.c);
+        for(const [br,bc] of adj){
+          if(!boxes[br][bc]&&countSides(br,bc)===1) return false;
+        }
+        return true;
+      });
+      if(safer.length>0) return safer[Math.floor(Math.random()*safer.length)];
+    }
     return safe[Math.floor(Math.random()*safe.length)];
   }
 
-  // 3. No safe move; pick least damaging (gives opponent fewest boxes in chain)
-  // Simple: pick a line that creates the shortest chain
-  // For simplicity, pick random from available
+  // 3. No safe move — sacrifice smallest chain
+  if(cpuDifficulty==='hard'){
+    let best=null,bestLen=Infinity;
+    for(const line of available){
+      const adj=cpuAffectedBoxes(line.type,line.r,line.c);
+      let chainLen=0;
+      for(const [br,bc] of adj){
+        if(!boxes[br][bc]&&countSides(br,bc)===2) chainLen++;
+      }
+      if(chainLen<bestLen){bestLen=chainLen;best=line;}
+    }
+    if(best) return best;
+  }
+
   return available[Math.floor(Math.random()*available.length)];
 }
 
@@ -359,6 +401,7 @@ function doCpuTurn(){
     turn='p';
     updateTurnLabel();
     render();
+    updateUndoBtn();
 
     if(boxes.flat().every(b=>b!==null)) endGame();
   }, 500);
@@ -398,11 +441,20 @@ function tryDrawLine(a,b){
   } else { // vertical
     type='v'; r=Math.min(a.r,b.r); c=a.c;
   }
+  // Save state before placing (for undo)
+  moveHistory.push({
+    hLines:hLines.map(row=>[...row]),
+    vLines:vLines.map(row=>[...row]),
+    boxes:boxes.map(row=>[...row]),
+    playerScore,cpuScore,turn
+  });
+  if(moveHistory.length>10) moveHistory.shift();
   const result=placeLine(type,r,c,'p');
-  if(result===-1){ flash('その線はもう引かれています','#ff6688'); return; }
+  if(result===-1){ moveHistory.pop(); flash('その線はもう引かれています','#ff6688'); return; }
   selectedDot=null;
   updateLEDs();
   render();
+  updateUndoBtn();
 
   if(result>0){
     // Player claimed box(es) — extra turn
@@ -480,6 +532,33 @@ function endGame(){
 function newGame(){
   initGame();
   updateRecord();
+}
+
+function setCpuDifficulty(val){ cpuDifficulty=val; }
+
+function updateUndoBtn(){
+  const btn=document.getElementById('undoBtn');
+  if(!btn) return;
+  const disabled=moveHistory.length===0||gameOver||cpuBusy;
+  btn.disabled=disabled;
+  btn.style.opacity=disabled?'0.4':'';
+}
+
+function undoMove(){
+  if(moveHistory.length===0||gameOver||cpuBusy) return;
+  const prev=moveHistory.pop();
+  hLines=prev.hLines;
+  vLines=prev.vLines;
+  boxes=prev.boxes;
+  playerScore=prev.playerScore;
+  cpuScore=prev.cpuScore;
+  turn=prev.turn;
+  selectedDot=null;
+  updateLEDs();
+  updateTurnLabel();
+  render();
+  flash('');
+  updateUndoBtn();
 }
 
 // ── Render ──

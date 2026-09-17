@@ -164,6 +164,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
   <button class="act-btn" onclick="newPuzzle()">🔄 新しいパズル</button>
   <button class="act-btn active-diff" id="diff-btn" onclick="cycleDiff()">難易度: ふつう</button>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
   <button class="act-btn" onclick="manualSave()">💾 保存</button>
 </div>
@@ -211,6 +212,7 @@ const N=5;
 let grid=Array(N*N).fill(0);
 let moves=0;
 let gameOver=false;
+let moveHistory=[];
 let difficulty='normal'; // easy, normal, hard
 const diffConfig={easy:{toggles:10,label:'かんたん'},normal:{toggles:15,label:'ふつう'},hard:{toggles:22,label:'むずかしい'}};
 const diffOrder=['easy','normal','hard'];
@@ -267,11 +269,14 @@ function updateGrid(){
 
 function handleClick(idx){
   if(gameOver) return;
+  moveHistory.push([...grid]);
+  if(moveHistory.length>10) moveHistory.shift();
   toggleCell(idx);
   moves++;
   document.getElementById('led-moves').textContent=moves;
   updateGrid();
   autoSave();
+  updateUndoBtn();
   checkWin();
 }
 
@@ -322,12 +327,13 @@ function flash(msg, color='#ffe870'){
 }
 
 function newPuzzle(){
-  gameOver=false; moves=0;
+  gameOver=false; moves=0; moveHistory=[];
   document.getElementById('led-moves').textContent=0;
   flash('');
   generatePuzzle();
   renderGrid();
   updateBestLED();
+  updateUndoBtn();
 }
 
 function updateHiModal(){
@@ -340,6 +346,24 @@ function updateHiModal(){
   });
   html+='</table>';
   document.getElementById('hi-body').innerHTML=html;
+}
+
+// ── Undo ──
+function updateUndoBtn(){
+  const btn=document.getElementById('undoBtn');
+  if(!btn) return;
+  const disabled=moveHistory.length===0||gameOver;
+  btn.disabled=disabled;
+  btn.style.opacity=disabled?'0.4':'';
+}
+
+function undoMove(){
+  if(moveHistory.length===0||gameOver) return;
+  grid=moveHistory.pop();
+  moves=Math.max(0,moves-1);
+  document.getElementById('led-moves').textContent=moves;
+  updateGrid();
+  updateUndoBtn();
 }
 
 // ── Toast ──
@@ -367,8 +391,10 @@ function tryLoadSave(){
     document.getElementById('diff-btn').textContent='難易度: '+diffConfig[difficulty].label;
     document.getElementById('led-moves').textContent=moves;
     gameOver=false;
+    moveHistory=[];
     renderGrid();
     updateBestLED();
+    updateUndoBtn();
     return true;
   }catch(e){return false;}
 }

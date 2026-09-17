@@ -506,11 +506,12 @@ function resumeTetris(){
   bag=s.bag||fillBag();
   canHold=true; gameRunning=true; paused=false; gameOver=false;
   dropInterval=getDropInterval(level);
+  accumulator=0;
   const nb=document.getElementById('overlay-no-btn');
   if(nb) nb.remove();
   document.getElementById('overlay-btn').onclick=startGame;
   document.getElementById('overlay').style.display='none';
-  updateLEDs(); lastTime=0;
+  updateLEDs(); draw(); lastTime=0;
   requestAnimationFrame(gameLoop);
 }
 
@@ -721,6 +722,7 @@ function drawMini(c, key, canvW, canvH, offsetY=0){
 function drawBoard(){
   ctx.fillStyle='#080018';
   ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(!board) return;
   // Grid lines
   ctx.strokeStyle='rgba(80,60,150,0.25)';
   ctx.lineWidth=0.5;
@@ -764,6 +766,7 @@ function drawHold(){
 function drawNext(){
   nextCtx.fillStyle='#0a0018';
   nextCtx.fillRect(0,0,64,192);
+  if(!nextBag) return;
   for(let i=0;i<3;i++) if(nextBag[i]) drawMini(nextCtx,nextBag[i],64,64,i*4.57);
 }
 

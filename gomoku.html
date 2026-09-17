@@ -165,6 +165,7 @@ body{padding-top:44px!important;}
     <option value="normal" selected>ふつう</option>
     <option value="hard">つよい</option>
   </select>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
 </div>
 
@@ -238,6 +239,7 @@ let board, currentTurn, gameOver, moveCount, lastMove, winCells;
 let playerWins = 0, cpuWins = 0;
 let difficulty = 'normal';
 let cpuThinking = false;
+let moveHistory = [];
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -389,6 +391,7 @@ function initBoard() {
   lastMove = null;
   winCells = [];
   cpuThinking = false;
+  moveHistory = [];
   updateStatus();
   drawBoard();
 }
@@ -400,12 +403,15 @@ function updateStatus() {
   if (gameOver) td.textContent = '終了';
   else if (cpuThinking) td.textContent = 'CPU思考中...';
   else td.textContent = currentTurn === PLAYER ? 'あなた ⚫' : 'CPU ⚪';
+  updateUndoBtn();
 }
 
 function placeStone(r, c) {
   if (gameOver || board[r][c] !== EMPTY || currentTurn !== PLAYER || cpuThinking) return;
   if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return;
 
+  moveHistory.push({ board: board.map(row => [...row]), moveCount, lastMove: lastMove ? {...lastMove} : null });
+  if (moveHistory.length > 10) moveHistory.shift();
   board[r][c] = PLAYER;
   lastMove = { r, c };
   moveCount++;
@@ -580,6 +586,29 @@ function getBestMove(board, diff) {
   }
 
   return bestMove || candidates[0];
+}
+
+// ===== UNDO =====
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (!btn) return;
+  const disabled = moveHistory.length === 0 || cpuThinking || gameOver;
+  btn.disabled = disabled;
+  btn.style.opacity = disabled ? '0.4' : '';
+}
+
+function undoMove() {
+  if (moveHistory.length === 0 || cpuThinking || gameOver) return;
+  const prev = moveHistory.pop();
+  board = prev.board;
+  moveCount = prev.moveCount;
+  lastMove = prev.lastMove;
+  winCells = [];
+  gameOver = false;
+  currentTurn = PLAYER;
+  cpuThinking = false;
+  updateStatus();
+  drawBoard();
 }
 
 // ===== UI =====

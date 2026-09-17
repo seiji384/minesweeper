@@ -1,12 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>ミニRPG ～勇者と仲間たち～</title>
+<title>RPG ～バトルクエスト～</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
   background: radial-gradient(ellipse at center, #120830 0%, #050210 100%);
   min-height: 100vh;
@@ -14,240 +13,405 @@ body {
   color: #ddd;
   overflow-x: hidden;
 }
-
-#starCanvas {
-  position: fixed; top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none; z-index: 0;
-}
-
-#confettiCanvas {
-  position: fixed; top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none; z-index: 999; display: none;
-}
-
-#app {
-  position: relative; z-index: 1;
-  max-width: 480px; margin: 0 auto;
-  padding-bottom: 70px; padding-top: 8px;
-}
-
+#starCanvas { position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0; }
+#confettiCanvas { position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;display:none; }
+#app { position:relative;z-index:1;max-width:480px;margin:0 auto;padding-bottom:70px;padding-top:8px; }
 .window {
-  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
+  background: linear-gradient(160deg,#1e1248 0%,#0d0830 100%);
   border: 2px solid #7060ff;
   border-radius: 16px;
-  box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 60px rgba(80,40,200,0.2);
+  box-shadow: 0 0 30px rgba(112,90,255,0.55),0 0 60px rgba(80,40,200,0.2);
   margin: 8px; overflow: hidden;
 }
-
 .titlebar {
-  background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
+  background: linear-gradient(90deg,#a06008 0%,#f5c842 28%,#ffe870 50%,#f5c842 72%,#a06008 100%);
   color: #3a1a00; font-weight: 900; font-size: 14px;
   padding: 6px 12px;
   display: flex; align-items: center; justify-content: space-between;
   letter-spacing: 1px;
 }
-.titlebar a { text-decoration: none; font-size: 16px; }
-.titlebar .tc { flex: 1; text-align: center; }
-.titlebar .side { min-width: 24px; }
-
-.content { padding: 12px; }
-
+.titlebar a { text-decoration:none;font-size:16px; }
+.titlebar .tc { flex:1;text-align:center; }
+.titlebar .side { min-width:24px; }
+.content { padding:12px; }
 .led {
-  background: #0a0018; color: #ff60c0;
-  border: 1px solid #ff40a0; border-radius: 6px;
-  font-family: monospace; font-size: 16px;
-  padding: 3px 8px;
-  box-shadow: 0 0 10px rgba(255,80,160,0.5);
-  letter-spacing: 2px; display: inline-block;
+  background:#0a0018;color:#ff60c0;border:1px solid #ff40a0;border-radius:6px;
+  font-family:monospace;font-size:16px;padding:3px 8px;
+  box-shadow:0 0 10px rgba(255,80,160,0.5);letter-spacing:2px;display:inline-block;
 }
-
 .btn {
-  background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
-  color: #b898ff; border: 1px solid #5a3aaa;
-  border-radius: 10px; padding: 8px 14px;
-  font-weight: bold; font-size: 14px;
-  cursor: pointer; transition: filter 0.15s;
-  font-family: inherit;
+  background:linear-gradient(160deg,#3a2080 0%,#22105a 100%);
+  color:#b898ff;border:1px solid #5a3aaa;border-radius:10px;
+  padding:8px 14px;font-weight:bold;font-size:14px;
+  cursor:pointer;transition:filter 0.15s;font-family:inherit;
 }
-.btn:hover { filter: brightness(1.3); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn:disabled:hover { filter: none; }
-
-.btn-danger {
-  background: linear-gradient(160deg, #801020 0%, #5a0a10 100%);
-  color: #ffaaaa; border-color: #aa2030;
-}
-.btn-success {
-  background: linear-gradient(160deg, #206040 0%, #104020 100%);
-  color: #88ffbb; border-color: #30aa60;
-}
-.btn-gold {
-  background: linear-gradient(160deg, #806020 0%, #5a4010 100%);
-  color: #ffe870; border-color: #aa8020;
-}
-
+.btn:hover { filter:brightness(1.3); }
+.btn:disabled { opacity:0.4;cursor:not-allowed; }
+.btn:disabled:hover { filter:none; }
+.btn-danger { background:linear-gradient(160deg,#801020 0%,#5a0a10 100%);color:#ffaaaa;border-color:#aa2030; }
+.btn-success { background:linear-gradient(160deg,#206040 0%,#104020 100%);color:#88ffbb;border-color:#30aa60; }
+.btn-gold { background:linear-gradient(160deg,#806020 0%,#5a4010 100%);color:#ffe870;border-color:#aa8020; }
 .action-bar {
-  background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
-  border-top: 1px solid #4030a0;
-  position: fixed; bottom: 0; left: 0; right: 0;
-  padding: 8px 12px 10px;
-  display: flex; gap: 8px; justify-content: center;
-  z-index: 100;
+  background:linear-gradient(0deg,#060412 0%,rgba(10,6,28,0.97) 100%);
+  border-top:1px solid #4030a0;
+  position:fixed;bottom:0;left:0;right:0;
+  padding:8px 12px 10px;
+  display:flex;gap:8px;justify-content:center;z-index:100;
 }
-
-.hp-bar-wrap {
-  background: #0a0018; border-radius: 4px;
-  overflow: hidden; border: 1px solid #1a0a30;
-}
-.hp-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
-.hp-green { background: linear-gradient(90deg, #00bb44, #00ff66); }
-.hp-yellow { background: linear-gradient(90deg, #aaaa00, #ffff00); }
-.hp-red { background: linear-gradient(90deg, #aa0000, #ff2200); }
-
-.mp-bar-wrap {
-  background: #0a0018; border-radius: 4px;
-  overflow: hidden; border: 1px solid #1a0a30;
-}
-.mp-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #0044bb, #0088ff);
-  border-radius: 4px; transition: width 0.3s;
-}
-
-#battle-log {
-  background: #05010f; border: 1px solid #3a2080;
-  border-radius: 8px; padding: 8px;
-  min-height: 72px; max-height: 100px;
-  font-size: 13px; color: #ccc;
-  line-height: 1.6; overflow-y: auto;
-}
-
-.screen { display: none; }
-.screen.active { display: block; }
-
+.hp-bar-wrap { background:#0a0018;border-radius:4px;overflow:hidden;border:1px solid #1a0a30; }
+.hp-bar { height:100%;border-radius:4px;transition:width 0.4s,background-color 0.4s; }
+.mp-bar-wrap { background:#0a0018;border-radius:4px;overflow:hidden;border:1px solid #1a0a30; }
+.mp-bar { height:100%;background:linear-gradient(90deg,#0044bb,#0088ff);border-radius:4px;transition:width 0.3s; }
+.screen { display:none; }
+.screen.active { display:block; }
 .game-title {
-  font-size: 26px; font-weight: 900; color: #ffe870;
-  text-shadow: 0 0 20px rgba(255,200,50,0.8), 0 0 40px rgba(255,150,0,0.4);
-  margin-bottom: 6px; letter-spacing: 3px;
+  font-size:28px;font-weight:900;color:#ffe870;
+  text-shadow:0 0 20px rgba(255,200,50,0.8),0 0 40px rgba(255,150,0,0.4);
+  margin-bottom:4px;letter-spacing:3px;
+  font-family:'Courier New',monospace;
 }
-.game-subtitle { font-size: 14px; color: #b898ff; margin-bottom: 24px; }
-
-.title-art {
-  font-size: 56px; margin: 16px 0;
-  animation: floatY 3s ease-in-out infinite;
-  display: block;
-}
-@keyframes floatY {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.village-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; margin: 10px 0;
-}
+.game-subtitle { font-size:13px;color:#b898ff;margin-bottom:20px; }
+.title-art { font-size:64px;margin:14px 0;animation:floatY 3s ease-in-out infinite;display:block; }
+@keyframes floatY { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+.village-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0; }
 .village-card {
-  background: linear-gradient(160deg, #1a0a40 0%, #0d0525 100%);
-  border: 1px solid #5040a0; border-radius: 12px;
-  padding: 14px 10px; text-align: center;
-  cursor: pointer; transition: filter 0.15s, border-color 0.15s;
-  font-size: 13px; color: #b898ff;
+  background:linear-gradient(160deg,#1a0a40 0%,#0d0525 100%);
+  border:1px solid #5040a0;border-radius:12px;
+  padding:14px 10px;text-align:center;
+  cursor:pointer;transition:filter 0.15s,border-color 0.15s;
+  font-size:13px;color:#b898ff;
 }
-.village-card:hover { filter: brightness(1.3); border-color: #9070ff; }
-.village-card .ce { font-size: 26px; display: block; margin-bottom: 5px; }
-.village-card .cn { font-weight: bold; font-size: 14px; }
-
+.village-card:hover { filter:brightness(1.3);border-color:#9070ff; }
+.village-card .ce { font-size:26px;display:block;margin-bottom:5px; }
+.village-card .cn { font-weight:bold;font-size:14px; }
 .hero-panel {
-  background: #05010f; border: 1px solid #3a2080;
-  border-radius: 10px; padding: 10px; margin-bottom: 10px;
-  display: flex; align-items: center; gap: 10px;
+  background:#05010f;border:1px solid #3a2080;border-radius:10px;
+  padding:10px;margin-bottom:10px;display:flex;align-items:center;gap:10px;
 }
-.hero-emoji { font-size: 30px; }
-.hero-info { flex: 1; }
-
-.enemy-zone {
-  min-height: 90px;
-  display: flex; gap: 8px;
-  justify-content: center; align-items: flex-end;
-  padding: 8px 0;
-}
-.enemy-card {
-  text-align: center; flex: 1; max-width: 130px;
-}
-.enemy-emoji { font-size: 38px; display: block; }
-.enemy-name { font-size: 11px; color: #b898ff; margin: 2px 0; }
-
-.ally-zone { margin: 6px 0; }
-.ally-row {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 5px; background: #05010f;
-  border-radius: 8px; padding: 6px 8px;
-  border: 1px solid #2a1860;
-}
-.ally-emoji { font-size: 18px; min-width: 24px; }
-.ally-info { flex: 1; }
-.ally-name { font-size: 12px; color: #ddd; margin-bottom: 2px; }
-
-.battle-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-.skill-list, .item-list { display: flex; flex-direction: column; gap: 6px; }
-
-.monster-entry {
-  background: #05010f; border: 1px solid #2a1060;
-  border-radius: 8px; padding: 10px; margin-bottom: 6px;
-  display: flex; align-items: center; gap: 10px;
-}
-.monster-entry.caught { border-color: #5040a0; background: #0a0520; }
-.monster-entry.uncaught { opacity: 0.45; }
-
-.shop-row {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #05010f; border-radius: 8px;
-  padding: 8px 10px; border: 1px solid #2a1860; margin-bottom: 6px;
-}
-
-.party-card {
-  background: #05010f; border: 1px solid #2a1860;
-  border-radius: 10px; padding: 12px; margin-bottom: 8px;
-}
-
+.hero-emoji { font-size:30px; }
+.hero-info { flex:1; }
 .area-card {
-  background: linear-gradient(160deg, #1a0a40 0%, #0d0525 100%);
-  border: 1px solid #5040a0; border-radius: 12px;
-  padding: 12px; margin-bottom: 8px;
-  cursor: pointer; transition: filter 0.15s;
+  background:linear-gradient(160deg,#1a0a40 0%,#0d0525 100%);
+  border:1px solid #5040a0;border-radius:12px;
+  padding:12px;margin-bottom:8px;cursor:pointer;transition:filter 0.15s;
 }
-.area-card:hover { filter: brightness(1.3); }
-.area-card.locked { opacity: 0.4; cursor: not-allowed; filter: none; }
-
+.area-card:hover { filter:brightness(1.3); }
+.area-card.locked { opacity:0.4;cursor:not-allowed;filter:none; }
+.shop-row {
+  display:flex;align-items:center;justify-content:space-between;
+  background:#05010f;border-radius:8px;padding:8px 10px;
+  border:1px solid #2a1860;margin-bottom:6px;
+}
+.party-card { background:#05010f;border:1px solid #2a1860;border-radius:10px;padding:12px;margin-bottom:8px; }
+.monster-entry {
+  background:#05010f;border:1px solid #2a1060;border-radius:8px;
+  padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.monster-entry.caught { border-color:#5040a0;background:#0a0520; }
+.monster-entry.uncaught { opacity:0.45; }
 .overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.75); z-index: 500;
-  display: flex; align-items: center; justify-content: center;
+  position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);
+  z-index:500;display:flex;align-items:center;justify-content:center;
 }
 .overlay-box {
-  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
-  border: 2px solid #7060ff; border-radius: 16px;
-  padding: 22px; max-width: 320px; width: 90%;
+  background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);
+  border:2px solid #7060ff;border-radius:16px;padding:22px;
+  max-width:320px;width:90%;text-align:center;
+  box-shadow:0 0 30px rgba(112,90,255,0.55);
+}
+.hidden { display:none !important; }
+.gold-display { color:#ffe870;font-weight:bold;font-size:14px;margin-bottom:10px; }
+hr.sep { border:none;border-top:1px solid #2a1860;margin:10px 0; }
+.label { color:#8070c0;font-size:11px;letter-spacing:1px;text-transform:uppercase; }
+.tg{color:#ffe870} .tp{color:#ff60c0} .tb{color:#60b0ff}
+.tgr{color:#60ff90} .tr{color:#ff6060} .tpu{color:#b898ff}
+.ending-title { font-size:26px;color:#ffe870;text-shadow:0 0 20px gold;margin:16px 0; }
+
+/* ===== JRPG BATTLE STYLES ===== */
+#battle-field {
+  height: 210px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.5s;
+}
+/* Ground strip */
+#battle-field::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 36px;
+  background: rgba(0,0,0,0.18);
+  border-top: 2px solid rgba(255,255,255,0.08);
+}
+/* Enemy HUD - top left (Pokemon-style) */
+#enemy-hud {
+  position: absolute;
+  top: 10px; left: 8px;
+  background: rgba(8,4,22,0.88);
+  border: 2px solid #ffe870;
+  border-radius: 6px;
+  padding: 5px 9px 5px 9px;
+  min-width: 155px;
+  z-index: 10;
+}
+.ehud-name {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.ehud-hp {
+  font-family: monospace;
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 1px;
+  text-align: right;
+}
+.ehud-row { margin-bottom: 0; }
+.ehud-row + .ehud-row { margin-top: 5px; border-top: 1px solid #2a1860; padding-top: 4px; }
+
+/* JRPG HP bar */
+.jrpg-hpbar-wrap {
+  background: #1a0830;
+  border-radius: 2px;
+  height: 7px;
+  margin: 2px 0 1px 0;
+  border: 1px solid #3a1a60;
+  overflow: hidden;
+}
+.jrpg-hpbar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.45s ease, background-color 0.45s ease;
+}
+
+/* Enemy sprites - large, right side */
+#enemy-sprites {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0px;
+  z-index: 5;
+}
+.enemy-spr {
+  display: block;
+  line-height: 1;
+  filter: drop-shadow(3px 4px 8px rgba(0,0,0,0.7));
+  transition: opacity 0.3s;
+  cursor: default;
+  user-select: none;
+}
+.enemy-spr.faded { opacity: 0.12; }
+@keyframes enemyShake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-10px)}
+  40%{transform:translateX(10px)}
+  60%{transform:translateX(-6px)}
+  80%{transform:translateX(6px)}
+}
+.enemy-shake { animation: enemyShake 0.35s; }
+
+/* Player sprite - bottom left */
+#player-sprite-el {
+  position: absolute;
+  left: 14px;
+  bottom: 42px;
+  font-size: 44px;
+  z-index: 5;
+  filter: drop-shadow(2px 3px 5px rgba(0,0,0,0.6));
+  line-height: 1;
+}
+@keyframes playerFlash {
+  0%,100%{filter:drop-shadow(2px 3px 5px rgba(0,0,0,0.6))}
+  40%{filter:drop-shadow(0 0 12px #ff4444) brightness(1.8)}
+  70%{filter:drop-shadow(2px 3px 5px rgba(0,0,0,0.6)) brightness(0.5)}
+}
+.player-flash { animation: playerFlash 0.45s; }
+
+/* Player HUD - bottom right (Pokemon-style) */
+#player-hud {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  background: rgba(8,4,22,0.9);
+  border: 2px solid #ffe870;
+  border-radius: 6px;
+  padding: 5px 9px;
+  min-width: 165px;
+  max-width: 185px;
+  z-index: 10;
+}
+.phud-name {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #ffe870;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.phud-lv { color: #b898ff; font-size: 11px; }
+.phud-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+.phud-label { font-family: monospace; font-size: 10px; color: #ffe870; min-width: 16px; }
+.phud-bar { flex: 1; }
+.phud-num { font-family: monospace; font-size: 10px; color: #ccc; min-width: 44px; text-align: right; }
+
+/* Battle UI area (below field) */
+#battle-ui {
+  background: #050115;
+  padding: 7px 8px 8px;
+  border-top: 2px solid #2a1060;
+}
+
+/* DQ-style message box */
+#dq-msgbox {
+  background: #08041a;
+  border: 3px solid #ffe870;
+  border-radius: 4px;
+  padding: 9px 12px 8px;
+  min-height: 62px;
+  margin-bottom: 7px;
+  position: relative;
+  font-family: 'Courier New', 'MS Gothic', monospace;
+}
+#msg-text {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.3px;
+  min-height: 42px;
+  white-space: pre-wrap;
+}
+#msg-cursor {
+  position: absolute;
+  bottom: 5px; right: 9px;
+  color: #ffe870;
+  font-size: 11px;
+  display: none;
+  animation: blink 0.75s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+/* Command panel */
+#cmd-panel { min-height: 82px; }
+.jrpg-cmd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.jrpg-cmd-btn {
+  background: linear-gradient(180deg,#18094a 0%,#0c0530 100%);
+  border: 2px solid #4a38a0;
+  border-radius: 4px;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  font-weight: bold;
+  padding: 11px 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
   text-align: center;
-  box-shadow: 0 0 30px rgba(112,90,255,0.55);
+  transition: background 0.1s, border-color 0.1s;
+  touch-action: manipulation;
+}
+.jrpg-cmd-btn:hover, .jrpg-cmd-btn:active {
+  background: linear-gradient(180deg,#2a1490 0%,#160a50 100%);
+  border-color: #ffe870;
+  color: #ffe870;
+}
+.jrpg-cmd-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #2a1860;
+}
+.jrpg-cmd-btn:disabled:hover { background:linear-gradient(180deg,#18094a 0%,#0c0530 100%);border-color:#2a1860;color:#fff; }
+
+/* Submenu (spell/item/target list) */
+.jrpg-submenu {
+  background: #08041a;
+  border: 2px solid #4a38a0;
+  border-radius: 4px;
+  overflow: hidden;
+  max-height: 150px;
+  overflow-y: auto;
+}
+.jrpg-subitem {
+  padding: 7px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #fff;
+  cursor: pointer;
+  border-bottom: 1px solid #1a0a40;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  touch-action: manipulation;
+}
+.jrpg-subitem:last-child { border-bottom: none; }
+.jrpg-subitem:hover, .jrpg-subitem:active { background: #1e0c60; color: #ffe870; }
+.jrpg-subitem.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.jrpg-back-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 7px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #b898ff;
+  cursor: pointer;
+  border-top: 1px solid #2a1860;
+  background: #050112;
+  touch-action: manipulation;
+}
+.jrpg-back-btn:hover { color: #ffe870; }
+
+/* Floating damage numbers */
+.float-dmg {
+  position: absolute;
+  font-family: 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: bold;
+  pointer-events: none;
+  animation: floatUp 1.1s ease-out forwards;
+  z-index: 50;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+@keyframes floatUp {
+  0%{transform:translateY(0) scale(1.2);opacity:1}
+  20%{transform:translateY(-10px) scale(1);opacity:1}
+  100%{transform:translateY(-55px) scale(0.8);opacity:0}
 }
 
-.hidden { display: none !important; }
-.gold-display { color: #ffe870; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
-hr.sep { border: none; border-top: 1px solid #2a1860; margin: 10px 0; }
-.label { color: #8070c0; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
-.tg { color: #ffe870; } .tp { color: #ff60c0; } .tb { color: #60b0ff; }
-.tgr { color: #60ff90; } .tr { color: #ff6060; } .tpu { color: #b898ff; }
-
-.ending-title {
-  font-size: 26px; color: #ffe870;
-  text-shadow: 0 0 20px gold; margin: 16px 0;
+/* Victory / Defeat panels */
+.result-panel {
+  text-align: center;
+  padding: 6px 0 4px;
 }
-
-#battle-action-panel { padding: 8px; }
+.result-title {
+  font-size: 20px;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+.result-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -264,23 +428,23 @@ hr.sep { border: none; border-top: 1px solid #2a1860; margin: 10px 0; }
 .hcb-cancel{padding:8px 22px;border-radius:12px;background:linear-gradient(160deg,#1a0e3a,#0d0820);color:#6858a0;border:1px solid #3a2870;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;}
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
-</style><!-- body-bg-override -->
+</style>
 <style>body { background: radial-gradient(ellipse at 25% 20%, rgba(90,15,170,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(65,8,145,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #120530 0%, #0c0320 100%) !important; }</style>
-<!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="ミニゲーム集">
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
-<div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
+<div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div>
+<div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
 
 <canvas id="starCanvas"></canvas>
 <canvas id="confettiCanvas"></canvas>
 
 <div id="app">
 
-<!-- TITLE -->
+<!-- TITLE SCREEN -->
 <div id="title-screen" class="screen">
   <div class="window">
     <div class="titlebar">
@@ -289,19 +453,19 @@ body{padding-top:44px!important;}
       <span class="side"></span>
     </div>
     <div class="content" style="text-align:center;padding:24px 16px">
-      <div class="game-title">ミニRPG</div>
-      <div class="game-subtitle">～勇者と仲間たち～</div>
-      <span class="title-art">🗡️✨🐉</span>
-      <div style="font-size:12px;color:#5040a0;margin-bottom:20px">Pokémon × Dragon Quest × Final Fantasy</div>
+      <div class="game-title">BATTLE QUEST</div>
+      <div class="game-subtitle">～ドラゴンクエスト風ターン制RPG～</div>
+      <span class="title-art">🗡️🐉⚔️</span>
+      <div style="font-size:11px;color:#3a2870;margin-bottom:22px;font-family:monospace">JRPG STYLE BATTLE SYSTEM</div>
       <div style="display:flex;flex-direction:column;gap:12px">
-        <button class="btn btn-gold" style="width:100%;padding:14px;font-size:16px" onclick="startNewGame()">⚔️ はじめから</button>
-        <button class="btn" style="width:100%;padding:14px;font-size:16px" id="continue-btn" onclick="continueGame()">📖 つづきから</button>
+        <button class="btn btn-gold" style="width:100%;padding:14px;font-size:16px;font-family:'Courier New',monospace;letter-spacing:2px" onclick="startNewGame()">⚔️ はじめから</button>
+        <button class="btn" style="width:100%;padding:14px;font-size:16px;font-family:'Courier New',monospace;letter-spacing:2px" id="continue-btn" onclick="continueGame()">📖 つづきから</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- VILLAGE -->
+<!-- VILLAGE SCREEN -->
 <div id="village-screen" class="screen">
   <div class="window">
     <div class="titlebar">
@@ -349,7 +513,7 @@ body{padding-top:44px!important;}
   </div>
 </div>
 
-<!-- BATTLE -->
+<!-- BATTLE SCREEN - JRPG STYLE -->
 <div id="battle-screen" class="screen">
   <div class="window">
     <div class="titlebar">
@@ -357,13 +521,22 @@ body{padding-top:44px!important;}
       <span class="tc" id="battle-area-title">バトル</span>
       <span class="side"></span>
     </div>
-    <div class="content">
-      <div class="enemy-zone" id="enemy-zone"></div>
-      <div id="battle-log"></div>
-      <div class="ally-zone" id="ally-zone"></div>
+    <!-- Battle field: enemy sprites + HUDs -->
+    <div id="battle-field">
+      <div id="enemy-hud"></div>
+      <div id="enemy-sprites"></div>
+      <div id="player-sprite-el">🧙</div>
+      <div id="player-hud"></div>
+    </div>
+    <!-- Battle UI: message box + commands -->
+    <div id="battle-ui">
+      <div id="dq-msgbox">
+        <div id="msg-text"></div>
+        <div id="msg-cursor">▼</div>
+      </div>
+      <div id="cmd-panel"></div>
     </div>
   </div>
-  <div id="battle-action-panel"></div>
 </div>
 
 <!-- SHOP -->
@@ -435,38 +608,42 @@ const MONSTER_TYPES = [
     skills:[{name:'みずしぶき',effect:'dmg',power:30},{name:'かいふく',effect:'heal',power:30}], catchRate:1.0 },
   { id:1, emoji:'🦇', name:'コウモリ',       type:'風', baseHp:40,  baseAtk:12, baseDef:4,  baseSpd:16,
     skills:[{name:'こうそく',effect:'dmg',power:24}], catchRate:1.0 },
-  { id:2, emoji:'🟤', name:'ゴブリン',       type:'地', baseHp:70,  baseAtk:18, baseDef:8,  baseSpd:10,
+  { id:2, emoji:'👺', name:'ゴブリン',       type:'地', baseHp:70,  baseAtk:18, baseDef:8,  baseSpd:10,
     skills:[{name:'パワーアタック',effect:'dmg',power:0,atkMult:1.5}], catchRate:1.0 },
   { id:3, emoji:'🌿', name:'モリビト',       type:'草', baseHp:60,  baseAtk:10, baseDef:12, baseSpd:9,
     skills:[{name:'ヒーリング',effect:'heal',power:40},{name:'どくけむり',effect:'dmg',power:20,status:'poison'}], catchRate:0.8 },
-  { id:4, emoji:'🪨', name:'ゴーレム',       type:'岩', baseHp:120, baseAtk:22, baseDef:25, baseSpd:5,
+  { id:4, emoji:'🗿', name:'ゴーレム',       type:'岩', baseHp:120, baseAtk:22, baseDef:25, baseSpd:5,
     skills:[{name:'いわなげ',effect:'dmg',power:60}], catchRate:0.8 },
   { id:5, emoji:'🔥', name:'ファイアバット',  type:'火', baseHp:80,  baseAtk:20, baseDef:10, baseSpd:14,
     skills:[{name:'かえん',effect:'dmg',power:70}], catchRate:0.8 },
-  { id:6, emoji:'🌊', name:'ウォータードラ', type:'水', baseHp:90,  baseAtk:18, baseDef:15, baseSpd:11,
-    skills:[{name:'アイスブレス',effect:'dmg',power:80,status:'slow'}], catchRate:0.5 },
+  { id:6, emoji:'💀', name:'スケルトン',     type:'闇', baseHp:90,  baseAtk:18, baseDef:15, baseSpd:11,
+    skills:[{name:'ボーンアロー',effect:'dmg',power:50,status:'slow'}], catchRate:0.5 },
   { id:7, emoji:'⚡', name:'サンダーバード', type:'風', baseHp:100, baseAtk:25, baseDef:12, baseSpd:18,
     skills:[{name:'いかずち',effect:'dmg',power:90,status:'paralysis'}], catchRate:0.5 },
   { id:8, emoji:'🐉', name:'ミニドラゴン',   type:'火', baseHp:130, baseAtk:30, baseDef:20, baseSpd:13,
     skills:[{name:'ドラゴンブレス',effect:'dmg',power:100}], catchRate:0.5 },
-  { id:9, emoji:'🌙', name:'ムーンフェアリ', type:'光', baseHp:70,  baseAtk:15, baseDef:15, baseSpd:15,
-    skills:[{name:'ムーンヒール',effect:'heal',power:60},{name:'ほし光',effect:'dmg',power:50}], catchRate:0.5 },
+  { id:9, emoji:'🧚', name:'ムーンフェアリ', type:'光', baseHp:70,  baseAtk:15, baseDef:15, baseSpd:15,
+    skills:[{name:'ムーンヒール',effect:'heal',power:60},{name:'ほしのひかり',effect:'dmg',power:50}], catchRate:0.5 },
 ];
 
 const AREAS = [
   { id:0, name:'みどりのもり', emoji:'🌳', sub:'Green Forest', rec:'1-5', enemies:[0,1,2,3],
+    bgGrad:'linear-gradient(180deg,#4e8abf 0%,#70b8e8 35%,#6ab04c 65%,#4a8030 100%)',
     boss:{ emoji:'👹', name:'大ゴブリン', hp:200, atk:25, def:15, spd:12,
            skills:[{name:'パワースラッシュ',effect:'dmg',power:0,atkMult:1.5},{name:'こうげき',effect:'dmg',power:0}],
            exp:150, gold:200, unlocks:1 } },
   { id:1, name:'いわのどうくつ', emoji:'🪨', sub:'Rock Cave', rec:'6-10', enemies:[4,1,2],
+    bgGrad:'linear-gradient(180deg,#0d0d1a 0%,#1a1a30 55%,#2a2444 100%)',
     boss:{ emoji:'🗿', name:'ゴーレムキング', hp:350, atk:38, def:35, spd:6,
            skills:[{name:'メガクラッシュ',effect:'dmg',power:80},{name:'いわなだれ',effect:'dmgAll',power:40}],
            exp:300, gold:400, unlocks:2 } },
   { id:2, name:'ほのおのやま', emoji:'🌋', sub:'Fire Mountain', rec:'11-15', enemies:[5,6,8],
+    bgGrad:'linear-gradient(180deg,#1a0800 0%,#7b2000 45%,#c44200 75%,#8b3a00 100%)',
     boss:{ emoji:'🐲', name:'ドラゴンロード', hp:500, atk:55, def:30, spd:16,
            skills:[{name:'インフェルノ',effect:'dmg',power:120},{name:'テイルスイング',effect:'dmgAll',power:60}],
            exp:500, gold:700, unlocks:3 } },
   { id:3, name:'まおうのとりで', emoji:'🏰', sub:'Demon Fortress', rec:'16-20', enemies:[7,9,8],
+    bgGrad:'linear-gradient(180deg,#050008 0%,#1a0030 55%,#2d0050 100%)',
     boss:{ emoji:'🦹', name:'ダークナイト', hp:600, atk:65, def:40, spd:20,
            skills:[{name:'ダークブレード',effect:'dmg',power:0,atkMult:1.6},{name:'こうげき',effect:'dmg',power:0}],
            exp:600, gold:800, unlocks:4 } },
@@ -482,6 +659,7 @@ const FINAL_BOSS = {
   ],
   exp:1000, gold:2000
 };
+const FB_BG = 'linear-gradient(180deg,#000000 0%,#0d000d 55%,#200020 100%)';
 
 const HERO_SKILLS = [
   { name:'こうげき',        lv:1,  mp:0,  effect:'physical' },
@@ -500,19 +678,19 @@ const ITEMS = [
 ];
 
 const EQUIPMENT = [
-  { id:'broadSword',   name:'ブロードソード',  type:'weapon', atk:15, def:0,  price:300,  emoji:'🗡️' },
-  { id:'ironSword',    name:'アイアンソード',   type:'weapon', atk:30, def:0,  price:800,  emoji:'⚔️' },
-  { id:'dragonSword',  name:'ドラゴンソード',   type:'weapon', atk:55, def:0,  price:2200, emoji:'🔱' },
-  { id:'leatherArmor', name:'レザーアーマー',   type:'armor',  atk:0,  def:12, price:250,  emoji:'🥋' },
-  { id:'chainMail',    name:'チェーンメイル',   type:'armor',  atk:0,  def:28, price:700,  emoji:'🛡️' },
-  { id:'dragonScale',  name:'ドラゴンスケイル', type:'armor',  atk:0,  def:50, price:2000, emoji:'🐲' },
+  { id:'broadSword',   name:'ブロードソード', type:'weapon', atk:15, def:0,  price:300,  emoji:'🗡️' },
+  { id:'ironSword',    name:'アイアンソード',  type:'weapon', atk:30, def:0,  price:800,  emoji:'⚔️' },
+  { id:'dragonSword',  name:'ドラゴンソード',  type:'weapon', atk:55, def:0,  price:2200, emoji:'🔱' },
+  { id:'leatherArmor', name:'レザーアーマー',  type:'armor',  atk:0,  def:12, price:250,  emoji:'🥋' },
+  { id:'chainMail',    name:'チェーンメイル',  type:'armor',  atk:0,  def:28, price:700,  emoji:'🛡️' },
+  { id:'dragonScale',  name:'ドラゴンスケイル',type:'armor',  atk:0,  def:50, price:2000, emoji:'🐲' },
 ];
 
 // ============================================================
 // STATE
 // ============================================================
 let G = {};
-let BT = {}; // battle state
+let BT = {};
 let battleOver = false;
 let battleBusy = false;
 let _pendingSkill = null;
@@ -537,7 +715,13 @@ function defaultState() {
   };
 }
 
-function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
+function showSaveToast(){
+  const t=document.createElement('div');
+  t.textContent='✅ 保存しました';
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);
+}
 function save() { localStorage.setItem('rpg_save', JSON.stringify(G)); }
 function saveGame() { save(); showSaveToast(); }
 function load() {
@@ -556,6 +740,38 @@ function heroDef() {
   if (G.hero.armor) { const e = EQUIPMENT.find(x=>x.id===G.hero.armor); if(e) d+=e.def; }
   return d;
 }
+
+// ============================================================
+// AUDIO (Web Audio API)
+// ============================================================
+let _audioCtx = null;
+function getAudio() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+function beep(freq, dur, type='square', vol=0.1, delay=0) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    const t = ctx.currentTime + delay;
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t); osc.stop(t + dur + 0.02);
+  } catch(e){}
+}
+function sndAttack()  { beep(280, 0.07,'sawtooth',0.14); beep(180,0.06,'square',0.08,0.05); }
+function sndHit()     { beep(140, 0.1,'square',0.12); }
+function sndMagic()   { beep(880,0.08,'sine',0.09); beep(1100,0.1,'sine',0.08,0.07); beep(1320,0.14,'sine',0.07,0.14); }
+function sndHeal()    { beep(660,0.1,'sine',0.09); beep(880,0.12,'sine',0.09,0.1); beep(1100,0.15,'sine',0.08,0.2); }
+function sndLevelUp() { [262,330,392,523,659,784].forEach((f,i)=>beep(f,0.12,'sine',0.1,i*0.08)); }
+function sndVictory() { [392,440,494,523,587,659,784].forEach((f,i)=>beep(f,0.1,'square',0.09,i*0.07)); }
+function sndEscape()  { beep(440,0.06,'sine',0.09); beep(330,0.08,'sine',0.08,0.07); beep(220,0.1,'sine',0.07,0.14); }
+function sndGameOver(){ beep(330,0.15,'sawtooth',0.1); beep(220,0.2,'sawtooth',0.1,0.18); beep(110,0.35,'sawtooth',0.12,0.4); }
+function sndMenuSel() { beep(880,0.04,'sine',0.07); }
 
 // ============================================================
 // STARS
@@ -587,33 +803,33 @@ function drawStars() {
 // ============================================================
 const CC = document.getElementById('confettiCanvas');
 const CX = CC.getContext('2d');
-let confetti = [], confettiOn = false;
+let confetti=[], confettiOn=false;
 function startConfetti() {
-  CC.width = window.innerWidth; CC.height = window.innerHeight;
-  CC.style.display = 'block'; confettiOn = true;
-  confetti = Array.from({length:120}, () => ({
-    x: Math.random()*CC.width, y: Math.random()*CC.height - CC.height,
-    w: Math.random()*10+5, h: Math.random()*6+3,
-    color: ['#ff60c0','#ffe870','#b898ff','#60ff90','#60b0ff'][Math.floor(Math.random()*5)],
-    vy: Math.random()*3+1, vx: (Math.random()-0.5)*2,
-    rot: Math.random()*Math.PI*2, vrot: (Math.random()-0.5)*0.1,
+  CC.width=window.innerWidth; CC.height=window.innerHeight;
+  CC.style.display='block'; confettiOn=true;
+  confetti=Array.from({length:120},()=>({
+    x:Math.random()*CC.width, y:Math.random()*CC.height-CC.height,
+    w:Math.random()*10+5, h:Math.random()*6+3,
+    color:['#ff60c0','#ffe870','#b898ff','#60ff90','#60b0ff'][Math.floor(Math.random()*5)],
+    vy:Math.random()*3+1, vx:(Math.random()-0.5)*2,
+    rot:Math.random()*Math.PI*2, vrot:(Math.random()-0.5)*0.1,
   }));
   animateConfetti();
-  setTimeout(stopConfetti, 5000);
+  setTimeout(stopConfetti,5000);
 }
 function animateConfetti() {
-  if (!confettiOn) return;
+  if(!confettiOn)return;
   CX.clearRect(0,0,CC.width,CC.height);
-  for (const p of confetti) {
+  for(const p of confetti){
     p.x+=p.vx; p.y+=p.vy; p.rot+=p.vrot;
-    if (p.y > CC.height) { p.y=-10; p.x=Math.random()*CC.width; }
+    if(p.y>CC.height){p.y=-10;p.x=Math.random()*CC.width;}
     CX.save(); CX.translate(p.x,p.y); CX.rotate(p.rot);
     CX.fillStyle=p.color; CX.fillRect(-p.w/2,-p.h/2,p.w,p.h);
     CX.restore();
   }
   requestAnimationFrame(animateConfetti);
 }
-function stopConfetti() { confettiOn=false; CC.style.display='none'; }
+function stopConfetti(){confettiOn=false;CC.style.display='none';}
 
 // ============================================================
 // SCREENS
@@ -621,38 +837,38 @@ function stopConfetti() { confettiOn=false; CC.style.display='none'; }
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const ab = document.getElementById('action-bar');
-  ab.style.display = (id==='battle-screen') ? 'none' : 'flex';
-  if (id==='village-screen') renderVillage();
-  if (id==='area-select-screen') renderAreaSelect();
-  if (id==='shop-screen') renderShop();
-  if (id==='party-screen') renderParty();
-  if (id==='encyclopedia-screen') renderEncyclopedia();
+  const ab=document.getElementById('action-bar');
+  ab.style.display=(id==='battle-screen')?'none':'flex';
+  if(id==='village-screen') renderVillage();
+  if(id==='area-select-screen') renderAreaSelect();
+  if(id==='shop-screen') renderShop();
+  if(id==='party-screen') renderParty();
+  if(id==='encyclopedia-screen') renderEncyclopedia();
 }
 
 // ============================================================
 // HELPERS
 // ============================================================
-function ri(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
-function hpClass(p) { return p>0.5?'hp-green':p>0.25?'hp-yellow':'hp-red'; }
-function hpBar(hp,max,h='9px') {
+function ri(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function hpColor(p){return p>0.5?'#00cc44':p>0.25?'#ffcc00':'#dd2200';}
+function hpBar(hp,max,h='9px'){
   const p=Math.max(0,hp/max);
-  return `<div class="hp-bar-wrap" style="height:${h}"><div class="hp-bar ${hpClass(p)}" style="width:${Math.round(p*100)}%"></div></div>`;
+  return `<div class="hp-bar-wrap" style="height:${h}"><div class="hp-bar" style="width:${Math.round(p*100)}%;background:${hpColor(p)}"></div></div>`;
 }
-function mpBar(mp,max) {
+function mpBar(mp,max){
   const p=Math.max(0,mp/max);
   return `<div class="mp-bar-wrap" style="height:6px"><div class="mp-bar" style="width:${Math.round(p*100)}%"></div></div>`;
 }
-const STATUS_ICON = { poison:'☠️', paralysis:'⚡', slow:'🐌' };
-function stIcons(arr) { return (arr||[]).map(s=>STATUS_ICON[s]||'').join(''); }
+const STATUS_ICON={poison:'☠️',paralysis:'⚡',slow:'🐌'};
+function stIcons(arr){return(arr||[]).map(s=>STATUS_ICON[s]||'').join('');}
 
-function showOverlay(html) {
-  document.getElementById('overlay-box').innerHTML = html;
+function showOverlay(html){
+  document.getElementById('overlay-box').innerHTML=html;
   document.getElementById('overlay').classList.remove('hidden');
 }
-function hideOverlay() { document.getElementById('overlay').classList.add('hidden'); }
+function hideOverlay(){document.getElementById('overlay').classList.add('hidden');}
 
-function confirmHome(e) {
+function confirmHome(e){
   e.preventDefault();
   showOverlay(`<div style="font-size:16px;margin-bottom:12px">🏠 ホームへ戻る</div>
     <p style="margin-bottom:16px">ホームへ戻りますか？（データは自動保存済みです）</p>
@@ -661,7 +877,7 @@ function confirmHome(e) {
       <button class="btn btn-danger" onclick="hideOverlay()">キャンセル</button>
     </div>`);
 }
-function confirmReset() {
+function confirmReset(){
   showOverlay(`<div style="font-size:16px;margin-bottom:12px">⚠️ データリセット</div>
     <p style="margin-bottom:16px">セーブデータを全て削除しますか？<br>この操作は元に戻せません。</p>
     <div style="display:flex;gap:8px;justify-content:center">
@@ -669,22 +885,18 @@ function confirmReset() {
       <button class="btn" onclick="hideOverlay()">キャンセル</button>
     </div>`);
 }
-function doReset() {
-  localStorage.removeItem('rpg_save');
-  hideOverlay();
-  renderTitle();
-}
+function doReset(){localStorage.removeItem('rpg_save');hideOverlay();renderTitle();}
 
 // ============================================================
 // TITLE
 // ============================================================
-function renderTitle() {
-  const hasSave = !!localStorage.getItem('rpg_save');
-  document.getElementById('continue-btn').disabled = !hasSave;
+function renderTitle(){
+  const hasSave=!!localStorage.getItem('rpg_save');
+  document.getElementById('continue-btn').disabled=!hasSave;
   showScreen('title-screen');
 }
-function startNewGame() {
-  if (localStorage.getItem('rpg_save')) {
+function startNewGame(){
+  if(localStorage.getItem('rpg_save')){
     showOverlay(`<div style="font-size:18px;margin-bottom:12px">⚠️ 注意</div>
       <p style="margin-bottom:16px">セーブデータが消えます。本当に始めますか？</p>
       <div style="display:flex;gap:8px;justify-content:center">
@@ -693,16 +905,16 @@ function startNewGame() {
       </div>`);
   } else doNewGame();
 }
-function doNewGame() { hideOverlay(); G = defaultState(); save(); showScreen('village-screen'); }
-function continueGame() { if (load()) showScreen('village-screen'); }
+function doNewGame(){hideOverlay();G=defaultState();save();showScreen('village-screen');}
+function continueGame(){if(load())showScreen('village-screen');}
 
 // ============================================================
 // VILLAGE
 // ============================================================
-function renderVillage() {
-  const h = G.hero;
-  const en = h.lv * 50;
-  document.getElementById('village-hero-panel').innerHTML = `
+function renderVillage(){
+  const h=G.hero;
+  const en=h.lv*50;
+  document.getElementById('village-hero-panel').innerHTML=`
     <div class="hero-panel">
       <div class="hero-emoji">${h.emoji}</div>
       <div class="hero-info">
@@ -723,8 +935,8 @@ function renderVillage() {
 // ============================================================
 // INN
 // ============================================================
-function goToInn() {
-  if (G.gold < 50) {
+function goToInn(){
+  if(G.gold<50){
     showOverlay(`<div style="font-size:16px;margin-bottom:12px">💰 お金が足りません</div>
       <p style="margin-bottom:16px">やどやは50Gが必要です。</p>
       <button class="btn" onclick="hideOverlay()">閉じる</button>`);
@@ -738,10 +950,10 @@ function goToInn() {
       <button class="btn" onclick="hideOverlay()">やめる</button>
     </div>`);
 }
-function doInn() {
-  G.gold -= 50;
-  G.hero.hp = G.hero.maxHp; G.hero.mp = G.hero.maxMp; G.hero.status = [];
-  for (const m of G.party) { m.hp = m.maxHp; m.status = []; }
+function doInn(){
+  G.gold-=50;
+  G.hero.hp=G.hero.maxHp; G.hero.mp=G.hero.maxMp; G.hero.status=[];
+  for(const m of G.party){m.hp=m.maxHp;m.status=[];}
   save(); hideOverlay(); renderVillage();
   showOverlay(`<div style="font-size:30px;margin-bottom:10px">😴✨</div>
     <p style="margin-bottom:16px">ゆっくり休んで体力が全回復した！</p>
@@ -751,11 +963,11 @@ function doInn() {
 // ============================================================
 // AREA SELECT
 // ============================================================
-function renderAreaSelect() {
-  let h = '<div style="color:#8070c0;font-size:12px;margin-bottom:8px">エリアを選択してください</div>';
-  for (const a of AREAS) {
-    const lk = a.id >= G.unlockedAreas;
-    h += `<div class="area-card ${lk?'locked':''}" ${lk?'':('onclick="enterArea('+a.id+')"')}>
+function renderAreaSelect(){
+  let h='<div style="color:#8070c0;font-size:12px;margin-bottom:8px">エリアを選択してください</div>';
+  for(const a of AREAS){
+    const lk=a.id>=G.unlockedAreas;
+    h+=`<div class="area-card ${lk?'locked':''}" ${lk?'':('onclick="enterArea('+a.id+')"')}>
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:26px">${a.emoji}</span>
         <div>
@@ -766,8 +978,8 @@ function renderAreaSelect() {
       </div>
     </div>`;
   }
-  const fbLk = G.unlockedAreas < 4;
-  h += `<div class="area-card ${fbLk?'locked':''}" ${fbLk?'':'onclick="enterFinalBoss()"'} style="border-color:${fbLk?'#5040a0':'#ff4060'}">
+  const fbLk=G.unlockedAreas<4;
+  h+=`<div class="area-card ${fbLk?'locked':''}" ${fbLk?'':'onclick="enterFinalBoss()"'} style="border-color:${fbLk?'#5040a0':'#ff4060'}">
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-size:26px">😈</span>
       <div>
@@ -777,638 +989,706 @@ function renderAreaSelect() {
       </div>
     </div>
   </div>`;
-  document.getElementById('area-list').innerHTML = h;
+  document.getElementById('area-list').innerHTML=h;
 }
-
-function enterArea(areaId) { startBattle(AREAS[areaId], false, false); }
-function enterFinalBoss() { startBattle(null, false, true); }
+function enterArea(areaId){startBattle(AREAS[areaId],false,false);}
+function enterFinalBoss(){startBattle(null,false,true);}
 
 // ============================================================
 // BATTLE: SETUP
 // ============================================================
-function mkEnemy(typeId, scaleLv) {
-  const t = MONSTER_TYPES[typeId];
-  const sc = 1 + (scaleLv-1)*0.12;
-  return {
-    typeId, emoji:t.emoji, name:t.name, type:t.type,
-    hp: Math.round(t.baseHp*sc), maxHp: Math.round(t.baseHp*sc),
-    atk: Math.round(t.baseAtk*sc), def: Math.round(t.baseDef*sc), spd:t.baseSpd,
-    skills: t.skills, exp: Math.round(20*sc), gold: Math.round(15*sc),
-    status:[], isBoss:false, catchable:true,
+function mkEnemy(typeId,scaleLv){
+  const t=MONSTER_TYPES[typeId];
+  const sc=1+(scaleLv-1)*0.12;
+  return{
+    typeId,emoji:t.emoji,name:t.name,type:t.type,
+    hp:Math.round(t.baseHp*sc),maxHp:Math.round(t.baseHp*sc),
+    atk:Math.round(t.baseAtk*sc),def:Math.round(t.baseDef*sc),spd:t.baseSpd,
+    skills:t.skills,exp:Math.round(20*sc),gold:Math.round(15*sc),
+    status:[],isBoss:false,catchable:true,
   };
 }
-function mkBoss(data) {
-  return { ...data, maxHp:data.hp, status:[], isBoss:true, catchable:false, typeId:-1 };
-}
-function mkPartyMon(typeId, lv) {
-  const t = MONSTER_TYPES[typeId];
-  const sc = 1 + (lv-1)*0.12;
-  return {
-    typeId, emoji:t.emoji, name:t.name, type:t.type,
-    hp:Math.round(t.baseHp*sc), maxHp:Math.round(t.baseHp*sc),
-    atk:Math.round(t.baseAtk*sc), def:Math.round(t.baseDef*sc), spd:t.baseSpd,
-    skills:t.skills, lv:lv, exp:0, status:[],
+function mkBoss(data){return{...data,maxHp:data.hp,status:[],isBoss:true,catchable:false,typeId:-1};}
+function mkPartyMon(typeId,lv){
+  const t=MONSTER_TYPES[typeId];
+  const sc=1+(lv-1)*0.12;
+  return{
+    typeId,emoji:t.emoji,name:t.name,type:t.type,
+    hp:Math.round(t.baseHp*sc),maxHp:Math.round(t.baseHp*sc),
+    atk:Math.round(t.baseAtk*sc),def:Math.round(t.baseDef*sc),spd:t.baseSpd,
+    skills:t.skills,lv:lv,exp:0,status:[],
   };
 }
 
-function startBattle(area, isBoss, isFB) {
-  battleOver = false; battleBusy = false;
-  _pendingSkill = null; _pendingItem = null;
-  document.getElementById('battle-log').innerHTML = '';
+function startBattle(area,isBoss,isFB){
+  battleOver=false; battleBusy=false;
+  _pendingSkill=null; _pendingItem=null;
 
-  let enemies = [];
-  if (isFB) {
-    enemies = [{ ...FINAL_BOSS, maxHp:FINAL_BOSS.hp, hp:FINAL_BOSS.hp, status:[], isBoss:true, catchable:false, phase:1 }];
-    document.getElementById('battle-area-title').textContent = '最終決戦 ～魔王ゾルダ～';
-  } else if (isBoss) {
-    enemies = [mkBoss(area.boss)];
-    document.getElementById('battle-area-title').textContent = area.name + ' ボス戦';
+  let enemies=[];
+  let bgGrad='linear-gradient(180deg,#4e8abf 0%,#70b8e8 35%,#6ab04c 65%,#4a8030 100%)';
+
+  if(isFB){
+    enemies=[{...FINAL_BOSS,maxHp:FINAL_BOSS.hp,hp:FINAL_BOSS.hp,status:[],isBoss:true,catchable:false,phase:1}];
+    document.getElementById('battle-area-title').textContent='最終決戦 ～魔王ゾルダ～';
+    bgGrad=FB_BG;
+  } else if(isBoss){
+    enemies=[mkBoss(area.boss)];
+    document.getElementById('battle-area-title').textContent=area.name+' ボス戦';
+    bgGrad=area.bgGrad||bgGrad;
   } else {
-    const num = Math.floor(Math.random()*2)+1;
-    const scaleLv = Math.max(1, G.hero.lv - 1 + area.id * 3);
-    for (let i=0;i<num;i++) {
-      enemies.push(mkEnemy(area.enemies[Math.floor(Math.random()*area.enemies.length)], scaleLv));
-    }
-    document.getElementById('battle-area-title').textContent = area.name;
+    const num=Math.floor(Math.random()*2)+1;
+    const scaleLv=Math.max(1,G.hero.lv-1+area.id*3);
+    for(let i=0;i<num;i++) enemies.push(mkEnemy(area.enemies[Math.floor(Math.random()*area.enemies.length)],scaleLv));
+    document.getElementById('battle-area-title').textContent=area.name;
+    bgGrad=area.bgGrad||bgGrad;
   }
 
-  const allies = [
-    { ...G.hero, isHero:true, atk:heroAtk(), def:heroDef(), status:[...(G.hero.status||[])] },
-    ...G.party.map(m => ({ ...m, status:[...(m.status||[])] }))
+  document.getElementById('battle-field').style.background=bgGrad;
+
+  const allies=[
+    {...G.hero,isHero:true,atk:heroAtk(),def:heroDef(),status:[...(G.hero.status||[])]},
+    ...G.party.map(m=>({...m,status:[...(m.status||[])]}))
   ];
 
-  BT = { enemies, allies, turnOrder:[], currentTurn:0,
-         area, isBoss, isFB, isNormal:!isBoss&&!isFB, roundCount:0 };
+  BT={enemies,allies,turnOrder:[],currentTurn:0,area,isBoss,isFB,isNormal:!isBoss&&!isFB,roundCount:0};
   buildTurnOrder();
   showScreen('battle-screen');
   renderBattle();
-  logMsg('バトル開始！');
-  setTimeout(advanceTurn, 700);
+
+  const names=enemies.map(e=>e.name).join('と');
+  logMsg(`${names}があらわれた！`, ()=>setTimeout(advanceTurn,300));
 }
 
-function buildTurnOrder() {
-  const units = [];
-  BT.allies.forEach((a,i)=>{ if(a.hp>0) units.push({t:'a',i,spd:a.status.includes('slow')?Math.floor(a.spd/2):a.spd}); });
-  BT.enemies.forEach((e,i)=>{ if(e.hp>0) units.push({t:'e',i,spd:e.status.includes('slow')?Math.floor(e.spd/2):e.spd}); });
+function buildTurnOrder(){
+  const units=[];
+  BT.allies.forEach((a,i)=>{if(a.hp>0)units.push({t:'a',i,spd:a.status.includes('slow')?Math.floor(a.spd/2):a.spd});});
+  BT.enemies.forEach((e,i)=>{if(e.hp>0)units.push({t:'e',i,spd:e.status.includes('slow')?Math.floor(e.spd/2):e.spd});});
   units.sort((a,b)=>b.spd-a.spd);
-  BT.turnOrder = units; BT.currentTurn = 0;
+  BT.turnOrder=units; BT.currentTurn=0;
 }
 
 // ============================================================
 // BATTLE: TURN ENGINE
 // ============================================================
-function advanceTurn() {
-  if (battleOver || battleBusy) return;
-
-  const ae = BT.enemies.filter(e=>e.hp>0);
-  const aa = BT.allies.filter(a=>a.hp>0);
-  if (ae.length===0) { battleBusy=true; setTimeout(endVictory,600); return; }
-  if (aa.length===0) { battleBusy=true; setTimeout(endDefeat,600); return; }
-
-  if (BT.currentTurn >= BT.turnOrder.length) {
-    // New round: apply status, rebuild order
+function advanceTurn(){
+  if(battleOver||battleBusy)return;
+  const ae=BT.enemies.filter(e=>e.hp>0);
+  const aa=BT.allies.filter(a=>a.hp>0);
+  if(ae.length===0){battleBusy=true;setTimeout(endVictory,500);return;}
+  if(aa.length===0){battleBusy=true;setTimeout(endDefeat,500);return;}
+  if(BT.currentTurn>=BT.turnOrder.length){
     applyStatusTick();
     buildTurnOrder();
-    BT.roundCount = (BT.roundCount||0)+1;
-    // Re-check win/loss after status
-    const ae2 = BT.enemies.filter(e=>e.hp>0);
-    const aa2 = BT.allies.filter(a=>a.hp>0);
-    if (ae2.length===0) { battleBusy=true; setTimeout(endVictory,600); return; }
-    if (aa2.length===0) { battleBusy=true; setTimeout(endDefeat,600); return; }
+    BT.roundCount=(BT.roundCount||0)+1;
+    const ae2=BT.enemies.filter(e=>e.hp>0);
+    const aa2=BT.allies.filter(a=>a.hp>0);
+    if(ae2.length===0){battleBusy=true;setTimeout(endVictory,500);return;}
+    if(aa2.length===0){battleBusy=true;setTimeout(endDefeat,500);return;}
   }
-
-  // Find next alive unit
-  let found = false;
-  while (BT.currentTurn < BT.turnOrder.length && !found) {
-    const u = BT.turnOrder[BT.currentTurn];
-    const obj = u.t==='a' ? BT.allies[u.i] : BT.enemies[u.i];
+  let found=false;
+  while(BT.currentTurn<BT.turnOrder.length&&!found){
+    const u=BT.turnOrder[BT.currentTurn];
+    const obj=u.t==='a'?BT.allies[u.i]:BT.enemies[u.i];
     BT.currentTurn++;
-    if (obj.hp <= 0) continue;
-    found = true;
-
-    if (u.t==='a' && u.i===0) {
-      // Hero: show actions
+    if(obj.hp<=0)continue;
+    found=true;
+    if(u.t==='a'&&u.i===0){
       showPlayerActions('main');
-    } else if (u.t==='a') {
-      // Monster ally auto
-      battleBusy = true;
-      setTimeout(()=>{ allyAuto(u.i); battleBusy=false; }, 600);
+    } else if(u.t==='a'){
+      battleBusy=true;
+      setTimeout(()=>{allyAuto(u.i);battleBusy=false;},500);
     } else {
-      // Enemy
-      battleBusy = true;
-      setTimeout(()=>{ enemyAct(u.i); battleBusy=false; }, 700);
+      battleBusy=true;
+      setTimeout(()=>{enemyAct(u.i);battleBusy=false;},600);
     }
   }
-  if (!found) setTimeout(advanceTurn, 100);
+  if(!found)setTimeout(advanceTurn,100);
 }
 
-function applyStatusTick() {
-  const all = [...BT.allies, ...BT.enemies];
-  const msgs = [];
-  for (const u of all) {
-    if (!u.status) u.status=[];
-    if (u.hp>0 && u.status.includes('poison')) {
-      u.hp = Math.max(0, u.hp-10);
-      if (u.isHero) G.hero.hp = u.hp;
+function applyStatusTick(){
+  const all=[...BT.allies,...BT.enemies];
+  const msgs=[];
+  for(const u of all){
+    if(!u.status)u.status=[];
+    if(u.hp>0&&u.status.includes('poison')){
+      u.hp=Math.max(0,u.hp-10);
+      if(u.isHero)G.hero.hp=u.hp;
       msgs.push(`${u.name}は毒のダメージ！(-10)`);
     }
   }
-  if (msgs.length) {
-    renderBattle();
-    msgs.forEach((m,i) => setTimeout(()=>logMsg(m), i*300));
-  }
+  if(msgs.length){renderBattle();msgs.forEach((m,i)=>setTimeout(()=>logMsg(m),i*400));}
 }
 
 // ============================================================
-// BATTLE: RENDERING
+// BATTLE: JRPG RENDERING
 // ============================================================
-function renderBattle() {
-  // Enemies
-  let eh = '';
-  for (let i=0;i<BT.enemies.length;i++) {
-    const e = BT.enemies[i];
-    const dead = e.hp<=0;
-    eh += `<div class="enemy-card" style="opacity:${dead?0.25:1}">
-      <span class="enemy-emoji">${e.emoji}</span>
-      <div class="enemy-name">${e.name}${stIcons(e.status)}</div>
-      <div class="enemy-name">${e.hp}/${e.maxHp}</div>
-      ${hpBar(e.hp,e.maxHp,'8px')}
+function renderBattle(){
+  // Enemy HUD (top-left)
+  let ehHtml='';
+  for(let i=0;i<BT.enemies.length;i++){
+    const e=BT.enemies[i];
+    const p=Math.max(0,e.hp/e.maxHp);
+    ehHtml+=`<div class="ehud-row" style="opacity:${e.hp<=0?0.3:1}">
+      <div class="ehud-name">${e.name}${stIcons(e.status)}</div>
+      <div class="jrpg-hpbar-wrap">
+        <div class="jrpg-hpbar" style="width:${Math.round(p*100)}%;background:${hpColor(p)}"></div>
+      </div>
+      <div class="ehud-hp">${e.hp} / ${e.maxHp}</div>
     </div>`;
   }
-  document.getElementById('enemy-zone').innerHTML = eh;
+  document.getElementById('enemy-hud').innerHTML=ehHtml;
 
-  // Allies
-  let ah = '';
-  for (let i=0;i<BT.allies.length;i++) {
-    const a = BT.allies[i];
-    const dead = a.hp<=0;
-    ah += `<div class="ally-row" style="opacity:${dead?0.25:1}">
-      <div class="ally-emoji">${a.emoji}</div>
-      <div class="ally-info">
-        <div class="ally-name">${a.name}${i===0?` LV${a.lv}`:''} ${stIcons(a.status)}</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#ccc;margin-bottom:2px">
-          <span>HP</span><span class="led" style="font-size:11px;padding:1px 5px">${a.hp}/${a.maxHp}</span>
-          ${i===0?`<span class="tb">MP</span><span class="led" style="font-size:11px;padding:1px 5px;color:#60b0ff;border-color:#4090ff">${a.mp}/${a.maxMp}</span>`:''}
+  // Enemy sprites (right side, large)
+  const single=BT.enemies.length===1;
+  let sprHtml='';
+  for(let i=0;i<BT.enemies.length;i++){
+    const e=BT.enemies[i];
+    const fs=single?88:58;
+    const offset=single?0:(i===0?0:8);
+    sprHtml+=`<span class="enemy-spr" data-idx="${i}" style="font-size:${fs}px;opacity:${e.hp<=0?0.1:1};margin-top:${offset}px">${e.emoji}</span>`;
+  }
+  document.getElementById('enemy-sprites').innerHTML=sprHtml;
+
+  // Player sprite
+  document.getElementById('player-sprite-el').textContent=BT.allies[0].emoji||'🧙';
+
+  // Player HUD (bottom-right)
+  const hero=BT.allies[0];
+  const hp=Math.max(0,hero.hp/hero.maxHp);
+  const mp=Math.max(0,hero.mp/hero.maxMp);
+  let phHtml=`
+    <div class="phud-name">${hero.name}<span class="phud-lv">Lv${hero.lv}</span></div>
+    <div class="phud-bar-row">
+      <span class="phud-label">HP</span>
+      <div class="jrpg-hpbar-wrap phud-bar">
+        <div class="jrpg-hpbar" style="width:${Math.round(hp*100)}%;background:${hpColor(hp)}"></div>
+      </div>
+      <span class="phud-num">${hero.hp}/${hero.maxHp}</span>
+    </div>
+    <div class="phud-bar-row">
+      <span class="phud-label" style="color:#60b0ff">MP</span>
+      <div class="jrpg-hpbar-wrap phud-bar">
+        <div class="jrpg-hpbar" style="width:${Math.round(mp*100)}%;background:#3388ff"></div>
+      </div>
+      <span class="phud-num">${hero.mp}/${hero.maxMp}</span>
+    </div>`;
+  for(let i=1;i<BT.allies.length;i++){
+    const a=BT.allies[i];
+    const ap=Math.max(0,a.hp/a.maxHp);
+    phHtml+=`<div style="margin-top:3px;border-top:1px solid #1a0a40;padding-top:3px;opacity:${a.hp<=0?0.3:1}">
+      <div class="phud-name" style="font-size:10px">${a.emoji} ${a.name}</div>
+      <div class="phud-bar-row">
+        <span class="phud-label">HP</span>
+        <div class="jrpg-hpbar-wrap phud-bar">
+          <div class="jrpg-hpbar" style="width:${Math.round(ap*100)}%;background:${hpColor(ap)}"></div>
         </div>
-        ${hpBar(a.hp,a.maxHp,'6px')}
+        <span class="phud-num" style="font-size:9px">${a.hp}/${a.maxHp}</span>
       </div>
     </div>`;
   }
-  document.getElementById('ally-zone').innerHTML = ah;
+  document.getElementById('player-hud').innerHTML=phHtml;
+}
+
+// Floating damage number
+function showFloatDmg(text,x,y,color){
+  const field=document.getElementById('battle-field');
+  if(!field)return;
+  const el=document.createElement('div');
+  el.className='float-dmg';
+  el.textContent=text;
+  el.style.left=x+'px';
+  el.style.top=y+'px';
+  el.style.color=color||'#ff5555';
+  field.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+
+function shakeEnemy(idx){
+  const el=document.querySelector(`.enemy-spr[data-idx="${idx}"]`);
+  if(!el)return;
+  el.classList.add('enemy-shake');
+  setTimeout(()=>el.classList.remove('enemy-shake'),400);
+}
+function flashPlayer(){
+  const el=document.getElementById('player-sprite-el');
+  if(!el)return;
+  el.classList.add('player-flash');
+  setTimeout(()=>el.classList.remove('player-flash'),500);
+}
+
+// Enemy damage position (approximate pixel positions within battle-field)
+function enemyDmgPos(idx){
+  const field=document.getElementById('battle-field');
+  if(!field)return{x:200,y:40};
+  const w=field.clientWidth||340;
+  if(BT.enemies.length===1) return{x:w-120,y:35};
+  return idx===0?{x:w-100,y:30}:{x:w-160,y:50};
 }
 
 // ============================================================
-// BATTLE: PLAYER ACTIONS
+// BATTLE: TYPEWRITER MESSAGE BOX
 // ============================================================
-function showPlayerActions(mode, ctx) {
-  const panel = document.getElementById('battle-action-panel');
-  if (mode==='main') {
-    const ae = BT.enemies.filter(e=>e.hp>0);
-    const canCatch = ae.length===1 && !ae[0].isBoss && G.inventory.monsterBall>0 &&
-                     G.party.length < 2;
-    panel.innerHTML = `<div class="battle-actions" style="padding:0 8px 8px">
-      <button class="btn" onclick="heroAttack()">⚔️ こうげき</button>
-      <button class="btn" onclick="showPlayerActions('skill')">✨ スキル</button>
-      <button class="btn" onclick="showPlayerActions('item')">🧪 アイテム</button>
-      <button class="btn" ${canCatch?'':'disabled'} onclick="attemptCapture()">🔮 つかまえる<br><span style="font-size:10px">ボール:${G.inventory.monsterBall}</span></button>
-      <button class="btn btn-danger" style="grid-column:1/-1" onclick="attemptEscape()">🏃 にげる</button>
-    </div>`;
-  } else if (mode==='skill') {
-    let h = '<div class="skill-list" style="padding:0 8px 4px">';
-    for (const sk of HERO_SKILLS) {
-      if (sk.lv > G.hero.lv) continue;
-      const noMp = BT.allies[0].mp < sk.mp;
-      h += `<button class="btn" ${noMp?'disabled':''} onclick="heroSkill('${sk.name}')">
-        ${sk.name} <span class="tb" style="font-size:11px">MP:${sk.mp}</span>
-      </button>`;
+let _typeTimer=null;
+let _typeCb=null;
+
+function logMsg(text,cb){
+  if(_typeTimer){clearTimeout(_typeTimer);_typeTimer=null;}
+  const el=document.getElementById('msg-text');
+  const cursor=document.getElementById('msg-cursor');
+  if(!el)return;
+  cursor.style.display='none';
+  el.textContent='';
+  let i=0;
+  const speed=26;
+  function tick(){
+    if(i<text.length){
+      el.textContent+=text[i++];
+      _typeTimer=setTimeout(tick,speed);
+    } else {
+      cursor.style.display='block';
+      if(cb){
+        _typeCb=cb;
+        _typeTimer=setTimeout(()=>{
+          cursor.style.display='none';
+          _typeCb=null;
+          cb();
+        },420);
+      }
     }
-    h += `</div><div style="padding:0 8px 8px">
-      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
-    panel.innerHTML = h;
-  } else if (mode==='item') {
-    const itemDefs = [{id:'potion',n:'ポーション'},{id:'hiPotion',n:'ハイポーション'},{id:'elixir',n:'エリクサー'}];
-    let h = '<div class="item-list" style="padding:0 8px 4px">';
-    let hasAny = false;
-    for (const it of itemDefs) {
-      const cnt = G.inventory[it.id]||0;
-      if (!cnt) continue;
-      hasAny = true;
-      h += `<button class="btn" onclick="useItem('${it.id}')">${it.n} <span style="font-size:11px;color:#8070c0">(${cnt}個)</span></button>`;
+  }
+  tick();
+}
+
+function seqLog(msgs,finalCb){
+  let i=0;
+  function next(){
+    if(i>=msgs.length){if(finalCb)finalCb();return;}
+    logMsg(msgs[i++],next);
+  }
+  next();
+}
+
+function clearActions(){
+  document.getElementById('cmd-panel').innerHTML='';
+}
+
+// ============================================================
+// BATTLE: PLAYER ACTIONS (DQ COMMAND MENU)
+// ============================================================
+function showPlayerActions(mode,ctx){
+  const panel=document.getElementById('cmd-panel');
+  sndMenuSel();
+  if(mode==='main'){
+    const ae=BT.enemies.filter(e=>e.hp>0);
+    const canCatch=ae.length===1&&!ae[0].isBoss&&G.inventory.monsterBall>0&&G.party.length<2;
+    panel.innerHTML=`<div class="jrpg-cmd-grid">
+      <button class="jrpg-cmd-btn" onclick="heroAttack()">⚔️ たたかう</button>
+      <button class="jrpg-cmd-btn" onclick="showPlayerActions('skill')">✨ まほう</button>
+      <button class="jrpg-cmd-btn" onclick="showPlayerActions('item')">🧪 どうぐ</button>
+      <button class="jrpg-cmd-btn" onclick="attemptEscape()">🏃 にげる</button>
+    </div>
+    ${canCatch?`<div style="text-align:center;margin-top:5px"><button class="jrpg-cmd-btn" style="width:100%;padding:7px;font-size:13px" onclick="attemptCapture()">🔮 つかまえる (ボール:${G.inventory.monsterBall}個)</button></div>`:''}`;
+  } else if(mode==='skill'){
+    let h='<div class="jrpg-submenu">';
+    for(const sk of HERO_SKILLS){
+      if(sk.lv>G.hero.lv)continue;
+      const noMp=BT.allies[0].mp<sk.mp;
+      h+=`<div class="jrpg-subitem${noMp?' disabled':''}" onclick="${noMp?'':(`heroSkill('${sk.name}')`)}">
+        <span>${sk.name}</span>
+        <span style="color:#60b0ff;font-size:11px">MP:${sk.mp}</span>
+      </div>`;
     }
-    if (!hasAny) h += '<p style="color:#8070c0;font-size:13px;padding:4px">アイテムがありません</p>';
-    h += `</div><div style="padding:0 8px 8px">
-      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
-    panel.innerHTML = h;
-  } else if (mode==='selectAlly') {
-    let h = '<div class="skill-list" style="padding:0 8px 4px">';
-    for (let i=0;i<BT.allies.length;i++) {
-      const a = BT.allies[i];
-      if (a.hp<=0) continue;
-      h += `<button class="btn" onclick="${ctx.cb}(${i})">${a.emoji}${a.name} HP ${a.hp}/${a.maxHp}</button>`;
+    h+=`</div><div class="jrpg-back-btn" onclick="showPlayerActions('main')">◀ もどる</div>`;
+    panel.innerHTML=h;
+  } else if(mode==='item'){
+    const defs=[{id:'potion',n:'ポーション'},{id:'hiPotion',n:'ハイポーション'},{id:'elixir',n:'エリクサー'}];
+    let h='<div class="jrpg-submenu">';
+    let hasAny=false;
+    for(const it of defs){
+      const cnt=G.inventory[it.id]||0;
+      if(!cnt)continue;
+      hasAny=true;
+      h+=`<div class="jrpg-subitem" onclick="useItem('${it.id}')">
+        <span>${it.n}</span><span style="color:#aaa;font-size:11px">${cnt}個</span>
+      </div>`;
     }
-    h += `</div><div style="padding:0 8px 8px">
-      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
-    panel.innerHTML = h;
-  } else if (mode==='selectEnemy') {
-    let h = '<div class="skill-list" style="padding:0 8px 4px">';
-    for (let i=0;i<BT.enemies.length;i++) {
-      const e = BT.enemies[i];
-      if (e.hp<=0) continue;
-      h += `<button class="btn" onclick="${ctx.cb}(${i})">${e.emoji}${e.name} HP ${e.hp}/${e.maxHp}</button>`;
+    if(!hasAny)h+=`<div class="jrpg-subitem" style="color:#555;pointer-events:none">アイテムなし</div>`;
+    h+=`</div><div class="jrpg-back-btn" onclick="showPlayerActions('main')">◀ もどる</div>`;
+    panel.innerHTML=h;
+  } else if(mode==='selectAlly'){
+    let h='<div class="jrpg-submenu">';
+    for(let i=0;i<BT.allies.length;i++){
+      const a=BT.allies[i];
+      if(a.hp<=0)continue;
+      h+=`<div class="jrpg-subitem" onclick="${ctx.cb}(${i})">
+        <span>${a.emoji} ${a.name}</span>
+        <span style="color:#aaa;font-size:11px">HP ${a.hp}/${a.maxHp}</span>
+      </div>`;
     }
-    h += `</div><div style="padding:0 8px 8px">
-      <button class="btn" style="width:100%" onclick="showPlayerActions('main')">◀ もどる</button></div>`;
-    panel.innerHTML = h;
+    h+=`</div><div class="jrpg-back-btn" onclick="showPlayerActions('main')">◀ もどる</div>`;
+    panel.innerHTML=h;
+  } else if(mode==='selectEnemy'){
+    let h='<div class="jrpg-submenu">';
+    for(let i=0;i<BT.enemies.length;i++){
+      const e=BT.enemies[i];
+      if(e.hp<=0)continue;
+      h+=`<div class="jrpg-subitem" onclick="${ctx.cb}(${i})">
+        <span>${e.emoji} ${e.name}</span>
+        <span style="color:#aaa;font-size:11px">HP ${e.hp}/${e.maxHp}</span>
+      </div>`;
+    }
+    h+=`</div><div class="jrpg-back-btn" onclick="showPlayerActions('main')">◀ もどる</div>`;
+    panel.innerHTML=h;
   }
 }
 
-function clearActions() { document.getElementById('battle-action-panel').innerHTML=''; }
-
 // ── Hero: basic attack ──
-function heroAttack() {
-  const ae = BT.enemies.filter(e=>e.hp>0);
-  if (ae.length===1) doHeroAttack(BT.enemies.indexOf(ae[0]));
+function heroAttack(){
+  const ae=BT.enemies.filter(e=>e.hp>0);
+  if(ae.length===1)doHeroAttack(BT.enemies.indexOf(ae[0]));
   else showPlayerActions('selectEnemy',{cb:'doHeroAttack'});
 }
-function doHeroAttack(ei) {
+function doHeroAttack(ei){
   clearActions();
-  const h=BT.allies[0], e=BT.enemies[ei];
-  const dmg = Math.max(1, h.atk - Math.floor(e.def/2) + ri(-3,3));
-  e.hp = Math.max(0,e.hp-dmg);
-  logMsg(`${h.name}の攻撃！ ${e.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  const h=BT.allies[0],e=BT.enemies[ei];
+  const dmg=Math.max(1,h.atk-Math.floor(e.def/2)+ri(-3,3));
+  e.hp=Math.max(0,e.hp-dmg);
+  sndAttack();
+  const pos=enemyDmgPos(ei);
+  showFloatDmg(`-${dmg}`,pos.x,pos.y,'#ff5555');
+  shakeEnemy(ei);
+  logMsg(`${h.name}のこうげき！\n${e.name}に${dmg}のダメージ！`,()=>{renderBattle();setTimeout(advanceTurn,350);});
 }
 
 // ── Hero: skills ──
-function heroSkill(name) {
-  const sk = HERO_SKILLS.find(s=>s.name===name);
-  if (!sk) return;
-  _pendingSkill = name;
-  if (sk.effect==='physical') { heroAttack(); return; }
-  if (sk.target==='ally' || sk.effect==='heal' || sk.effect==='healFull')
+function heroSkill(name){
+  const sk=HERO_SKILLS.find(s=>s.name===name);
+  if(!sk)return;
+  _pendingSkill=name;
+  if(sk.effect==='physical'){heroAttack();return;}
+  if(sk.target==='ally'||sk.effect==='heal'||sk.effect==='healFull')
     showPlayerActions('selectAlly',{cb:'execHealSkill'});
-  else if (sk.effect==='magicAll')
+  else if(sk.effect==='magicAll')
     execMagicAll();
   else {
-    const ae = BT.enemies.filter(e=>e.hp>0);
-    if (ae.length===1) execMagicSingle(BT.enemies.indexOf(ae[0]));
+    const ae=BT.enemies.filter(e=>e.hp>0);
+    if(ae.length===1)execMagicSingle(BT.enemies.indexOf(ae[0]));
     else showPlayerActions('selectEnemy',{cb:'execMagicSingle'});
   }
 }
-
-function execHealSkill(ai) {
+function execHealSkill(ai){
   clearActions();
-  const sk = HERO_SKILLS.find(s=>s.name===_pendingSkill);
-  const hero=BT.allies[0]; const tgt=BT.allies[ai];
-  hero.mp -= sk.mp; G.hero.mp = hero.mp;
+  const sk=HERO_SKILLS.find(s=>s.name===_pendingSkill);
+  const hero=BT.allies[0];const tgt=BT.allies[ai];
+  hero.mp-=sk.mp;G.hero.mp=hero.mp;
+  sndHeal();
   let msg;
-  if (sk.effect==='healFull') {
-    tgt.hp = tgt.maxHp;
-    if (tgt.isHero) G.hero.hp = tgt.hp;
-    msg = `${hero.name}の${sk.name}！ ${tgt.name}のHPが全回復！`;
+  if(sk.effect==='healFull'){
+    tgt.hp=tgt.maxHp;if(tgt.isHero)G.hero.hp=tgt.hp;
+    msg=`${hero.name}の${sk.name}！\n${tgt.name}のHPが全回復した！`;
   } else {
-    const heal = sk.power||60;
-    tgt.hp = Math.min(tgt.maxHp, tgt.hp+heal);
-    if (tgt.isHero) G.hero.hp = tgt.hp;
-    msg = `${hero.name}の${sk.name}！ ${tgt.name}のHPが${heal}回復！`;
+    const heal=sk.power||60;
+    tgt.hp=Math.min(tgt.maxHp,tgt.hp+heal);if(tgt.isHero)G.hero.hp=tgt.hp;
+    msg=`${hero.name}の${sk.name}！\n${tgt.name}のHPが${heal}回復した！`;
   }
-  logMsg(msg, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  logMsg(msg,()=>{renderBattle();setTimeout(advanceTurn,350);});
 }
-
-function execMagicSingle(ei) {
+function execMagicSingle(ei){
   clearActions();
-  const sk = HERO_SKILLS.find(s=>s.name===_pendingSkill);
-  const hero=BT.allies[0]; const e=BT.enemies[ei];
-  hero.mp -= sk.mp; G.hero.mp = hero.mp;
-  let dmg = (sk.power||0) + ri(-5,5);
-  if (sk.effect!=='magicIgnoreDef') dmg = Math.max(1, dmg - Math.floor(e.def/4));
-  dmg = Math.max(1,dmg);
-  e.hp = Math.max(0, e.hp-dmg);
-  logMsg(`${hero.name}の${sk.name}！ ${e.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  const sk=HERO_SKILLS.find(s=>s.name===_pendingSkill);
+  const hero=BT.allies[0];const e=BT.enemies[ei];
+  hero.mp-=sk.mp;G.hero.mp=hero.mp;
+  let dmg=(sk.power||0)+ri(-5,5);
+  if(sk.effect!=='magicIgnoreDef')dmg=Math.max(1,dmg-Math.floor(e.def/4));
+  dmg=Math.max(1,dmg);
+  e.hp=Math.max(0,e.hp-dmg);
+  sndMagic();
+  const pos=enemyDmgPos(ei);
+  showFloatDmg(`-${dmg}`,pos.x,pos.y,'#88ccff');
+  shakeEnemy(ei);
+  logMsg(`${hero.name}の${sk.name}！\n${e.name}に${dmg}のダメージ！`,()=>{renderBattle();setTimeout(advanceTurn,350);});
 }
-
-function execMagicAll() {
+function execMagicAll(){
   clearActions();
-  const sk = HERO_SKILLS.find(s=>s.name===_pendingSkill);
+  const sk=HERO_SKILLS.find(s=>s.name===_pendingSkill);
   const hero=BT.allies[0];
-  hero.mp -= sk.mp; G.hero.mp = hero.mp;
+  hero.mp-=sk.mp;G.hero.mp=hero.mp;
+  sndMagic();
   const msgs=[`${hero.name}の${sk.name}！`];
-  for (const e of BT.enemies) {
-    if (e.hp<=0) continue;
-    const dmg = Math.max(1,(sk.power||50)+ri(-5,5));
-    e.hp = Math.max(0,e.hp-dmg);
-    msgs.push(`${e.name}に${dmg}ダメージ！`);
+  for(let i=0;i<BT.enemies.length;i++){
+    const e=BT.enemies[i];
+    if(e.hp<=0)continue;
+    const dmg=Math.max(1,(sk.power||50)+ri(-5,5));
+    e.hp=Math.max(0,e.hp-dmg);
+    const pos=enemyDmgPos(i);
+    showFloatDmg(`-${dmg}`,pos.x,pos.y,'#88ccff');
+    shakeEnemy(i);
+    msgs.push(`${e.name}に${dmg}のダメージ！`);
   }
-  seqLog(msgs, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  seqLog(msgs,()=>{renderBattle();setTimeout(advanceTurn,350);});
 }
 
 // ── Hero: items ──
-function useItem(itemId) { _pendingItem=itemId; showPlayerActions('selectAlly',{cb:'execItem'}); }
-function execItem(ai) {
+function useItem(itemId){_pendingItem=itemId;showPlayerActions('selectAlly',{cb:'execItem'});}
+function execItem(ai){
   clearActions();
-  const id=_pendingItem; const tgt=BT.allies[ai];
+  const id=_pendingItem;const tgt=BT.allies[ai];
   G.inventory[id]--;
+  sndHeal();
   let msg;
-  if (id==='potion') {
-    tgt.hp=Math.min(tgt.maxHp,tgt.hp+80);
-    if(tgt.isHero)G.hero.hp=tgt.hp;
-    msg=`${tgt.name}のHPが80回復した！`;
-  } else if (id==='hiPotion') {
-    tgt.hp=Math.min(tgt.maxHp,tgt.hp+250);
-    if(tgt.isHero)G.hero.hp=tgt.hp;
-    msg=`${tgt.name}のHPが250回復した！`;
-  } else if (id==='elixir') {
-    tgt.hp=tgt.maxHp;
-    if(tgt.isHero){tgt.mp=tgt.maxMp;G.hero.hp=tgt.hp;G.hero.mp=tgt.mp;}
-    msg=`${tgt.name}のHP・MPが全回復した！`;
-  }
-  logMsg(msg, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  if(id==='potion'){tgt.hp=Math.min(tgt.maxHp,tgt.hp+80);if(tgt.isHero)G.hero.hp=tgt.hp;msg=`${tgt.name}のHPが80回復した！`;}
+  else if(id==='hiPotion'){tgt.hp=Math.min(tgt.maxHp,tgt.hp+250);if(tgt.isHero)G.hero.hp=tgt.hp;msg=`${tgt.name}のHPが250回復した！`;}
+  else if(id==='elixir'){tgt.hp=tgt.maxHp;if(tgt.isHero){tgt.mp=tgt.maxMp;G.hero.hp=tgt.hp;G.hero.mp=tgt.mp;}msg=`${tgt.name}のHP・MPが全回復した！`;}
+  logMsg(msg,()=>{renderBattle();setTimeout(advanceTurn,350);});
 }
 
 // ── Capture ──
-function attemptCapture() {
-  const ae = BT.enemies.filter(e=>e.hp>0);
-  if (ae.length!==1||ae[0].isBoss) return;
+function attemptCapture(){
+  const ae=BT.enemies.filter(e=>e.hp>0);
+  if(ae.length!==1||ae[0].isBoss)return;
   clearActions();
   const enemy=ae[0];
   G.inventory.monsterBall--;
-  const pct = Math.min(90, (1-enemy.hp/enemy.maxHp)*80+10) * (MONSTER_TYPES[enemy.typeId]?.catchRate||1);
-  logMsg(`🔮 モンスターボールを投げた！`, ()=>{
-    if (Math.random()*100 < pct) {
-      if (!G.caughtMonsters.includes(enemy.typeId)) G.caughtMonsters.push(enemy.typeId);
-      if (G.party.length < 2) {
+  const pct=Math.min(90,(1-enemy.hp/enemy.maxHp)*80+10)*(MONSTER_TYPES[enemy.typeId]?.catchRate||1);
+  logMsg(`🔮 モンスターボールを投げた！`,()=>{
+    if(Math.random()*100<pct){
+      if(!G.caughtMonsters.includes(enemy.typeId))G.caughtMonsters.push(enemy.typeId);
+      if(G.party.length<2){
         G.party.push(mkPartyMon(enemy.typeId,1));
-        logMsg(`${enemy.name}を捕まえた！ パーティに加わった！`, ()=>{
-          enemy.hp=0; renderBattle(); setTimeout(advanceTurn,400);
-        });
+        logMsg(`${enemy.name}をつかまえた！\nパーティに加わった！`,()=>{enemy.hp=0;renderBattle();setTimeout(advanceTurn,350);});
       } else {
-        logMsg(`${enemy.name}を捕まえた！(パーティ満員のため逃がした)`, ()=>{
-          enemy.hp=0; renderBattle(); setTimeout(advanceTurn,400);
-        });
+        logMsg(`${enemy.name}をつかまえた！\n(パーティ満員のため逃がした)`,()=>{enemy.hp=0;renderBattle();setTimeout(advanceTurn,350);});
       }
     } else {
-      logMsg(`${enemy.name}は逃げてしまった...`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+      logMsg(`${enemy.name}は逃げてしまった...`,()=>{renderBattle();setTimeout(advanceTurn,350);});
     }
   });
 }
 
 // ── Escape ──
-function attemptEscape() {
+function attemptEscape(){
   clearActions();
-  if (Math.random()<0.5) {
+  if(Math.random()<0.5){
+    sndEscape();
     battleOver=true;
-    logMsg('うまく逃げ出した！', ()=>setTimeout(()=>{showScreen('village-screen');},800));
+    logMsg('うまく逃げ出した！',()=>setTimeout(()=>{showScreen('village-screen');},700));
   } else {
-    logMsg('逃げられなかった！', ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+    logMsg('逃げられなかった！',()=>{renderBattle();setTimeout(advanceTurn,350);});
   }
 }
 
 // ============================================================
 // BATTLE: ALLY AUTO
 // ============================================================
-function allyAuto(ai) {
-  const ally = BT.allies[ai];
-  if (!ally||ally.hp<=0) { advanceTurn(); return; }
-  // Paralysis check
-  if (ally.status.includes('paralysis') && Math.random()<0.5) {
-    logMsg(`${ally.name}はまひで動けない！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);}); return;
+function allyAuto(ai){
+  const ally=BT.allies[ai];
+  if(!ally||ally.hp<=0){advanceTurn();return;}
+  if(ally.status.includes('paralysis')&&Math.random()<0.5){
+    logMsg(`${ally.name}はまひで動けない！`,()=>{renderBattle();setTimeout(advanceTurn,350);});return;
   }
-  const ae = BT.enemies.filter(e=>e.hp>0);
-  if (!ae.length) { advanceTurn(); return; }
-  const tgt = ae[Math.floor(Math.random()*ae.length)];
-
-  // Try healing low ally first
-  const healSk = ally.skills.find(s=>s.effect==='heal');
-  if (healSk) {
-    const lowAlly = BT.allies.find(a=>a.hp>0 && a.hp<a.maxHp*0.4);
-    if (lowAlly) {
-      lowAlly.hp = Math.min(lowAlly.maxHp, lowAlly.hp+healSk.power);
-      if (lowAlly.isHero) G.hero.hp=lowAlly.hp;
-      logMsg(`${ally.name}の${healSk.name}！ ${lowAlly.name}のHPが${healSk.power}回復！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);}); return;
+  const ae=BT.enemies.filter(e=>e.hp>0);
+  if(!ae.length){advanceTurn();return;}
+  const tgt=ae[Math.floor(Math.random()*ae.length)];
+  const healSk=ally.skills.find(s=>s.effect==='heal');
+  if(healSk){
+    const lowAlly=BT.allies.find(a=>a.hp>0&&a.hp<a.maxHp*0.4);
+    if(lowAlly){
+      lowAlly.hp=Math.min(lowAlly.maxHp,lowAlly.hp+healSk.power);
+      if(lowAlly.isHero)G.hero.hp=lowAlly.hp;
+      sndHeal();
+      logMsg(`${ally.name}の${healSk.name}！\n${lowAlly.name}のHPが${healSk.power}回復！`,()=>{renderBattle();setTimeout(advanceTurn,350);});return;
     }
   }
-  // Attack skill
-  const atkSk = ally.skills.find(s=>s.effect==='dmg');
-  if (atkSk && Math.random()<0.45) {
-    let dmg = atkSk.power || Math.max(1, ally.atk - Math.floor(tgt.def/2));
-    if (atkSk.atkMult) dmg = Math.round(ally.atk*atkSk.atkMult);
-    dmg = Math.max(1, dmg+ri(-3,3));
-    tgt.hp = Math.max(0,tgt.hp-dmg);
-    if (atkSk.status) addStatus(tgt,atkSk.status);
-    logMsg(`${ally.name}の${atkSk.name}！ ${tgt.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);}); return;
+  const atkSk=ally.skills.find(s=>s.effect==='dmg');
+  if(atkSk&&Math.random()<0.45){
+    let dmg=atkSk.power||Math.max(1,ally.atk-Math.floor(tgt.def/2));
+    if(atkSk.atkMult)dmg=Math.round(ally.atk*atkSk.atkMult);
+    dmg=Math.max(1,dmg+ri(-3,3));
+    tgt.hp=Math.max(0,tgt.hp-dmg);
+    if(atkSk.status)addStatus(tgt,atkSk.status);
+    sndAttack();
+    const idx=BT.enemies.indexOf(tgt);
+    const pos=enemyDmgPos(idx);
+    showFloatDmg(`-${dmg}`,pos.x,pos.y,'#ff9955');
+    shakeEnemy(idx);
+    logMsg(`${ally.name}の${atkSk.name}！\n${tgt.name}に${dmg}のダメージ！`,()=>{renderBattle();setTimeout(advanceTurn,350);});return;
   }
-  // Basic
-  const dmg = Math.max(1, ally.atk - Math.floor(tgt.def/2) + ri(-3,3));
-  tgt.hp = Math.max(0,tgt.hp-dmg);
-  logMsg(`${ally.name}の攻撃！ ${tgt.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+  const dmg=Math.max(1,ally.atk-Math.floor(tgt.def/2)+ri(-3,3));
+  tgt.hp=Math.max(0,tgt.hp-dmg);
+  sndAttack();
+  const idx=BT.enemies.indexOf(tgt);
+  const pos=enemyDmgPos(idx);
+  showFloatDmg(`-${dmg}`,pos.x,pos.y,'#ff9955');
+  shakeEnemy(idx);
+  logMsg(`${ally.name}のこうげき！\n${tgt.name}に${dmg}のダメージ！`,()=>{renderBattle();setTimeout(advanceTurn,350);});
 }
 
 // ============================================================
 // BATTLE: ENEMY AI
 // ============================================================
-function enemyAct(ei) {
-  const enemy = BT.enemies[ei];
-  if (!enemy||enemy.hp<=0) { advanceTurn(); return; }
-  // Paralysis
-  if (enemy.status.includes('paralysis') && Math.random()<0.5) {
-    logMsg(`${enemy.name}はまひで動けない！`, ()=>{renderBattle(); setTimeout(advanceTurn,300);}); return;
+function enemyAct(ei){
+  const enemy=BT.enemies[ei];
+  if(!enemy||enemy.hp<=0){advanceTurn();return;}
+  if(enemy.status.includes('paralysis')&&Math.random()<0.5){
+    logMsg(`${enemy.name}はまひで動けない！`,()=>{renderBattle();setTimeout(advanceTurn,300);});return;
   }
-  // Final boss phase 2
-  if (BT.isFB && enemy.phase===1 && enemy.hp < enemy.maxHp*0.5) {
-    enemy.phase = 2; enemy.atk = Math.round(enemy.atk*1.3);
-    logMsg('魔王ゾルダが激怒した！ パワーアップ！', ()=>doEnemySkill(enemy));
+  if(BT.isFB&&enemy.phase===1&&enemy.hp<enemy.maxHp*0.5){
+    enemy.phase=2;enemy.atk=Math.round(enemy.atk*1.3);
+    logMsg('魔王ゾルダが激怒した！\nパワーアップ！！',()=>doEnemySkill(enemy));
     return;
   }
   doEnemySkill(enemy);
 }
+function doEnemySkill(enemy){
+  const aa=BT.allies.filter(a=>a.hp>0);
+  if(!aa.length){advanceTurn();return;}
+  const tgt=aa[Math.floor(Math.random()*aa.length)];
+  const sk=enemy.skills[Math.floor(Math.random()*enemy.skills.length)];
 
-function doEnemySkill(enemy) {
-  const aa = BT.allies.filter(a=>a.hp>0);
-  if (!aa.length) { advanceTurn(); return; }
-  const tgt = aa[Math.floor(Math.random()*aa.length)];
-  const sk = enemy.skills[Math.floor(Math.random()*enemy.skills.length)];
-
-  if (sk.effect==='dmgAll') {
+  if(sk.effect==='dmgAll'){
     const msgs=[`${enemy.name}の${sk.name}！`];
-    for (const a of BT.allies) {
-      if (a.hp<=0) continue;
-      const defV = a.isHero ? heroDef() : a.def;
-      let d = sk.power ? Math.max(1, sk.power - Math.floor(defV/3) + ri(-5,5)) :
-              Math.max(1, enemy.atk - Math.floor(defV/2) + ri(-5,5));
-      a.hp = Math.max(0,a.hp-d);
+    for(const a of BT.allies){
+      if(a.hp<=0)continue;
+      const defV=a.isHero?heroDef():a.def;
+      let d=sk.power?Math.max(1,sk.power-Math.floor(defV/3)+ri(-5,5)):Math.max(1,enemy.atk-Math.floor(defV/2)+ri(-5,5));
+      a.hp=Math.max(0,a.hp-d);
       if(a.isHero)G.hero.hp=a.hp;
       if(sk.status)addStatus(a,sk.status);
-      msgs.push(`${a.name}に${d}ダメージ！`);
+      msgs.push(`${a.name}に${d}のダメージ！`);
     }
-    seqLog(msgs, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+    sndHit();
+    flashPlayer();
+    seqLog(msgs,()=>{renderBattle();setTimeout(advanceTurn,350);});
   } else {
-    const defV = tgt.isHero ? heroDef() : tgt.def;
+    const defV=tgt.isHero?heroDef():tgt.def;
     let dmg;
-    if (sk.atkMult) dmg = Math.max(1, Math.round(enemy.atk*sk.atkMult) - Math.floor(defV/3) + ri(-5,5));
-    else if (sk.power) dmg = Math.max(1, sk.power - Math.floor(defV/3) + ri(-5,5));
-    else dmg = Math.max(1, enemy.atk - Math.floor(defV/2) + ri(-5,5));
-    tgt.hp = Math.max(0,tgt.hp-dmg);
+    if(sk.atkMult)dmg=Math.max(1,Math.round(enemy.atk*sk.atkMult)-Math.floor(defV/3)+ri(-5,5));
+    else if(sk.power)dmg=Math.max(1,sk.power-Math.floor(defV/3)+ri(-5,5));
+    else dmg=Math.max(1,enemy.atk-Math.floor(defV/2)+ri(-5,5));
+    tgt.hp=Math.max(0,tgt.hp-dmg);
     if(tgt.isHero)G.hero.hp=tgt.hp;
     if(sk.status)addStatus(tgt,sk.status);
-    logMsg(`${enemy.name}の${sk.name}！ ${tgt.name}に${dmg}ダメージ！`, ()=>{renderBattle(); setTimeout(advanceTurn,400);});
+    sndHit();
+    if(tgt.isHero)flashPlayer();
+    // Show floating damage on player HUD area
+    showFloatDmg(`-${dmg}`,70,130,'#ff4444');
+    logMsg(`${enemy.name}の${sk.name}！\n${tgt.name}に${dmg}のダメージ！`,()=>{renderBattle();setTimeout(advanceTurn,350);});
   }
 }
 
-function addStatus(unit, st) {
-  if (!unit.status) unit.status=[];
-  if (!unit.status.includes(st)) unit.status.push(st);
+function addStatus(unit,st){
+  if(!unit.status)unit.status=[];
+  if(!unit.status.includes(st))unit.status.push(st);
 }
 
 // ============================================================
 // BATTLE: RESULTS
 // ============================================================
-function endVictory() {
-  battleOver = true;
-  let totalExp=0, totalGold=0;
-  for (const e of BT.enemies) { totalExp+=e.exp||0; totalGold+=e.gold||0; }
-  G.gold += totalGold;
-  G.totalBattles = (G.totalBattles||0)+1;
-
-  // Sync hero
-  G.hero.hp = BT.allies[0].hp;
-  G.hero.mp = BT.allies[0].mp;
-  G.hero.status = [...(BT.allies[0].status||[])];
-  G.hero.exp += totalExp;
-
-  // Sync party
-  for (let i=0;i<G.party.length;i++) {
-    if (BT.allies[i+1]) {
-      G.party[i].hp = BT.allies[i+1].hp;
-      G.party[i].status = [...(BT.allies[i+1].status||[])];
-    }
+function endVictory(){
+  battleOver=true;
+  let totalExp=0,totalGold=0;
+  for(const e of BT.enemies){totalExp+=e.exp||0;totalGold+=e.gold||0;}
+  G.gold+=totalGold;
+  G.totalBattles=(G.totalBattles||0)+1;
+  G.hero.hp=BT.allies[0].hp;
+  G.hero.mp=BT.allies[0].mp;
+  G.hero.status=[...(BT.allies[0].status||[])];
+  G.hero.exp+=totalExp;
+  for(let i=0;i<G.party.length;i++){
+    if(BT.allies[i+1]){G.party[i].hp=BT.allies[i+1].hp;G.party[i].status=[...(BT.allies[i+1].status||[])];}
   }
+  if(BT.isBoss&&!BT.isFB&&BT.area&&BT.area.boss.unlocks>G.unlockedAreas)
+    G.unlockedAreas=BT.area.boss.unlocks;
 
-  // Boss unlocks
-  if (BT.isBoss && !BT.isFB && BT.area && BT.area.boss.unlocks > G.unlockedAreas)
-    G.unlockedAreas = BT.area.boss.unlocks;
-
-  const lvMsgs = checkLevelUps();
+  const lvMsgs=checkLevelUps();
   save();
+  sndVictory();
 
-  const msgs = [`勝利！ ${totalExp}EXP・${totalGold}G獲得！`, ...lvMsgs];
-  seqLog(msgs, ()=>showVictoryPanel(totalExp, totalGold));
+  const msgs=[`てきをたおした！`,`+${totalExp}EXP  +${totalGold}G`,...lvMsgs];
+  seqLog(msgs,()=>showVictoryPanel(totalExp,totalGold));
 }
 
-function checkLevelUps() {
+function checkLevelUps(){
   const msgs=[];
-  while (G.hero.exp >= G.hero.lv*50 && G.hero.lv<20) {
-    G.hero.exp -= G.hero.lv*50;
-    G.hero.lv++;
-    G.hero.maxHp+=20; G.hero.maxMp+=8; G.hero.baseAtk+=4; G.hero.baseDef+=3; G.hero.spd+=2;
+  while(G.hero.exp>=G.hero.lv*50&&G.hero.lv<20){
+    G.hero.exp-=G.hero.lv*50;G.hero.lv++;
+    G.hero.maxHp+=20;G.hero.maxMp+=8;G.hero.baseAtk+=4;G.hero.baseDef+=3;G.hero.spd+=2;
     G.hero.hp=Math.min(G.hero.hp+20,G.hero.maxHp);
     G.hero.mp=Math.min(G.hero.mp+8,G.hero.maxMp);
-    // Sync battle ally
-    if (BT.allies&&BT.allies[0]) {
+    if(BT.allies&&BT.allies[0]){
       Object.assign(BT.allies[0],{lv:G.hero.lv,maxHp:G.hero.maxHp,maxMp:G.hero.maxMp,
         hp:G.hero.hp,mp:G.hero.mp,atk:heroAtk(),def:heroDef(),spd:G.hero.spd});
     }
-    msgs.push(`✨ ${G.hero.name}がLV${G.hero.lv}にアップ！`);
-    const ns = HERO_SKILLS.find(s=>s.lv===G.hero.lv);
-    if (ns) msgs.push(`新スキル「${ns.name}」を習得！`);
+    sndLevelUp();
+    msgs.push(`★ ${G.hero.name}はLV${G.hero.lv}にあがった！`);
+    const ns=HERO_SKILLS.find(s=>s.lv===G.hero.lv);
+    if(ns)msgs.push(`「${ns.name}」をおぼえた！`);
   }
   return msgs;
 }
 
-function showVictoryPanel(exp, gold) {
-  if (BT.isFB) {
-    G.defeatedFinalBoss=true; save();
-    setTimeout(()=>{ showEndingScreen(); startConfetti(); }, 600);
-    return;
-  }
-  const panel = document.getElementById('battle-action-panel');
-  const unlockNote = (BT.isBoss && G.unlockedAreas <= AREAS.length) ?
-    '<div class="tgr" style="font-size:13px;margin-bottom:8px">🗺️ 新エリア解放！</div>' : '';
-  if (BT.isNormal) {
-    panel.innerHTML = `<div style="text-align:center;padding:8px">
-      <div style="font-size:20px;color:#ffe870;font-weight:bold;margin-bottom:6px">⭐ 勝利！ ⭐</div>
-      <div class="tpu" style="margin-bottom:10px">+${exp}EXP &nbsp; +${gold}G</div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center;padding:0 8px 8px;flex-wrap:wrap">
-      <button class="btn btn-success" onclick="continueAdventure()">⚔️ つぎの戦い</button>
-      <button class="btn btn-gold" onclick="challengeBoss()">👹 ボスに挑む</button>
-      <button class="btn" onclick="returnToVillage()">🏠 村へ</button>
+function showVictoryPanel(exp,gold){
+  if(BT.isFB){G.defeatedFinalBoss=true;save();setTimeout(()=>{showEndingScreen();startConfetti();},700);return;}
+  const panel=document.getElementById('cmd-panel');
+  const unlockNote=(BT.isBoss&&G.unlockedAreas<=AREAS.length)?
+    '<div style="color:#60ff90;font-size:12px;font-family:monospace;text-align:center;margin-bottom:6px">✨ 新エリア解放！</div>':'';
+  if(BT.isNormal){
+    panel.innerHTML=`<div class="result-panel">
+      <div class="result-title" style="color:#ffe870">★ しょうり ★</div>
+      ${unlockNote}
+      <div class="result-btns">
+        <button class="jrpg-cmd-btn" style="padding:9px 14px" onclick="continueAdventure()">⚔️ つぎへ</button>
+        <button class="jrpg-cmd-btn" style="padding:9px 14px" onclick="challengeBoss()">👹 ボス戦</button>
+        <button class="jrpg-cmd-btn" style="padding:9px 14px" onclick="returnToVillage()">🏠 むらへ</button>
+      </div>
     </div>`;
   } else {
-    panel.innerHTML = `<div style="text-align:center;padding:8px">
-      <div style="font-size:20px;color:#ffe870;font-weight:bold;margin-bottom:6px">👑 ボス撃破！ 👑</div>
-      <div class="tpu" style="margin-bottom:6px">+${exp}EXP &nbsp; +${gold}G</div>
+    panel.innerHTML=`<div class="result-panel">
+      <div class="result-title" style="color:#ffe870">👑 ボスかつ！ 👑</div>
       ${unlockNote}
-    </div>
-    <div style="padding:0 8px 8px">
-      <button class="btn" style="width:100%" onclick="returnToVillage()">🏠 村へもどる</button>
+      <div class="result-btns">
+        <button class="jrpg-cmd-btn" style="padding:9px 22px" onclick="returnToVillage()">🏠 むらへもどる</button>
+      </div>
     </div>`;
-    startConfetti(); setTimeout(stopConfetti,4000);
+    startConfetti();setTimeout(stopConfetti,4000);
   }
   renderBattle();
 }
 
-function continueAdventure() { startBattle(BT.area,false,false); }
-function challengeBoss() { startBattle(BT.area,true,false); }
-function returnToVillage() {
-  document.getElementById('battle-action-panel').innerHTML='';
-  showScreen('village-screen');
-}
+function continueAdventure(){clearActions();startBattle(BT.area,false,false);}
+function challengeBoss(){clearActions();startBattle(BT.area,true,false);}
+function returnToVillage(){clearActions();showScreen('village-screen');}
 
-function endDefeat() {
+function endDefeat(){
   battleOver=true;
-  logMsg('パーティが全滅した...', ()=>{
-    document.getElementById('battle-action-panel').innerHTML=`
-      <div style="text-align:center;padding:10px">
-        <div style="font-size:20px;color:#ff6060;font-weight:bold;margin-bottom:6px">💀 ゲームオーバー</div>
-        <div style="color:#8070c0;font-size:13px;margin-bottom:12px">村に戻り半分のHPで再開します</div>
+  sndGameOver();
+  logMsg('パーティがぜんめつした...',()=>{
+    document.getElementById('cmd-panel').innerHTML=`<div class="result-panel">
+      <div class="result-title" style="color:#ff6060">💀 ゲームオーバー 💀</div>
+      <div style="font-size:12px;color:#8070c0;font-family:monospace;text-align:center;margin-bottom:8px">むらにもどりHPが半分で再開します</div>
+      <div class="result-btns">
+        <button class="jrpg-cmd-btn" style="padding:9px 22px" onclick="continueFromDefeat()">🏠 むらへもどる</button>
       </div>
-      <div style="padding:0 8px 8px">
-        <button class="btn" style="width:100%" onclick="continueFromDefeat()">🏠 村へもどる</button>
-      </div>`;
+    </div>`;
   });
 }
 
-function continueFromDefeat() {
-  G.hero.hp = Math.max(1, Math.floor(G.hero.maxHp*0.5));
-  G.hero.mp = Math.floor(G.hero.maxMp*0.5);
+function continueFromDefeat(){
+  G.hero.hp=Math.max(1,Math.floor(G.hero.maxHp*0.5));
+  G.hero.mp=Math.floor(G.hero.maxMp*0.5);
   G.hero.status=[];
-  for (const m of G.party) { m.hp=Math.max(1,Math.floor(m.maxHp*0.5)); m.status=[]; }
-  save();
-  document.getElementById('battle-action-panel').innerHTML='';
-  showScreen('village-screen');
-}
-
-// ============================================================
-// BATTLE: LOG
-// ============================================================
-function logMsg(msg, cb) {
-  const log = document.getElementById('battle-log');
-  const line = document.createElement('div');
-  line.textContent = msg;
-  line.style.cssText = 'opacity:0;transition:opacity 0.3s';
-  log.appendChild(line);
-  while (log.children.length>5) log.removeChild(log.firstChild);
-  log.scrollTop = log.scrollHeight;
-  setTimeout(()=>line.style.opacity='1', 30);
-  if (cb) setTimeout(cb, 600);
-}
-
-function seqLog(msgs, finalCb) {
-  let i=0;
-  function next() {
-    if (i>=msgs.length) { if(finalCb) finalCb(); return; }
-    logMsg(msgs[i++], next);
-  }
-  next();
+  for(const m of G.party){m.hp=Math.max(1,Math.floor(m.maxHp*0.5));m.status=[];}
+  save();clearActions();showScreen('village-screen');
 }
 
 // ============================================================
 // SHOP
 // ============================================================
-function renderShop() {
+function renderShop(){
   let h=`<div class="gold-display">💰 所持金: ${G.gold}G</div>`;
   h+='<div class="tg" style="font-weight:bold;margin-bottom:8px">▼ アイテム</div>';
-  for (const it of ITEMS) {
-    const cnt = G.inventory[it.id]||0;
+  for(const it of ITEMS){
+    const cnt=G.inventory[it.id]||0;
     h+=`<div class="shop-row">
       <div><span style="font-size:15px">${it.emoji}</span>
         <span style="margin-left:6px">${it.name}</span>
@@ -1419,9 +1699,9 @@ function renderShop() {
       </div></div>`;
   }
   h+='<hr class="sep"><div class="tg" style="font-weight:bold;margin:8px 0">▼ 装備 (勇者用)</div>';
-  for (const eq of EQUIPMENT) {
-    const owned = G.hero.weapon===eq.id||G.hero.armor===eq.id;
-    const stat = eq.atk>0?`ATK+${eq.atk}`:`DEF+${eq.def}`;
+  for(const eq of EQUIPMENT){
+    const owned=G.hero.weapon===eq.id||G.hero.armor===eq.id;
+    const stat=eq.atk>0?`ATK+${eq.atk}`:`DEF+${eq.def}`;
     h+=`<div class="shop-row">
       <div><span style="font-size:15px">${eq.emoji}</span>
         <span style="margin-left:6px">${eq.name}</span>
@@ -1433,28 +1713,23 @@ function renderShop() {
         <button class="btn" style="padding:4px 10px" onclick="buyEquip('${eq.id}',${eq.price})" ${(G.gold<eq.price||owned)?'disabled':''}>買う</button>
       </div></div>`;
   }
-  document.getElementById('shop-content').innerHTML = h;
+  document.getElementById('shop-content').innerHTML=h;
 }
-
-function buyItem(id, price) {
-  if (G.gold<price) return;
-  G.gold-=price; G.inventory[id]=(G.inventory[id]||0)+1; save(); renderShop();
-}
-function buyEquip(id, price) {
-  if (G.gold<price) return;
-  const eq=EQUIPMENT.find(e=>e.id===id);
-  G.gold-=price;
-  if (eq.type==='weapon') G.hero.weapon=id; else G.hero.armor=id;
-  save(); renderShop();
+function buyItem(id,price){if(G.gold<price)return;G.gold-=price;G.inventory[id]=(G.inventory[id]||0)+1;save();renderShop();}
+function buyEquip(id,price){
+  if(G.gold<price)return;
+  const eq=EQUIPMENT.find(e=>e.id===id);G.gold-=price;
+  if(eq.type==='weapon')G.hero.weapon=id;else G.hero.armor=id;
+  save();renderShop();
 }
 
 // ============================================================
 // PARTY
 // ============================================================
-function renderParty() {
+function renderParty(){
   const h=G.hero;
-  const wp = h.weapon ? EQUIPMENT.find(e=>e.id===h.weapon) : null;
-  const ar = h.armor  ? EQUIPMENT.find(e=>e.id===h.armor)  : null;
+  const wp=h.weapon?EQUIPMENT.find(e=>e.id===h.weapon):null;
+  const ar=h.armor?EQUIPMENT.find(e=>e.id===h.armor):null;
   let html=`<div class="party-card">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <span style="font-size:30px">${h.emoji}</span>
@@ -1471,11 +1746,9 @@ function renderParty() {
       🗡️ 武器: ${wp?wp.emoji+wp.name:'なし'} &nbsp; 🛡️ 防具: ${ar?ar.emoji+ar.name:'なし'}
     </div>
   </div>`;
-
   html+=`<div class="tg" style="font-weight:bold;margin:8px 0">パーティモンスター (${G.party.length}/2)</div>`;
-  if (!G.party.length) html+='<p style="color:#8070c0;font-size:13px;margin-bottom:10px">バトルでモンスターを捕まえよう！</p>';
-
-  for (let i=0;i<G.party.length;i++) {
+  if(!G.party.length)html+='<p style="color:#8070c0;font-size:13px;margin-bottom:10px">バトルでモンスターをつかまえよう！</p>';
+  for(let i=0;i<G.party.length;i++){
     const m=G.party[i];
     html+=`<div class="party-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -1491,21 +1764,19 @@ function renderParty() {
       <div style="font-size:12px;color:#8070c0;margin-top:5px">スキル: ${m.skills.map(s=>s.name).join('・')}</div>
     </div>`;
   }
-
   html+='<div class="tg" style="font-weight:bold;margin:8px 0">勇者スキル一覧</div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
-  for (const sk of HERO_SKILLS) {
-    const ok = sk.lv<=h.lv;
+  for(const sk of HERO_SKILLS){
+    const ok=sk.lv<=h.lv;
     html+=`<div style="background:#05010f;border:1px solid ${ok?'#5040a0':'#1a0a40'};border-radius:8px;padding:6px;font-size:12px;opacity:${ok?1:0.4}">
       ${ok?'✅':'🔒'} <strong>${sk.name}</strong>
       <div style="color:#8070c0;font-size:11px">LV${sk.lv} / MP:${sk.mp}</div>
     </div>`;
   }
   html+='</div>';
-  document.getElementById('party-content').innerHTML = html;
+  document.getElementById('party-content').innerHTML=html;
 }
-
-function releaseMon(idx) {
+function releaseMon(idx){
   const m=G.party[idx];
   showOverlay(`<div style="font-size:16px;margin-bottom:12px">⚠️ 確認</div>
     <p style="margin-bottom:16px">${m.emoji}${m.name}を解放しますか？</p>
@@ -1514,18 +1785,16 @@ function releaseMon(idx) {
       <button class="btn" onclick="hideOverlay()">キャンセル</button>
     </div>`);
 }
-function doReleaseMon(idx) {
-  G.party.splice(idx,1); save(); hideOverlay(); renderParty();
-}
+function doReleaseMon(idx){G.party.splice(idx,1);save();hideOverlay();renderParty();}
 
 // ============================================================
 // ENCYCLOPEDIA
 // ============================================================
-function renderEncyclopedia() {
-  const ct = G.caughtMonsters||[];
+function renderEncyclopedia(){
+  const ct=G.caughtMonsters||[];
   let h=`<div style="color:#8070c0;font-size:12px;margin-bottom:10px">捕まえたモンスター: ${ct.length}/${MONSTER_TYPES.length}</div>`;
-  for (const t of MONSTER_TYPES) {
-    const ok = ct.includes(t.id);
+  for(const t of MONSTER_TYPES){
+    const ok=ct.includes(t.id);
     h+=`<div class="monster-entry ${ok?'caught':'uncaught'}">
       <span style="font-size:28px">${ok?t.emoji:'❓'}</span>
       <div style="flex:1">
@@ -1538,15 +1807,15 @@ function renderEncyclopedia() {
       ${ok?'<span class="tgr">✅</span>':''}
     </div>`;
   }
-  document.getElementById('encyclopedia-content').innerHTML = h;
+  document.getElementById('encyclopedia-content').innerHTML=h;
 }
 
 // ============================================================
 // ENDING
 // ============================================================
-function showEndingScreen() {
+function showEndingScreen(){
   showScreen('ending-screen');
-  document.getElementById('ending-content').innerHTML = `
+  document.getElementById('ending-content').innerHTML=`
     <div class="ending-title">🎉 ゲームクリア！ 🎉</div>
     <div style="font-size:48px;margin:16px 0">🏆</div>
     <p class="tpu" style="margin-bottom:12px">おめでとう！魔王ゾルダを倒し、世界に平和が戻った！</p>
@@ -1565,11 +1834,11 @@ function showEndingScreen() {
 // ============================================================
 // INIT
 // ============================================================
-window.addEventListener('resize', initStars);
+window.addEventListener('resize',initStars);
 initStars();
 drawStars();
 
-// Touch fix: global tracker + delegation for all interactive elements
+// Touch fix
 (function(){
   let txM=false,txX=0,txY=0;
   document.addEventListener('touchstart',e=>{
@@ -1594,14 +1863,14 @@ drawStars();
   const app=document.getElementById('app');
   const ov=document.getElementById('overlay');
   const ab=document.getElementById('action-bar');
-  if(app) addDel(app,'.btn,.village-card,.area-card');
-  if(ov)  addDel(ov,'.btn');
-  if(ab)  addDel(ab,'.btn');
+  if(app)addDel(app,'.btn,.village-card,.area-card,.jrpg-cmd-btn,.jrpg-subitem,.jrpg-back-btn');
+  if(ov)addDel(ov,'.btn');
+  if(ab)addDel(ab,'.btn');
 })();
 
 renderTitle();
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
-window.addEventListener('beforeunload', ()=>{ saveGame(); });
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
+window.addEventListener('beforeunload',()=>{saveGame();});
 </script>
 <script id="home-nav-js">
 (function(){
@@ -1616,5 +1885,6 @@ window.addEventListener('beforeunload', ()=>{ saveGame(); });
     upd();
   }
 })();
-</script></body>
+</script>
+</body>
 </html>

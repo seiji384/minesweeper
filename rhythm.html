@@ -529,7 +529,7 @@ function startGame(idx){
   allStages=false;
   score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;
   document.getElementById('menu-screen').style.display='none';
-  document.getElementById('game-area').style.display='';
+  document.getElementById('game-area').style.display='block';
   document.getElementById('end-screen').style.display='none';
   document.getElementById('stage-progress').style.display='none';
   updateLEDs();
@@ -543,7 +543,7 @@ function startAllStages(){
   stageIdx=0;
   score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;
   document.getElementById('menu-screen').style.display='none';
-  document.getElementById('game-area').style.display='';
+  document.getElementById('game-area').style.display='block';
   document.getElementById('end-screen').style.display='none';
   const sp=document.getElementById('stage-progress');
   sp.style.display='flex';
@@ -641,7 +641,7 @@ function onGameEnd(){
       if(endlessCount>best)localStorage.setItem('rhythm_endless_best',endlessCount);
       document.getElementById('game-area').style.display='none';
       const es=document.getElementById('end-screen');
-      es.style.display='';
+      es.style.display='block';
       document.getElementById('end-emoji').textContent='💦';
       document.getElementById('end-rank-text').textContent='エンドレス終了！';
       document.getElementById('end-rank-text').style.color='#ff6688';
@@ -681,7 +681,7 @@ function showBriefEnd(rank,emoji,cb){
 function showEndScreen(rank,emoji){
   document.getElementById('game-area').style.display='none';
   const es=document.getElementById('end-screen');
-  es.style.display='';
+  es.style.display='block';
   document.getElementById('end-emoji').textContent=emoji;
   document.getElementById('end-rank-text').textContent=rank;
   document.getElementById('end-rank-text').style.color=rank==='パーフェクト！'?'#ffe870':rank==='グレート！'?'#44ffaa':rank==='OK！'?'#88aaff':'#ff6688';
@@ -1515,7 +1515,7 @@ function startRandom(n){
   endlessMode=false; allStages=false;
   score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;judgments=[];
   document.getElementById('menu-screen').style.display='none';
-  document.getElementById('game-area').style.display='';
+  document.getElementById('game-area').style.display='block';
   document.getElementById('end-screen').style.display='none';
   document.getElementById('stage-progress').style.display='none';
   updateLEDs();
@@ -1529,7 +1529,7 @@ function startEndless(){
   randomMode=false; allStages=false;
   score=0;perfects=0;goods=0;misses=0;combo=0;maxCombo=0;judgments=[];
   document.getElementById('menu-screen').style.display='none';
-  document.getElementById('game-area').style.display='';
+  document.getElementById('game-area').style.display='block';
   document.getElementById('end-screen').style.display='none';
   document.getElementById('stage-progress').style.display='none';
   updateLEDs();
@@ -1605,7 +1605,7 @@ function updateDribble(elapsed,audioNow){
   // check for missed events
   dEvents.forEach(ev=>{
     if(!ev.judged&&audioNow>ev.tapTime+0.15){
-      ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();
+      ev.judged=true;misses++;combo=0;addJudgment('MISS','#ff4466',W/2,H/2);updateLEDs();
     }
   });
   if(!dDone&&dEvents.every(e=>e.judged)){dDone=true;setTimeout(onGameEnd,600);}
@@ -1622,7 +1622,7 @@ function dribbleTap(audioNow){
     else{misses++;combo=0;}
     if(combo>maxCombo)maxCombo=combo;
     const cv=canvas,W=cv.width,H=cv.height;
-    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466',W/2,H/2-60);
     updateLEDs();
   }
 }
@@ -1705,7 +1705,7 @@ function updatePiano(elapsed,audioNow){
   // mark played events
   pianoEvents.forEach(ev=>{
     if(ev.type==='play'&&!ev.done&&audioNow>=ev.time){ev.done=true;pianoKeyFlash=[ev.key,8];}
-    if(ev.type==='tap'&&!ev.judged&&audioNow>ev.time+0.5){ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();}
+    if(ev.type==='tap'&&!ev.judged&&audioNow>ev.time+0.5){ev.judged=true;misses++;combo=0;addJudgment('MISS','#ff4466',W/2,H/2);updateLEDs();}
   });
   drawJudgments();
   if(!pianoDone&&pianoEvents.every(e=>e.done||e.judged)){pianoDone=true;setTimeout(onGameEnd,600);}
@@ -1730,11 +1730,11 @@ function pianoTap(audioNow,key){
     else if(j==='good'){goods++;combo++;score+=50;}
     else{misses++;combo=0;}
     if(combo>maxCombo)maxCombo=combo;
-    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466',W/2,H/2-60);
     updateLEDs();
   } else if(key!==next.key){
     next.judged=true;misses++;combo=0;
-    addJudgment('MISS',W/2,H/2-60,'#ff4466');updateLEDs();
+    addJudgment('MISS','#ff4466',W/2,H/2-60);updateLEDs();
   }
 }
 
@@ -1800,7 +1800,7 @@ function updateChick(elapsed,audioNow){
   ctx2.fillStyle='#ffe870';ctx2.fillText('🐤 ひよこ行進',W/2,16);
   drawJudgments();
   chickEvents.forEach(ev=>{
-    if(!ev.judged&&audioNow>ev.tapTime+0.15){ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();}
+    if(!ev.judged&&audioNow>ev.tapTime+0.15){ev.judged=true;misses++;combo=0;addJudgment('MISS','#ff4466',W/2,H/2);updateLEDs();}
   });
   if(!chickDone&&chickEvents.every(e=>e.judged)){chickDone=true;setTimeout(onGameEnd,600);}
 }
@@ -1816,7 +1816,7 @@ function chickTap(audioNow){
     else{misses++;combo=0;}
     if(combo>maxCombo)maxCombo=combo;
     const W=canvas.width,H=canvas.height;
-    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466',W/2,H/2-60);
     updateLEDs();
   }
 }
@@ -1878,7 +1878,7 @@ function updateSinger(elapsed,audioNow){
   ctx2.fillStyle='#ff88cc';ctx2.fillText('🎤 歌手',W/2,16);
   drawJudgments();
   singerEvents.forEach(ev=>{
-    if(!ev.judged&&audioNow>ev.tapTime+0.15){ev.judged=true;misses++;combo=0;addJudgment('MISS',W/2,H/2,'#ff4466');updateLEDs();}
+    if(!ev.judged&&audioNow>ev.tapTime+0.15){ev.judged=true;misses++;combo=0;addJudgment('MISS','#ff4466',W/2,H/2);updateLEDs();}
   });
   if(!singerDone&&singerEvents.every(e=>e.judged)){singerDone=true;setTimeout(onGameEnd,600);}
 }
@@ -1894,7 +1894,7 @@ function singerTap(audioNow){
     else{misses++;combo=0;}
     if(combo>maxCombo)maxCombo=combo;
     const W=canvas.width,H=canvas.height;
-    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',W/2,H/2-60,j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466');
+    addJudgment(j==='perfect'?'PERFECT!':j==='good'?'GOOD':'MISS',j==='perfect'?'#ffe870':j==='good'?'#44ffaa':'#ff4466',W/2,H/2-60);
     updateLEDs();
   }
 }
