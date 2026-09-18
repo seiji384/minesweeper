@@ -270,6 +270,7 @@ body {
       <div id="question-num">Q1</div>
       <div id="question-text">問題文</div>
     </div>
+    <div id="char-hint" style="display:none;text-align:center;letter-spacing:8px;font-size:20px;color:rgba(255,255,255,0.5);margin:4px 0"></div>
     <div id="options"></div>
     <div id="input-wrap" style="display:none">
       <input id="answer-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="答えを入力...">
@@ -595,13 +596,134 @@ const CATEGORIES = [
   }
 ];
 
+// ===== INPUT MODE QUESTION BANK =====
+const INPUT_DB = [
+  // 国・地理
+  {q:'日本の首都は？', a:'東京', cat:'国・地理'},
+  {q:'世界で一番高い山は？', a:'エベレスト', cat:'国・地理'},
+  {q:'世界で一番長い川は？', a:'ナイル川', cat:'国・地理'},
+  {q:'アメリカの首都は？', a:'ワシントンDC', cat:'国・地理'},
+  {q:'フランスの首都は？', a:'パリ', cat:'国・地理'},
+  {q:'中国の首都は？', a:'北京', cat:'国・地理'},
+  {q:'オーストラリアの首都は？', a:'キャンベラ', cat:'国・地理'},
+  {q:'世界で一番面積が大きい国は？', a:'ロシア', cat:'国・地理'},
+  {q:'世界で一番人口が多い国は？', a:'インド', cat:'国・地理'},
+  {q:'日本で一番高い山は？', a:'富士山', cat:'国・地理'},
+  {q:'日本で一番長い川は？', a:'信濃川', cat:'国・地理'},
+  {q:'日本で一番大きい湖は？', a:'琵琶湖', cat:'国・地理'},
+  {q:'日本で一番面積が大きい都道府県は？', a:'北海道', cat:'国・地理'},
+  {q:'日本で一番面積が小さい都道府県は？', a:'香川県', cat:'国・地理'},
+  {q:'世界で一番大きい海は？', a:'太平洋', cat:'国・地理'},
+  {q:'アフリカ最高峰の山は？', a:'キリマンジャロ', cat:'国・地理'},
+  {q:'イタリアの首都は？', a:'ローマ', cat:'国・地理'},
+  {q:'スペインの首都は？', a:'マドリード', cat:'国・地理'},
+  {q:'エジプトの首都は？', a:'カイロ', cat:'国・地理'},
+  {q:'ブラジルの首都は？', a:'ブラジリア', cat:'国・地理'},
+  // 動物・生き物
+  {q:'地球上で最も大きい動物は？', a:'シロナガスクジラ', cat:'動物・生き物'},
+  {q:'地球上で最も速い陸上動物は？', a:'チーター', cat:'動物・生き物'},
+  {q:'タコは足が何本ある？', a:'8本', cat:'動物・生き物'},
+  {q:'カニは足が何本ある？', a:'10本', cat:'動物・生き物'},
+  {q:'人間の永久歯は何本ある？', a:'32本', cat:'動物・生き物'},
+  {q:'世界最大の魚は？', a:'ジンベエザメ', cat:'動物・生き物'},
+  {q:'コアラが主に食べる葉は？', a:'ユーカリ', cat:'動物・生き物'},
+  {q:'パンダの主食は？', a:'タケ', cat:'動物・生き物'},
+  {q:'クモの足は何本？', a:'8本', cat:'動物・生き物'},
+  {q:'タコの心臓は何個？', a:'3個', cat:'動物・生き物'},
+  // 食べ物
+  {q:'カレーライスの発祥国は？', a:'インド', cat:'食べ物'},
+  {q:'チョコレートの原料となる豆は？', a:'カカオ', cat:'食べ物'},
+  {q:'日本酒の原料は？', a:'米', cat:'食べ物'},
+  {q:'豆腐の原料は？', a:'大豆', cat:'食べ物'},
+  {q:'コーヒーはどこの国が原産？', a:'エチオピア', cat:'食べ物'},
+  {q:'ピザの発祥国は？', a:'イタリア', cat:'食べ物'},
+  {q:'寿司のシャリとは何のことか？', a:'酢飯', cat:'食べ物'},
+  {q:'抹茶の原料は？', a:'緑茶', cat:'食べ物'},
+  {q:'醤油の主な原料は？', a:'大豆', cat:'食べ物'},
+  {q:'テキーラの原料は？', a:'アガベ', cat:'食べ物'},
+  // 日本語・漢字
+  {q:'「薔薇」の読みは？', a:'ばら', cat:'日本語・漢字'},
+  {q:'「向日葵」の読みは？', a:'ひまわり', cat:'日本語・漢字'},
+  {q:'「海豚」の読みは？', a:'いるか', cat:'日本語・漢字'},
+  {q:'「河豚」の読みは？', a:'ふぐ', cat:'日本語・漢字'},
+  {q:'「蛍」の読みは？', a:'ほたる', cat:'日本語・漢字'},
+  {q:'「牡蠣」の読みは？', a:'かき', cat:'日本語・漢字'},
+  {q:'「憂鬱」の読みは？', a:'ゆううつ', cat:'日本語・漢字'},
+  {q:'「鸚鵡」の読みは？', a:'おうむ', cat:'日本語・漢字'},
+  {q:'「林檎」の読みは？', a:'りんご', cat:'日本語・漢字'},
+  {q:'「蒲公英」の読みは？', a:'たんぽぽ', cat:'日本語・漢字'},
+  {q:'「蝶」の読みは？', a:'ちょう', cat:'日本語・漢字'},
+  {q:'「狐」の読みは？', a:'きつね', cat:'日本語・漢字'},
+  {q:'「鰐」の読みは？', a:'わに', cat:'日本語・漢字'},
+  {q:'「石榴」の読みは？', a:'ざくろ', cat:'日本語・漢字'},
+  {q:'「土筆」の読みは？', a:'つくし', cat:'日本語・漢字'},
+  // スポーツ・雑学
+  {q:'サッカーのワールドカップは何年ごとに行われる？', a:'4年', cat:'スポーツ・雑学'},
+  {q:'オリンピックは何年ごとに行われる？', a:'4年', cat:'スポーツ・雑学'},
+  {q:'バスケットボールで1チームは何人？', a:'5人', cat:'スポーツ・雑学'},
+  {q:'テニスで40対40になることを何という？', a:'デュース', cat:'スポーツ・雑学'},
+  {q:'マラソンの距離は何km？', a:'42.195km', cat:'スポーツ・雑学'},
+  {q:'大相撲の最高位は？', a:'横綱', cat:'スポーツ・雑学'},
+  {q:'野球で9回を締めくくる投手を何という？', a:'クローザー', cat:'スポーツ・雑学'},
+  {q:'バレーボールの1チームは何人？', a:'6人', cat:'スポーツ・雑学'},
+  {q:'テニスのサービスが2回連続でフォルトになることを何という？', a:'ダブルフォルト', cat:'スポーツ・雑学'},
+  {q:'人間の骨は全部で何本？', a:'206本', cat:'スポーツ・雑学'},
+  // 日本の歴史
+  {q:'江戸幕府を開いた人物は？', a:'徳川家康', cat:'日本の歴史'},
+  {q:'日本で最初の武家政権を開いた人物は？', a:'源頼朝', cat:'日本の歴史'},
+  {q:'織田信長が家臣に討たれた事件を何という？', a:'本能寺の変', cat:'日本の歴史'},
+  {q:'第二次世界大戦で日本が降伏した年は？', a:'1945年', cat:'日本の歴史'},
+  {q:'日本の初代内閣総理大臣は？', a:'伊藤博文', cat:'日本の歴史'},
+  {q:'平安京は現在の何市？', a:'京都市', cat:'日本の歴史'},
+  {q:'日露戦争が始まった年は？', a:'1904年', cat:'日本の歴史'},
+  {q:'江戸幕府が開かれたのは何年？', a:'1603年', cat:'日本の歴史'},
+  {q:'明治維新が起きたのは何年？', a:'1868年', cat:'日本の歴史'},
+  {q:'江戸幕府最後の将軍は？', a:'徳川慶喜', cat:'日本の歴史'},
+  // 理科・サイエンス
+  {q:'水の化学式は？', a:'H2O', cat:'理科・サイエンス'},
+  {q:'光の速さは秒速何km？', a:'30万km', cat:'理科・サイエンス'},
+  {q:'太陽系で一番大きい惑星は？', a:'木星', cat:'理科・サイエンス'},
+  {q:'植物が光合成で吸収するガスは？', a:'二酸化炭素', cat:'理科・サイエンス'},
+  {q:'血液中で酸素を運ぶ成分は？', a:'ヘモグロビン', cat:'理科・サイエンス'},
+  {q:'元素記号Auは何の元素？', a:'金', cat:'理科・サイエンス'},
+  {q:'元素記号Feは何の元素？', a:'鉄', cat:'理科・サイエンス'},
+  {q:'ダイヤモンドの主成分は？', a:'炭素', cat:'理科・サイエンス'},
+  {q:'原子番号1番の元素は？', a:'水素', cat:'理科・サイエンス'},
+  {q:'ヒトの染色体は何本？', a:'46本', cat:'理科・サイエンス'},
+  // 世界の常識
+  {q:'国連本部はどこの国にある？', a:'アメリカ', cat:'世界の常識'},
+  {q:'ノーベル賞の授賞式が行われる国は？', a:'スウェーデン', cat:'世界の常識'},
+  {q:'英語で「ありがとう」は？', a:'Thank you', cat:'世界の常識'},
+  {q:'フランス語で「こんにちは」は？', a:'Bonjour', cat:'世界の常識'},
+  {q:'世界遺産の登録を行う機関は？', a:'ユネスコ', cat:'世界の常識'},
+  {q:'キリスト教の聖典の名前は？', a:'聖書', cat:'世界の常識'},
+  {q:'イスラム教の聖典の名前は？', a:'コーラン', cat:'世界の常識'},
+  {q:'ヨーロッパの共通通貨は？', a:'ユーロ', cat:'世界の常識'},
+  {q:'世界一面積が小さい国は？', a:'バチカン', cat:'世界の常識'},
+  {q:'オリンピックの発祥の地は？', a:'ギリシャ', cat:'世界の常識'},
+  // 数学・計算
+  {q:'1＋1は？', a:'2', cat:'数学・計算'},
+  {q:'3×3は？', a:'9', cat:'数学・計算'},
+  {q:'100÷4は？', a:'25', cat:'数学・計算'},
+  {q:'2の10乗は？', a:'1024', cat:'数学・計算'},
+  {q:'円周率πは小数第2位まで？（3.〇〇）', a:'3.14', cat:'数学・計算'},
+  {q:'正三角形の内角は何度？', a:'60度', cat:'数学・計算'},
+  {q:'直角は何度？', a:'90度', cat:'数学・計算'},
+  {q:'1kmは何m？', a:'1000m', cat:'数学・計算'},
+  {q:'1時間は何秒？', a:'3600秒', cat:'数学・計算'},
+  {q:'素数で最も小さい数は？', a:'2', cat:'数学・計算'},
+  {q:'5の階乗（5!）は？', a:'120', cat:'数学・計算'},
+  {q:'1+2+3+…+100の合計は？', a:'5050', cat:'数学・計算'},
+];
+
 // ===== GAME STATE =====
 const G = {
   round:0, qi:0, wrongs:0, consecutive:0, maxConsecutive:0,
   totalCorrect:0, totalWrong:0, roundsCleared:0,
   timer:null, timeLeft:30, answered:false,
   currentCat:null, questions:[], usedCatIndices:[],
-  mode:'choice'
+  mode:'choice',
+  inputAttempts: 0
 };
 
 function showScreen(id) {
@@ -622,14 +744,22 @@ function startGame() {
 
 function startRound() {
   G.wrongs=0; G.consecutive=0; G.qi=0;
-  // Pick unused category index
-  const available = CATEGORIES.map((_,i)=>i).filter(i=>!G.usedCatIndices.includes(i));
-  const pick = available.length > 0
-    ? available[Math.floor(Math.random()*available.length)]
-    : Math.floor(Math.random()*CATEGORIES.length);
-  G.usedCatIndices.push(pick);
-  G.currentCat = CATEGORIES[pick];
-  G.questions = [...G.currentCat.qs].sort(()=>Math.random()-0.5);
+
+  if (G.mode === 'input') {
+    // Use INPUT_DB for input mode — shuffle and take up to 20 questions per round
+    const pool = [...INPUT_DB].sort(() => Math.random() - 0.5);
+    G.questions = pool.slice(0, Math.min(20, pool.length));
+    G.currentCat = { name: '⌨️ 入力式クイズ' };
+  } else {
+    // Pick unused category index
+    const available = CATEGORIES.map((_,i)=>i).filter(i=>!G.usedCatIndices.includes(i));
+    const pick = available.length > 0
+      ? available[Math.floor(Math.random()*available.length)]
+      : Math.floor(Math.random()*CATEGORIES.length);
+    G.usedCatIndices.push(pick);
+    G.currentCat = CATEGORIES[pick];
+    G.questions = [...G.currentCat.qs].sort(()=>Math.random()-0.5);
+  }
 
   document.getElementById('cat-name').textContent = G.currentCat.name;
   document.getElementById('round-info').textContent = `ラウンド ${G.round+1}/5`;
@@ -643,6 +773,7 @@ function showQuestion() {
     roundClear(); return;
   }
   G.answered = false;
+  G.inputAttempts = 0;
   const q = G.questions[G.qi];
   document.getElementById('question-num').textContent = `Q${G.qi+1}`;
   document.getElementById('question-text').textContent = q.q;
@@ -650,10 +781,12 @@ function showQuestion() {
 
   const optsEl = document.getElementById('options');
   const inputWrap = document.getElementById('input-wrap');
+  const charHintEl = document.getElementById('char-hint');
 
   if (G.mode === 'choice' && q.opts) {
     optsEl.style.display = 'grid';
     inputWrap.style.display = 'none';
+    charHintEl.style.display = 'none';
     optsEl.innerHTML = '';
     const shuffled = [...q.opts].sort(() => Math.random() - 0.5);
     shuffled.forEach(opt => {
@@ -667,8 +800,22 @@ function showQuestion() {
     // input mode (or no opts available)
     optsEl.style.display = 'none';
     inputWrap.style.display = 'flex';
-    document.getElementById('answer-input').value = '';
-    setTimeout(() => document.getElementById('answer-input').focus(), 100);
+    const inputEl = document.getElementById('answer-input');
+    inputEl.value = '';
+    inputEl.style.borderColor = '';
+
+    // Show character count hint as underscores
+    const answerLen = q.a.replace(/[・（）()「」【】\s]/g, '').length;
+    charHintEl.textContent = '＿'.repeat(answerLen);
+    charHintEl.style.display = 'block';
+
+    // Update placeholder with language and length hint
+    const isJapanese = /[぀-ヿ一-鿿]/.test(q.a);
+    inputEl.placeholder = isJapanese
+      ? `日本語で入力（${q.a.length}文字）`
+      : `答えを入力（${q.a.length}文字）`;
+
+    setTimeout(() => inputEl.focus(), 100);
   }
   startTimer();
 }
@@ -722,14 +869,42 @@ function submitFree() {
   const q=G.questions[G.qi];
   const input=document.getElementById('answer-input').value.trim();
   if(!input)return;
-  G.answered=true;
-  clearInterval(G.timer);
-  const norm=s=>s.replace(/[　\s]/g,'').toLowerCase();
-  if(norm(input)===norm(q.a)||q.a.includes(input)||input.includes(q.a)){
+
+  const norm=s=>s.replace(/[　\s・]/g,'').toLowerCase();
+  const isCorrect=norm(input)===norm(q.a)||q.a.includes(input)||input.includes(q.a);
+
+  if(isCorrect){
+    G.answered=true;
+    clearInterval(G.timer);
     handleCorrect();
   } else {
-    showFeedbackBig(`正解: ${q.a}`,'#ffcc00');
-    handleWrong();
+    // Wrong but can retry
+    G.inputAttempts=(G.inputAttempts||0)+1;
+    const inp=document.getElementById('answer-input');
+    inp.value='';
+    inp.focus();
+
+    // Flash border red briefly
+    inp.style.borderColor='#ff4444';
+    setTimeout(()=>{ inp.style.borderColor=''; },500);
+
+    // Progressive hints
+    let hintMsg;
+    if(G.inputAttempts===1){
+      hintMsg=`❌ 違います！（${q.a.length}文字）`;
+    } else if(G.inputAttempts===2){
+      hintMsg=`❌ 違います！ヒント: 「${q.a[0]}」から始まります`;
+    } else {
+      hintMsg=`❌ 違います！ヒント: 「${q.a.slice(0,2)}...」`;
+    }
+    showFeedbackBig(hintMsg,'#ffaa44');
+
+    // After 3 wrong attempts, count as miss
+    if(G.inputAttempts>=3){
+      G.answered=true;
+      clearInterval(G.timer);
+      handleWrong();
+    }
   }
 }
 
@@ -837,6 +1012,8 @@ function flashScreen(type){
 }
 
 document.getElementById('answer-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitFree();});
+
+// No live per-character feedback — blanks are shown statically in showQuestion()
 </script>
 </body>
 </html>

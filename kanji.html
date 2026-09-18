@@ -760,22 +760,36 @@ function handleCorrect() {
 }
 
 function handleWrong(timeout=false, given='') {
-  clearInterval(G.timer);
-  G.wrongs++; G.combo=0;
-  document.getElementById('combo-display').style.opacity='0';
-  const q = G.questions[G.qi];
-  document.getElementById('kanji-word').classList.add('wrong-anim');
-  const msg = timeout ? '⏰ タイムオーバー！' : '❌ ミス！';
-  showFeedback(msg, '#ff6666');
-  // Show correct answer
-  const revEl = document.getElementById('answer-reveal');
-  revEl.textContent = `正解: ${q.r}`;
-  revEl.style.display='block';
-  updateLives();
-  if (G.wrongs >= 3) {
-    setTimeout(() => { revEl.style.display='none'; endGame(true); }, 1500);
+  if (timeout) {
+    // Timer expired — count as miss, move on
+    clearInterval(G.timer);
+    G.combo = 0;
+    document.getElementById('combo-display').style.opacity = '0';
+    const q = G.questions[G.qi];
+    document.getElementById('kanji-word').classList.add('wrong-anim');
+    showFeedback('⏰ タイムオーバー！', '#ff8800');
+    const revEl = document.getElementById('answer-reveal');
+    revEl.textContent = `正解: ${q.r}`;
+    revEl.style.display = 'block';
+    G.wrongs++;
+    updateLives();
+    if (G.wrongs >= 3) {
+      setTimeout(() => { revEl.style.display = 'none'; endGame(true); }, 1500);
+    } else {
+      setTimeout(() => { revEl.style.display = 'none'; G.qi++; showQuestion(); }, 1500);
+    }
   } else {
-    setTimeout(() => { revEl.style.display='none'; G.qi++; showQuestion(); }, 1500);
+    // Wrong answer but timer still running — shake and let player retry
+    document.getElementById('kanji-word').classList.add('wrong-anim');
+    setTimeout(() => document.getElementById('kanji-word').classList.remove('wrong-anim'), 400);
+    showFeedback('❌ 違います！もう一度！', '#ff6666');
+    // Clear input for retry
+    const inputEl = document.getElementById('answer-input');
+    inputEl.value = '';
+    inputEl.focus();
+    // Brief red border flash on input
+    inputEl.style.borderColor = '#ff4444';
+    setTimeout(() => { inputEl.style.borderColor = ''; }, 600);
   }
 }
 

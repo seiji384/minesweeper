@@ -89,6 +89,21 @@
   </div>
   <div id="toast"></div>
 
+  <!-- Opening story overlay -->
+  <div id="opening-overlay" style="position:fixed;inset:0;z-index:1000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px">
+    <button onclick="openingIdx=OPENING_SCENES.length-1;openingNext()"
+      style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer">
+      スキップ
+    </button>
+    <div id="opening-content" style="max-width:480px;width:100%;text-align:center">
+      <div id="opening-logo" style="font-size:clamp(24px,7vw,40px);font-weight:900;color:#44ff88;text-shadow:0 0 30px #22cc66;margin-bottom:8px">モンスターワールド</div>
+      <div id="opening-subtitle" style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:30px">オープンワールドモンスター育成RPG</div>
+      <div id="opening-text-box" style="background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.15);border-radius:14px;padding:20px 24px;margin-bottom:20px;min-height:100px;font-size:15px;line-height:1.7;color:#fff;text-align:left"></div>
+      <button id="opening-next-btn" onclick="openingNext()" style="background:linear-gradient(135deg,#44cc88,#22aa66);border:none;color:#fff;padding:14px 40px;font-size:16px;font-weight:bold;border-radius:30px;cursor:pointer;transition:transform 0.15s">次へ →</button>
+      <div id="opening-progress" style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.4)"></div>
+    </div>
+  </div>
+
   <script>
     const S = {
       scene:null, camera:null, renderer:null,
@@ -102,7 +117,8 @@
       dayTime:0,
       sun:null, hemi:null, ambientLight:null,
       healCrystal:null, wildMonsters:[],
-      playerLeg:null, _toastTimer:null
+      playerLeg:null, _toastTimer:null,
+      currentBiome:-1
     };
 
     const MONS = [
@@ -158,6 +174,7 @@
       setupControls();
       loadGame();
       animate();
+      startOpening();
     }
 
     function getTerrainY(x, z) {
@@ -422,6 +439,7 @@
       wild.respawn=Date.now()+60000;
       showToast(def.name+'をゲット！');
       saveGame();
+      checkStoryMilestone();
     }
 
     function checkLevelUp(mon) {
@@ -579,8 +597,19 @@
       S.ambientLight.intensity=0.15+dayT*0.35;
       S.hemi.intensity=0.2+dayT*0.2;
 
-      const biome=getBiomeAt(S.player.position.x,S.player.position.z);
-      document.getElementById('biome-name').textContent=BIOMES[biome].name;
+      const newBiome=getBiomeAt(S.player.position.x,S.player.position.z);
+      if (newBiome !== S.currentBiome) {
+        const prevBiome = S.currentBiome;
+        S.currentBiome = newBiome;
+        const biomeMessages = [
+          '🌿 グリーンフィールドへようこそ！草タイプや普通タイプのモンスターが住んでいる。',
+          '🌲 ダークフォレストへ突入！霧が深い。ゴーストタイプのモンスターに注意！',
+          '🌋 カエンゾーンへ！溶岩地帯。炎タイプの強力なモンスターがいる！'
+        ];
+        const biomeEl = document.getElementById('biome-name');
+        if (biomeEl) biomeEl.textContent = BIOMES[newBiome].name;
+        if (prevBiome >= 0) showToast(biomeMessages[newBiome]);
+      }
       document.getElementById('party-count').textContent='仲間: '+S.party.length+'/6';
 
       S.wildMonsters.forEach(wm=>{
@@ -699,6 +728,116 @@
     }
 
     window.addEventListener('load', init);
+
+    // ===== STORY MILESTONES =====
+    function checkStoryMilestone() {
+      const caught = S.party.length + S.pokedex.length;
+
+      if (caught === 1 && !localStorage.getItem('ow_m1')) {
+        localStorage.setItem('ow_m1', '1');
+        setTimeout(() => showToast('🎉 初めてのモンスターゲット！次は西の森に行ってみよう！'), 500);
+      }
+      if (S.pokedex.length >= 5 && !localStorage.getItem('ow_m2')) {
+        localStorage.setItem('ow_m2', '1');
+        setTimeout(() => showToast('⭐ 5種類発見！カエンゾーン（東）にも強いモンスターがいるよ！'), 500);
+      }
+      if (S.pokedex.length >= 9 && !localStorage.getItem('ow_m3')) {
+        localStorage.setItem('ow_m3', '1');
+        setTimeout(() => showToast('🏆 図鑑コンプリート！伝説のモンスターマスターだ！！'), 500);
+      }
+      if (S.party.length >= 3 && !localStorage.getItem('ow_m4')) {
+        localStorage.setItem('ow_m4', '1');
+        setTimeout(() => showToast('💪 仲間が3匹に！チームが強くなってきた！'), 500);
+      }
+    }
+
+    // ===== OPENING STORY =====
+    const OPENING_SCENES = [
+      {
+        bg: '#001a00',
+        text: '🌿 ここは「モンスターワールド」。\n\n様々な野生のモンスターが生息する広大な世界だ。',
+        btn: '次へ →'
+      },
+      {
+        bg: '#001a10',
+        text: '🏘️ 君は今日、モンスタートレーナーとして旅を始める。\n\n中央の「グリーンフィールド」から冒険が始まる！',
+        btn: '次へ →'
+      },
+      {
+        bg: '#0a001a',
+        text: '🗺️ この世界には3つのエリアがある：\n\n🌿 グリーンフィールド（中央）\n🌲 ダークフォレスト（西）\n🌋 カエンゾーン（東）\n\nそれぞれ異なるモンスターが住んでいる。',
+        btn: '次へ →'
+      },
+      {
+        bg: '#1a0a00',
+        text: '⚔️ 野生のモンスターに近づくと戦闘が始まる！\n\n「ボールを投げる」でモンスターを捕まえて\n仲間にしよう！\n\nHPが低いほど捕まえやすい！',
+        btn: '次へ →'
+      },
+      {
+        bg: '#001a1a',
+        text: '✨ 中央の光る結晶（ヒーリングクリスタル）に\n近づくと仲間のHPが全回復する！\n\n「仲間」ボタンで仲間の状態を確認、\n「図鑑」でこれまで会ったモンスターを確認できる。',
+        btn: '次へ →'
+      },
+      {
+        bg: '#000010',
+        text: '🎯 今日の目標：\n\n① まず1匹モンスターを捕まえよう！\n② 3エリアすべてを探索しよう！\n③ 図鑑を9匹全部埋めよう！\n\n伝説のモンスターマスターを目指せ！',
+        btn: '冒険を始める！ 🌟'
+      }
+    ];
+
+    let openingIdx = 0;
+
+    function startOpening() {
+      if (localStorage.getItem('openworld_seen_opening') === '1') {
+        document.getElementById('opening-overlay').style.display = 'none';
+        return;
+      }
+      showOpeningScene(0);
+    }
+
+    function showOpeningScene(idx) {
+      const scene = OPENING_SCENES[idx];
+      const overlay = document.getElementById('opening-overlay');
+      const textBox = document.getElementById('opening-text-box');
+      const btn = document.getElementById('opening-next-btn');
+      const prog = document.getElementById('opening-progress');
+
+      // Fade background
+      overlay.style.background = scene.bg;
+      overlay.style.transition = 'background 0.8s';
+
+      // Typewriter effect
+      textBox.textContent = '';
+      const text = scene.text;
+      let charIdx = 0;
+      const typeInterval = setInterval(() => {
+        if (charIdx < text.length) {
+          textBox.textContent += text[charIdx];
+          charIdx++;
+        } else {
+          clearInterval(typeInterval);
+        }
+      }, 30);
+
+      btn.textContent = scene.btn;
+      prog.textContent = `${idx + 1} / ${OPENING_SCENES.length}`;
+      openingIdx = idx;
+    }
+
+    function openingNext() {
+      openingIdx++;
+      if (openingIdx >= OPENING_SCENES.length) {
+        // End opening
+        localStorage.setItem('openworld_seen_opening', '1');
+        document.getElementById('opening-overlay').style.display = 'none';
+        // Show welcome toast
+        showToast('冒険を始めよう！まずはモンスターを捕まえて！');
+        // Show first objective
+        setTimeout(() => showToast('ヒント: 光る草むらに近づくと野生モンスターと出会える！'), 3000);
+      } else {
+        showOpeningScene(openingIdx);
+      }
+    }
   </script>
 </body>
 </html>
