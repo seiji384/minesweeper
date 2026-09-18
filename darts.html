@@ -628,5 +628,15 @@ tryLoadSave();
     upd();
   }
 })();
+</script>
+<button id="home-btn" onclick="goHome()" style="position:fixed;top:52px;left:8px;z-index:9999;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;display:none;backdrop-filter:blur(4px)">🏠 戻る</button>
+<script>
+function goHome() {
+  if (!confirm('ホーム画面に戻りますか？')) return;
+  if (typeof animId !== 'undefined') cancelAnimationFrame(animId);
+  document.getElementById('home-btn').style.display = 'none';
+  location.href = 'index.html';
+}
+document.getElementById('home-btn').style.display = '';
 </script></body>
 </html>

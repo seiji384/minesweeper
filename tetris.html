@@ -528,6 +528,7 @@ function resumeTetris(){
   if(nb) nb.remove();
   document.getElementById('overlay-btn').onclick=startGame;
   document.getElementById('overlay').style.display='none';
+  document.getElementById('home-btn').style.display = 'block';
   updateLEDs(); draw(); lastTime=0;
   requestAnimationFrame(gameLoop);
 }
@@ -541,6 +542,7 @@ function declineTetris(){
   document.getElementById('overlay-msg').innerHTML='スワイプまたは矢印キーで操作<br>スペース = 即落とし<br>タップ = 回転';
   document.getElementById('overlay-btn').onclick=startGame;
   document.getElementById('overlay').style.display='flex';
+  document.getElementById('home-btn').style.display = 'none';
 }
 
 function emptyBoard(){ return Array.from({length:ROWS},()=>Array(COLS).fill(null)); }
@@ -679,6 +681,7 @@ function holdPiece(){
 function endGame(){
   localStorage.removeItem('tetris_save');
   gameRunning=false; gameOver=true;
+  document.getElementById('home-btn').style.display = 'none';
   document.getElementById('overlay-title').textContent='ゲームオーバー';
   document.getElementById('overlay-msg').innerHTML=`スコア: ${score}<br>ベスト: ${hiScore}<br>レベル: ${level}`;
   document.getElementById('overlay-btn').textContent='もう一度';
@@ -696,6 +699,7 @@ function startGame(){
   gameRunning=true; paused=false; gameOver=false;
   dropInterval=getDropInterval(1);
   document.getElementById('overlay').style.display='none';
+  document.getElementById('home-btn').style.display = 'block';
   updateLEDs(); lastTime=0;
   requestAnimationFrame(gameLoop);
 }
@@ -942,12 +946,26 @@ function playBeep(freq=440, dur=0.08, type='sine') {
   } catch(e) {}
 }
 
+function goHome() {
+  if (!confirm('タイトル画面に戻りますか？（進行中のゲームは終了します）')) return;
+  gameRunning = false;
+  document.getElementById('home-btn').style.display = 'none';
+  const nb = document.getElementById('overlay-no-btn');
+  if (nb) nb.remove();
+  document.getElementById('overlay-btn').textContent = 'スタート';
+  document.getElementById('overlay-btn').onclick = startGame;
+  document.getElementById('overlay-title').textContent = 'TETRIS';
+  document.getElementById('overlay-msg').innerHTML = 'スワイプまたは矢印キーで操作<br>スペース = 即落とし<br>タップ = 回転';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
 // Init
 hiScore=getHiScore();
 updateLEDs();
 draw();
 tryLoadSave();
 </script>
+<button id="home-btn" onclick="goHome()" style="position:fixed;top:52px;left:8px;z-index:9999;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;display:none;backdrop-filter:blur(4px)">🏠 戻る</button>
 <script id="home-nav-js">
 (function(){
   window.showHomeConfirm=function(){document.getElementById('home-confirm-overlay').classList.add('visible');};

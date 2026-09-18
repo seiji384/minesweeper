@@ -117,6 +117,11 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
 
 /* Back btn */
 .back-btn { position:fixed; top:12px; left:12px; z-index:100; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; }
+
+/* Scrollable question area on small screens */
+#q-area { overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:calc(100vh - 280px); }
+#options { width:100%; }
+.opt-btn { word-break:break-all; white-space:normal; }
 </style>
 </head>
 <body>
@@ -143,6 +148,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
       <div class="sample">学校</div>
       <div class="sample">電話</div>
       <div style="font-size:11px;text-align:center;opacity:0.7;margin-top:4px">漢検5〜4級</div>
+      <div class="diff-best" style="font-size:10px;opacity:0.7;text-align:center;margin-top:2px"></div>
     </div>
     <div class="diff-col diff-inter" onclick="selectDiff('inter')">
       <h2>中級</h2>
@@ -150,6 +156,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
       <div class="sample">憂鬱</div>
       <div class="sample">朦朧</div>
       <div style="font-size:11px;text-align:center;opacity:0.7;margin-top:4px">漢検3〜2級</div>
+      <div class="diff-best" style="font-size:10px;opacity:0.7;text-align:center;margin-top:2px"></div>
     </div>
     <div class="diff-col diff-adv" onclick="selectDiff('adv')">
       <h2>上級</h2>
@@ -157,6 +164,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
       <div class="sample">頷く</div>
       <div class="sample">聳える</div>
       <div style="font-size:11px;text-align:center;opacity:0.7;margin-top:4px">漢検準1級</div>
+      <div class="diff-best" style="font-size:10px;opacity:0.7;text-align:center;margin-top:2px"></div>
     </div>
     <div class="diff-col diff-ultra" onclick="selectDiff('ultra')">
       <h2>ULTRA</h2>
@@ -164,6 +172,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
       <div class="sample">霖雨</div>
       <div class="sample">嬰児</div>
       <div style="font-size:11px;text-align:center;opacity:0.7;margin-top:4px">漢検1〜2級</div>
+      <div class="diff-best" style="font-size:10px;opacity:0.7;text-align:center;margin-top:2px"></div>
     </div>
     <div class="diff-col diff-geki diff-full-row" onclick="selectDiff('geki')">
       <h2>💀 激ムズ 💀</h2>
@@ -173,6 +182,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
         <div class="sample">饕餮</div>
       </div>
       <div style="font-size:11px;text-align:center;opacity:0.7;margin-top:4px">漢検1級クラス・廃人向け</div>
+      <div class="diff-best" style="font-size:10px;opacity:0.7;text-align:center;margin-top:2px"></div>
     </div>
   </div>
 </div>
@@ -215,6 +225,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
 
 <!-- GAME -->
 <div id="game-screen" class="screen">
+  <button onclick="if(confirm('ゲームを終了しますか？')){clearInterval(G && G.timer);showScreen('title-screen');}" style="position:absolute;top:12px;right:12px;z-index:200;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;">🏠</button>
   <div id="game-top">
     <button id="skip-btn" onclick="skipQuestion()">いれかえ <span id="skip-count">×2</span></button>
     <div id="progress-bar-wrap">
@@ -261,11 +272,14 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
     <div class="stat-row"><span>最大コンボ</span><span class="stat-val" id="res-combo">-</span></div>
     <div class="stat-row"><span>スキップ使用</span><span class="stat-val" id="res-skip">-</span></div>
     <div class="stat-row"><span>ランク</span><span class="stat-val" id="res-rank">-</span></div>
+    <div class="stat-row"><span>ベストスコア</span><span class="stat-val" id="res-best">-</span></div>
   </div>
   <div class="result-btns">
     <button class="result-btn btn-retry" onclick="retryGame()">もう一度</button>
     <button class="result-btn btn-menu" onclick="showScreen('title-screen')">メニュー</button>
+    <button class="result-btn btn-menu" onclick="showScreen('title-screen')">🏠 ホーム</button>
   </div>
+  <a href="#" onclick="showScreen('title-screen');return false;" style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:4px;text-decoration:none;">← 戻る</a>
 </div>
 
 <script>
@@ -379,6 +393,262 @@ const DB = [
   {w:'額田王',r:'ぬかたのおおきみ',g:'history',d:'geki',hint:'万葉の女流歌人'},
   {w:'藤原鎌足',r:'ふじわらのかまたり',g:'history',d:'geki',hint:'中臣鎌足'},
   {w:'蜻蛉日記',r:'かげろうにっき',g:'history',d:'geki',hint:'藤原道綱母の作品'},
+
+  // ===== ADDITIONAL BEGINNER =====
+  {w:'自動車',r:'じどうしゃ',g:'general',d:'beginner'},{w:'自転車',r:'じてんしゃ',g:'general',d:'beginner'},
+  {w:'図書',r:'としょ',g:'general',d:'beginner'},{w:'公園',r:'こうえん',g:'general',d:'beginner'},
+  {w:'天気',r:'てんき',g:'general',d:'beginner'},{w:'雨',r:'あめ',g:'general',d:'beginner'},
+  {w:'雪',r:'ゆき',g:'general',d:'beginner'},{w:'太陽',r:'たいよう',g:'general',d:'beginner'},
+  {w:'月',r:'つき',g:'general',d:'beginner'},{w:'星',r:'ほし',g:'general',d:'beginner'},
+  {w:'山',r:'やま',g:'general',d:'beginner'},{w:'川',r:'かわ',g:'general',d:'beginner'},
+  {w:'海',r:'うみ',g:'general',d:'beginner'},{w:'池',r:'いけ',g:'general',d:'beginner'},
+  {w:'森',r:'もり',g:'general',d:'beginner'},{w:'橋',r:'はし',g:'general',d:'beginner'},
+  {w:'道路',r:'どうろ',g:'general',d:'beginner'},{w:'駅',r:'えき',g:'general',d:'beginner'},
+  {w:'空港',r:'くうこう',g:'general',d:'beginner'},{w:'港',r:'みなと',g:'general',d:'beginner'},
+  {w:'部屋',r:'へや',g:'general',d:'beginner'},{w:'台所',r:'だいどころ',g:'general',d:'beginner'},
+  {w:'風呂',r:'ふろ',g:'general',d:'beginner'},{w:'玄関',r:'げんかん',g:'general',d:'beginner'},
+  {w:'屋根',r:'やね',g:'general',d:'beginner'},{w:'窓',r:'まど',g:'general',d:'beginner'},
+  {w:'机',r:'つくえ',g:'general',d:'beginner'},{w:'椅子',r:'いす',g:'general',d:'beginner'},
+  {w:'黒板',r:'こくばん',g:'general',d:'beginner'},{w:'教室',r:'きょうしつ',g:'general',d:'beginner'},
+  {w:'先生',r:'せんせい',g:'general',d:'beginner'},{w:'生徒',r:'せいと',g:'general',d:'beginner'},
+  {w:'兄弟',r:'きょうだい',g:'general',d:'beginner'},{w:'姉妹',r:'しまい',g:'general',d:'beginner'},
+  {w:'父',r:'ちち',g:'general',d:'beginner'},{w:'母',r:'はは',g:'general',d:'beginner'},
+  {w:'祖父',r:'そふ',g:'general',d:'beginner'},{w:'祖母',r:'そぼ',g:'general',d:'beginner'},
+  {w:'手紙',r:'てがみ',g:'general',d:'beginner'},{w:'言葉',r:'ことば',g:'general',d:'beginner'},
+  {w:'朝食',r:'ちょうしょく',g:'general',d:'beginner'},{w:'夕食',r:'ゆうしょく',g:'general',d:'beginner'},
+  {w:'昼食',r:'ちゅうしょく',g:'general',d:'beginner'},{w:'水',r:'みず',g:'general',d:'beginner'},
+  {w:'牛乳',r:'ぎゅうにゅう',g:'general',d:'beginner'},{w:'砂糖',r:'さとう',g:'general',d:'beginner'},
+  {w:'塩',r:'しお',g:'general',d:'beginner'},{w:'醤油',r:'しょうゆ',g:'general',d:'beginner'},
+  // Plant beginner
+  {w:'葉',r:'は',g:'plant',d:'beginner'},{w:'花',r:'はな',g:'plant',d:'beginner'},
+  {w:'木',r:'き',g:'plant',d:'beginner'},{w:'草',r:'くさ',g:'plant',d:'beginner'},
+  {w:'根',r:'ね',g:'plant',d:'beginner'},{w:'種',r:'たね',g:'plant',d:'beginner'},
+  {w:'林',r:'はやし',g:'plant',d:'beginner'},{w:'桃',r:'もも',g:'plant',d:'beginner'},
+  {w:'柿',r:'かき',g:'plant',d:'beginner'},{w:'栗',r:'くり',g:'plant',d:'beginner'},
+  {w:'梨',r:'なし',g:'plant',d:'beginner'},{w:'葡萄',r:'ぶどう',g:'plant',d:'beginner'},
+  {w:'苺',r:'いちご',g:'plant',d:'beginner'},{w:'西瓜',r:'すいか',g:'plant',d:'beginner'},
+  {w:'南瓜',r:'かぼちゃ',g:'plant',d:'beginner'},{w:'茄子',r:'なす',g:'plant',d:'beginner'},
+  {w:'胡瓜',r:'きゅうり',g:'plant',d:'beginner'},{w:'大根',r:'だいこん',g:'plant',d:'beginner'},
+  {w:'人参',r:'にんじん',g:'plant',d:'beginner'},{w:'玉葱',r:'たまねぎ',g:'plant',d:'beginner'},
+  // Animal beginner
+  {w:'鳥',r:'とり',g:'animal',d:'beginner'},{w:'魚',r:'さかな',g:'animal',d:'beginner'},
+  {w:'虫',r:'むし',g:'animal',d:'beginner'},{w:'豚',r:'ぶた',g:'animal',d:'beginner'},
+  {w:'牛',r:'うし',g:'animal',d:'beginner'},{w:'羊',r:'ひつじ',g:'animal',d:'beginner'},
+  {w:'鶏',r:'にわとり',g:'animal',d:'beginner'},{w:'兎',r:'うさぎ',g:'animal',d:'beginner'},
+  {w:'熊',r:'くま',g:'animal',d:'beginner'},{w:'狼',r:'おおかみ',g:'animal',d:'beginner'},
+  {w:'狐',r:'きつね',g:'animal',d:'beginner'},{w:'狸',r:'たぬき',g:'animal',d:'beginner'},
+  {w:'鹿',r:'しか',g:'animal',d:'beginner'},{w:'猿',r:'さる',g:'animal',d:'beginner'},
+  {w:'蛇',r:'へび',g:'animal',d:'beginner'},{w:'蛙',r:'かえる',g:'animal',d:'beginner'},
+  // Food beginner
+  {w:'米',r:'こめ',g:'food',d:'beginner'},{w:'麦',r:'むぎ',g:'food',d:'beginner'},
+  {w:'豆腐',r:'とうふ',g:'food',d:'beginner'},{w:'納豆',r:'なっとう',g:'food',d:'beginner'},
+  {w:'豚肉',r:'ぶたにく',g:'food',d:'beginner'},{w:'牛肉',r:'ぎゅうにく',g:'food',d:'beginner'},
+  {w:'鶏肉',r:'とりにく',g:'food',d:'beginner'},{w:'卵',r:'たまご',g:'food',d:'beginner'},
+  {w:'醤油',r:'しょうゆ',g:'food',d:'beginner'},{w:'味噌',r:'みそ',g:'food',d:'beginner'},
+  {w:'林檎',r:'りんご',g:'food',d:'beginner'},{w:'蜜柑',r:'みかん',g:'food',d:'beginner'},
+  {w:'梅干',r:'うめぼし',g:'food',d:'beginner'},{w:'漬物',r:'つけもの',g:'food',d:'beginner'},
+  // Place beginner
+  {w:'神奈川',r:'かながわ',g:'place',d:'beginner'},{w:'埼玉',r:'さいたま',g:'place',d:'beginner'},
+  {w:'千葉',r:'ちば',g:'place',d:'beginner'},{w:'福岡',r:'ふくおか',g:'place',d:'beginner'},
+  {w:'広島',r:'ひろしま',g:'place',d:'beginner'},{w:'仙台',r:'せんだい',g:'place',d:'beginner'},
+  {w:'名古屋',r:'なごや',g:'place',d:'beginner'},{w:'横浜',r:'よこはま',g:'place',d:'beginner'},
+  {w:'沖縄',r:'おきなわ',g:'place',d:'beginner'},{w:'鹿児島',r:'かごしま',g:'place',d:'beginner'},
+  // History beginner
+  {w:'源頼朝',r:'みなもとのよりとも',g:'history',d:'beginner',hint:'鎌倉幕府初代将軍'},
+  {w:'武田信玄',r:'たけだしんげん',g:'history',d:'beginner',hint:'甲斐の虎'},
+  {w:'伊達政宗',r:'だてまさむね',g:'history',d:'beginner',hint:'独眼竜'},
+  {w:'明智光秀',r:'あけちみつひで',g:'history',d:'beginner',hint:'本能寺の変'},
+  {w:'石田三成',r:'いしだみつなり',g:'history',d:'beginner',hint:'関ヶ原の戦い'},
+  // Yoji beginner
+  {w:'四苦八苦',r:'しくはっく',g:'yoji',d:'beginner'},{w:'八方美人',r:'はっぽうびじん',g:'yoji',d:'beginner'},
+  {w:'二人三脚',r:'ににんさんきゃく',g:'yoji',d:'beginner'},{w:'三寒四温',r:'さんかんしおん',g:'yoji',d:'beginner'},
+  {w:'五里霧中',r:'ごりむちゅう',g:'yoji',d:'beginner'},{w:'大器晩成',r:'たいきばんせい',g:'yoji',d:'beginner'},
+  {w:'自業自得',r:'じごうじとく',g:'yoji',d:'beginner'},{w:'以心伝心',r:'いしんでんしん',g:'yoji',d:'beginner'},
+  {w:'無我夢中',r:'むがむちゅう',g:'yoji',d:'beginner'},{w:'喜怒哀楽',r:'きどあいらく',g:'yoji',d:'beginner'},
+
+  // ===== ADDITIONAL INTERMEDIATE =====
+  {w:'憧憬',r:'どうけい',g:'general',d:'inter'},{w:'逃避',r:'とうひ',g:'general',d:'inter'},
+  {w:'矛盾',r:'むじゅん',g:'general',d:'inter'},{w:'妥協',r:'だきょう',g:'general',d:'inter'},
+  {w:'皮肉',r:'ひにく',g:'general',d:'inter'},
+  {w:'危惧',r:'きぐ',g:'general',d:'inter'},{w:'懸念',r:'けねん',g:'general',d:'inter'},
+  {w:'趣旨',r:'しゅし',g:'general',d:'inter'},{w:'概念',r:'がいねん',g:'general',d:'inter'},
+  {w:'抽象',r:'ちゅうしょう',g:'general',d:'inter'},{w:'具体',r:'ぐたい',g:'general',d:'inter'},
+  {w:'倫理',r:'りんり',g:'general',d:'inter'},{w:'哲学',r:'てつがく',g:'general',d:'inter'},
+  {w:'宗教',r:'しゅうきょう',g:'general',d:'inter'},{w:'信仰',r:'しんこう',g:'general',d:'inter'},
+  {w:'偏見',r:'へんけん',g:'general',d:'inter'},{w:'差別',r:'さべつ',g:'general',d:'inter'},
+  {w:'貧困',r:'ひんこん',g:'general',d:'inter'},{w:'格差',r:'かくさ',g:'general',d:'inter'},
+  {w:'腐敗',r:'ふはい',g:'general',d:'inter'},{w:'汚職',r:'おしょく',g:'general',d:'inter'},
+  {w:'陰謀',r:'いんぼう',g:'general',d:'inter'},{w:'欺瞞',r:'ぎまん',g:'general',d:'inter'},
+  {w:'顕著',r:'けんちょ',g:'general',d:'inter'},{w:'卓越',r:'たくえつ',g:'general',d:'inter'},
+  {w:'斬新',r:'ざんしん',g:'general',d:'inter'},{w:'革新',r:'かくしん',g:'general',d:'inter'},
+  {w:'保守',r:'ほしゅ',g:'general',d:'inter'},{w:'改革',r:'かいかく',g:'general',d:'inter'},
+  // Plant inter
+  {w:'椿',r:'つばき',g:'plant',d:'inter'},{w:'木蓮',r:'もくれん',g:'plant',d:'inter'},
+  {w:'桐',r:'きり',g:'plant',d:'inter'},{w:'楓',r:'かえで',g:'plant',d:'inter'},
+  {w:'柳',r:'やなぎ',g:'plant',d:'inter'},{w:'銀杏',r:'いちょう',g:'plant',d:'inter'},
+  {w:'楠',r:'くすのき',g:'plant',d:'inter'},{w:'欅',r:'けやき',g:'plant',d:'inter'},
+  {w:'橡',r:'とちのき',g:'plant',d:'inter'},{w:'檜',r:'ひのき',g:'plant',d:'inter'},
+  {w:'菖蒲',r:'あやめ',g:'plant',d:'inter'},{w:'撫子',r:'なでしこ',g:'plant',d:'inter'},
+  {w:'桔梗',r:'ききょう',g:'plant',d:'inter'},{w:'芍薬',r:'しゃくやく',g:'plant',d:'inter'},
+  {w:'牡丹',r:'ぼたん',g:'plant',d:'inter'},{w:'蘭',r:'らん',g:'plant',d:'inter'},
+  // Animal inter
+  {w:'鯨',r:'くじら',g:'animal',d:'inter'},{w:'海豚',r:'いるか',g:'animal',d:'inter'},
+  {w:'海豹',r:'あざらし',g:'animal',d:'inter'},{w:'海象',r:'せいうち',g:'animal',d:'inter'},
+  {w:'烏賊',r:'いか',g:'animal',d:'inter'},{w:'海月',r:'くらげ',g:'animal',d:'inter'},
+  {w:'蟹',r:'かに',g:'animal',d:'inter'},{w:'蛸',r:'たこ',g:'animal',d:'inter'},
+  {w:'鮪',r:'まぐろ',g:'animal',d:'inter'},{w:'鰤',r:'ぶり',g:'animal',d:'inter'},
+  {w:'鯛',r:'たい',g:'animal',d:'inter'},{w:'秋刀魚',r:'さんま',g:'animal',d:'inter'},
+  {w:'鮭',r:'さけ',g:'animal',d:'inter'},{w:'鰺',r:'あじ',g:'animal',d:'inter'},
+  {w:'烏',r:'からす',g:'animal',d:'inter'},{w:'鷺',r:'さぎ',g:'animal',d:'inter'},
+  {w:'雉',r:'きじ',g:'animal',d:'inter'},{w:'燕',r:'つばめ',g:'animal',d:'inter'},
+  // Food inter
+  {w:'蕗',r:'ふき',g:'food',d:'inter'},{w:'独活',r:'うど',g:'food',d:'inter'},
+  {w:'筍',r:'たけのこ',g:'food',d:'inter'},{w:'蓮根',r:'れんこん',g:'food',d:'inter'},
+  {w:'牛蒡',r:'ごぼう',g:'food',d:'inter'},{w:'芋',r:'いも',g:'food',d:'inter'},
+  {w:'薩摩芋',r:'さつまいも',g:'food',d:'inter'},{w:'里芋',r:'さといも',g:'food',d:'inter'},
+  {w:'長芋',r:'ながいも',g:'food',d:'inter'},{w:'山葵',r:'わさび',g:'food',d:'inter'},
+  {w:'生姜',r:'しょうが',g:'food',d:'inter'},{w:'葱',r:'ねぎ',g:'food',d:'inter'},
+  {w:'韮',r:'にら',g:'food',d:'inter'},{w:'薄荷',r:'はっか',g:'food',d:'inter'},
+  // Place inter
+  {w:'奈良',r:'なら',g:'place',d:'inter'},{w:'鎌倉',r:'かまくら',g:'place',d:'inter'},
+  {w:'日光',r:'にっこう',g:'place',d:'inter'},{w:'箱根',r:'はこね',g:'place',d:'inter'},
+  {w:'富士山',r:'ふじさん',g:'place',d:'inter'},{w:'琵琶湖',r:'びわこ',g:'place',d:'inter'},
+  {w:'淡路島',r:'あわじしま',g:'place',d:'inter'},{w:'屋久島',r:'やくしま',g:'place',d:'inter'},
+  {w:'佐渡島',r:'さどがしま',g:'place',d:'inter'},{w:'対馬',r:'つしま',g:'place',d:'inter'},
+  // History inter
+  {w:'足利尊氏',r:'あしかがたかうじ',g:'history',d:'inter',hint:'室町幕府初代将軍'},
+  {w:'北条時宗',r:'ほうじょうときむね',g:'history',d:'inter',hint:'元寇を退けた執権'},
+  {w:'後醍醐天皇',r:'ごだいごてんのう',g:'history',d:'inter',hint:'建武の新政'},
+  {w:'楠木正成',r:'くすのきまさしげ',g:'history',d:'inter',hint:'大楠公'},
+  {w:'新田義貞',r:'にったよしさだ',g:'history',d:'inter',hint:'鎌倉幕府を滅ぼした武将'},
+  // Yoji inter
+  {w:'一刀両断',r:'いっとうりょうだん',g:'yoji',d:'inter'},{w:'快刀乱麻',r:'かいとうらんま',g:'yoji',d:'inter'},
+  {w:'千変万化',r:'せんぺんばんか',g:'yoji',d:'inter'},{w:'森羅万象',r:'しんらばんしょう',g:'yoji',d:'inter'},
+  {w:'天変地異',r:'てんぺんちい',g:'yoji',d:'inter'},{w:'因果応報',r:'いんがおうほう',g:'yoji',d:'inter'},
+  {w:'自然淘汰',r:'しぜんとうた',g:'yoji',d:'inter'},{w:'適者生存',r:'てきしゃせいぞん',g:'yoji',d:'inter'},
+  {w:'弱肉強食',r:'じゃくにくきょうしょく',g:'yoji',d:'inter'},{w:'優勝劣敗',r:'ゆうしょうれっぱい',g:'yoji',d:'inter'},
+  {w:'栄枯盛衰',r:'えいこせいすい',g:'yoji',d:'inter'},{w:'盛者必衰',r:'じょうしゃひっすい',g:'yoji',d:'inter'},
+
+  // ===== ADDITIONAL ADVANCED =====
+  {w:'蹉跌',r:'さてつ',g:'general',d:'adv'},{w:'錯綜',r:'さくそう',g:'general',d:'adv'},
+  {w:'頽廃',r:'たいはい',g:'general',d:'adv'},{w:'澱む',r:'よどむ',g:'general',d:'adv'},
+  {w:'歪む',r:'ゆがむ',g:'general',d:'adv'},{w:'蠢く',r:'うごめく',g:'general',d:'adv'},
+  {w:'躊躇',r:'ちゅうちょ',g:'general',d:'adv'},{w:'拮抗',r:'きっこう',g:'general',d:'adv'},
+  {w:'凋落',r:'ちょうらく',g:'general',d:'adv'},{w:'勃興',r:'ぼっこう',g:'general',d:'adv'},
+  {w:'嘉納',r:'かのう',g:'general',d:'adv'},{w:'裁量',r:'さいりょう',g:'general',d:'adv'},
+  {w:'斡旋',r:'あっせん',g:'general',d:'adv'},{w:'懐柔',r:'かいじゅう',g:'general',d:'adv'},
+  {w:'籠絡',r:'ろうらく',g:'general',d:'adv'},{w:'失墜',r:'しっつい',g:'general',d:'adv'},
+  {w:'瓦解',r:'がかい',g:'general',d:'adv'},{w:'崩壊',r:'ほうかい',g:'general',d:'adv'},
+  {w:'弛緩',r:'しかん',g:'general',d:'adv'},{w:'緊迫',r:'きんぱく',g:'general',d:'adv'},
+  // Plant adv
+  {w:'山茶花',r:'さざんか',g:'plant',d:'adv'},{w:'木犀',r:'もくせい',g:'plant',d:'adv'},
+  {w:'沈丁花',r:'じんちょうげ',g:'plant',d:'adv'},{w:'金木犀',r:'きんもくせい',g:'plant',d:'adv'},
+  {w:'姫百合',r:'ひめゆり',g:'plant',d:'adv'},{w:'鬼百合',r:'おにゆり',g:'plant',d:'adv'},
+  {w:'鉄線',r:'てっせん',g:'plant',d:'adv'},{w:'葛',r:'くず',g:'plant',d:'adv'},
+  {w:'蓬',r:'よもぎ',g:'plant',d:'adv'},{w:'萩',r:'はぎ',g:'plant',d:'adv'},
+  {w:'芒',r:'すすき',g:'plant',d:'adv'},{w:'藜',r:'あかざ',g:'plant',d:'adv'},
+  // Animal adv
+  {w:'土竜',r:'もぐら',g:'animal',d:'adv'},{w:'鼯鼠',r:'むささび',g:'animal',d:'adv'},
+  {w:'飛鼠',r:'もも',g:'animal',d:'adv'},{w:'猪',r:'いのしし',g:'animal',d:'adv'},
+  {w:'貂',r:'てん',g:'animal',d:'adv'},{w:'鼬',r:'いたち',g:'animal',d:'adv'},
+  {w:'栗鼠',r:'りす',g:'animal',d:'adv'},{w:'海狸',r:'ビーバー',g:'animal',d:'adv'},
+  {w:'鴨',r:'かも',g:'animal',d:'adv'},{w:'鵜',r:'う',g:'animal',d:'adv'},
+  {w:'鶴',r:'つる',g:'animal',d:'adv'},{w:'白鳥',r:'はくちょう',g:'animal',d:'adv'},
+  // Food adv
+  {w:'鱒',r:'ます',g:'food',d:'adv'},{w:'鮎',r:'あゆ',g:'food',d:'adv'},
+  {w:'鰍',r:'かじか',g:'food',d:'adv'},{w:'鯉',r:'こい',g:'food',d:'adv'},
+  {w:'鮒',r:'ふな',g:'food',d:'adv'},{w:'泥鰌',r:'どじょう',g:'food',d:'adv'},
+  {w:'海老',r:'えび',g:'food',d:'adv'},{w:'帆立',r:'ほたて',g:'food',d:'adv'},
+  {w:'浅利',r:'あさり',g:'food',d:'adv'},{w:'蛤',r:'はまぐり',g:'food',d:'adv'},
+  {w:'螺',r:'にし',g:'food',d:'adv'},{w:'栄螺',r:'さざえ',g:'food',d:'adv'},
+  // Place adv
+  {w:'越前',r:'えちぜん',g:'place',d:'adv'},{w:'越中',r:'えっちゅう',g:'place',d:'adv'},
+  {w:'越後',r:'えちご',g:'place',d:'adv'},{w:'加賀',r:'かが',g:'place',d:'adv'},
+  {w:'能登',r:'のと',g:'place',d:'adv'},{w:'若狭',r:'わかさ',g:'place',d:'adv'},
+  {w:'丹波',r:'たんば',g:'place',d:'adv'},{w:'播磨',r:'はりま',g:'place',d:'adv'},
+  {w:'淡路',r:'あわじ',g:'place',d:'adv'},{w:'阿波',r:'あわ',g:'place',d:'adv'},
+  // History adv
+  {w:'平清盛',r:'たいらのきよもり',g:'history',d:'adv',hint:'平家の棟梁'},
+  {w:'源義経',r:'みなもとのよしつね',g:'history',d:'adv',hint:'牛若丸'},
+  {w:'弁慶',r:'べんけい',g:'history',d:'adv',hint:'義経の忠臣'},
+  {w:'北条政子',r:'ほうじょうまさこ',g:'history',d:'adv',hint:'尼将軍'},
+  {w:'後鳥羽上皇',r:'ごとばじょうこう',g:'history',d:'adv',hint:'承久の乱'},
+  // Yoji adv
+  {w:'一騎当千',r:'いっきとうせん',g:'yoji',d:'adv'},{w:'百戦錬磨',r:'ひゃくせんれんま',g:'yoji',d:'adv'},
+  {w:'疾風怒濤',r:'しっぷうどとう',g:'yoji',d:'adv'},{w:'波乱万丈',r:'はらんばんじょう',g:'yoji',d:'adv'},
+  {w:'千載一遇',r:'せんざいいちぐう',g:'yoji',d:'adv'},{w:'前代未聞',r:'ぜんだいみもん',g:'yoji',d:'adv'},
+  {w:'空前絶後',r:'くうぜんぜつご',g:'yoji',d:'adv'},{w:'金科玉条',r:'きんかぎょくじょう',g:'yoji',d:'adv'},
+  {w:'用意周到',r:'よういしゅうとう',g:'yoji',d:'adv'},{w:'縦横無尽',r:'じゅうおうむじん',g:'yoji',d:'adv'},
+
+  // ===== ADDITIONAL ULTRA =====
+  {w:'諄い',r:'くどい',g:'general',d:'ultra'},{w:'煩わしい',r:'わずらわしい',g:'general',d:'ultra'},
+  {w:'拗ねる',r:'すねる',g:'general',d:'ultra'},{w:'嗾ける',r:'けしかける',g:'general',d:'ultra'},
+  {w:'訝しむ',r:'いぶかしむ',g:'general',d:'ultra'},{w:'憚る',r:'はばかる',g:'general',d:'ultra'},
+  {w:'諦める',r:'あきらめる',g:'general',d:'ultra'},{w:'窘める',r:'たしなめる',g:'general',d:'ultra'},
+  {w:'慄く',r:'おののく',g:'general',d:'ultra'},{w:'戦慄',r:'せんりつ',g:'general',d:'ultra'},
+  {w:'愕然',r:'がくぜん',g:'general',d:'ultra'},{w:'瞠目',r:'どうもく',g:'general',d:'ultra'},
+  {w:'驚愕',r:'きょうがく',g:'general',d:'ultra'},{w:'狼狽',r:'ろうばい',g:'general',d:'ultra'},
+  {w:'焦燥',r:'しょうそう',g:'general',d:'ultra'},{w:'逡巡',r:'しゅんじゅん',g:'general',d:'ultra'},
+  {w:'躊躇逡巡',r:'ちゅうちょしゅんじゅん',g:'general',d:'ultra'},{w:'彷徨',r:'ほうこう',g:'general',d:'ultra'},
+  {w:'漂泊',r:'ひょうはく',g:'general',d:'ultra'},{w:'流浪',r:'るろう',g:'general',d:'ultra'},
+  // Plant ultra
+  {w:'苧環',r:'おだまき',g:'plant',d:'ultra'},{w:'著莪',r:'しゃが',g:'plant',d:'ultra'},
+  {w:'杜若',r:'かきつばた',g:'plant',d:'ultra'},{w:'花菖蒲',r:'はなしょうぶ',g:'plant',d:'ultra'},
+  {w:'勿忘草',r:'わすれなぐさ',g:'plant',d:'ultra'},{w:'矢車草',r:'やぐるまそう',g:'plant',d:'ultra'},
+  {w:'虎耳草',r:'ゆきのした',g:'plant',d:'ultra'},{w:'千振',r:'せんぶり',g:'plant',d:'ultra'},
+  // Animal ultra
+  {w:'鯔',r:'ぼら',g:'animal',d:'ultra'},{w:'鰹節',r:'かつおぶし',g:'animal',d:'ultra'},
+  {w:'鱈子',r:'たらこ',g:'animal',d:'ultra'},{w:'数の子',r:'かずのこ',g:'animal',d:'ultra'},
+  {w:'蟹子',r:'かにこ',g:'animal',d:'ultra'},{w:'鯢',r:'さんしょううお',g:'animal',d:'ultra'},
+  {w:'玳瑁',r:'たいまい',g:'animal',d:'ultra'},{w:'楊貴妃',r:'ようきひ',g:'animal',d:'ultra',hint:'美しい金魚の品種'},
+  // Yoji ultra
+  {w:'阿鼻叫喚',r:'あびきょうかん',g:'yoji',d:'ultra'},{w:'修羅場',r:'しゅらば',g:'yoji',d:'ultra'},
+  {w:'天衣無縫',r:'てんいむほう',g:'yoji',d:'ultra'},{w:'玄妙',r:'げんみょう',g:'yoji',d:'ultra'},
+  {w:'無為自然',r:'むいしぜん',g:'yoji',d:'ultra'},{w:'虚心坦懐',r:'きょしんたんかい',g:'yoji',d:'ultra'},
+
+  // ===== ADDITIONAL GEKI =====
+  {w:'螽',r:'きりぎりす',g:'animal',d:'geki'},{w:'蜩',r:'ひぐらし',g:'animal',d:'geki'},
+  {w:'蟬',r:'せみ',g:'animal',d:'geki'},{w:'蟷螂',r:'かまきり',g:'animal',d:'geki'},
+  {w:'蜻蜓',r:'とんぼ',g:'animal',d:'geki'},{w:'螢',r:'ほたる',g:'animal',d:'geki'},
+  {w:'蝌蚪',r:'おたまじゃくし',g:'animal',d:'geki'},{w:'蠑螺',r:'さざえ',g:'animal',d:'geki'},
+  {w:'鱚',r:'きす',g:'food',d:'geki'},{w:'鰊',r:'にしん',g:'food',d:'geki'},
+  {w:'鯡',r:'にしん',g:'food',d:'geki'},{w:'鱶',r:'ふか',g:'food',d:'geki'},
+  {w:'燻製',r:'くんせい',g:'food',d:'geki'},{w:'鹹味',r:'えんみ',g:'food',d:'geki'},
+  {w:'糠味噌',r:'ぬかみそ',g:'food',d:'geki'},{w:'饅頭',r:'まんじゅう',g:'food',d:'geki'},
+  {w:'羊羹',r:'ようかん',g:'food',d:'geki'},{w:'外郎',r:'ういろう',g:'food',d:'geki'},
+  {w:'落雁',r:'らくがん',g:'food',d:'geki'},{w:'金平糖',r:'こんぺいとう',g:'food',d:'geki'},
+  {w:'泡盛',r:'あわもり',g:'food',d:'geki'},{w:'焼酎',r:'しょうちゅう',g:'food',d:'geki'},
+  {w:'吟醸',r:'ぎんじょう',g:'food',d:'geki'},{w:'醸造',r:'じょうぞう',g:'food',d:'geki'},
+  // Place geki (old province names)
+  {w:'陸奥',r:'むつ',g:'place',d:'geki'},{w:'出羽',r:'でわ',g:'place',d:'geki'},
+  {w:'常陸',r:'ひたち',g:'place',d:'geki'},{w:'武蔵',r:'むさし',g:'place',d:'geki'},
+  {w:'相模',r:'さがみ',g:'place',d:'geki'},{w:'駿河',r:'するが',g:'place',d:'geki'},
+  {w:'遠江',r:'とおとうみ',g:'place',d:'geki'},{w:'三河',r:'みかわ',g:'place',d:'geki'},
+  {w:'尾張',r:'おわり',g:'place',d:'geki'},{w:'近江',r:'おうみ',g:'place',d:'geki'},
+  {w:'山城',r:'やましろ',g:'place',d:'geki'},{w:'大和',r:'やまと',g:'place',d:'geki'},
+  {w:'河内',r:'かわち',g:'place',d:'geki'},{w:'和泉',r:'いずみ',g:'place',d:'geki'},
+  {w:'摂津',r:'せっつ',g:'place',d:'geki'},{w:'紀伊',r:'きい',g:'place',d:'geki'},
+  // History geki
+  {w:'小野妹子',r:'おののいもこ',g:'history',d:'geki',hint:'遣隋使'},
+  {w:'阿倍仲麻呂',r:'あべのなかまろ',g:'history',d:'geki',hint:'唐に渡った歌人'},
+  {w:'吉備真備',r:'きびのまきび',g:'history',d:'geki',hint:'奈良時代の学者'},
+  {w:'橘諸兄',r:'たちばなのもろえ',g:'history',d:'geki',hint:'奈良時代の公卿'},
+  {w:'藤原仲麻呂',r:'ふじわらのなかまろ',g:'history',d:'geki',hint:'恵美押勝の乱'},
+  {w:'道鏡',r:'どうきょう',g:'history',d:'geki',hint:'称徳天皇に寵愛された僧'},
+  {w:'桓武天皇',r:'かんむてんのう',g:'history',d:'geki',hint:'平安京遷都'},
+  {w:'坂上田村麻呂',r:'さかのうえのたむらまろ',g:'history',d:'geki',hint:'征夷大将軍'},
+  // Geki yoji
+  {w:'烏合之衆',r:'うごうのしゅう',g:'yoji',d:'geki'},{w:'呉越同舟',r:'ごえつどうしゅう',g:'yoji',d:'geki'},
+  {w:'臥薪嘗胆',r:'がしんしょうたん',g:'yoji',d:'geki'},{w:'破釜沈舟',r:'はふちんしゅう',g:'yoji',d:'geki'},
+  {w:'捲土重来',r:'けんどちょうらい',g:'yoji',d:'geki'},{w:'雌伏雄飛',r:'しふくゆうひ',g:'yoji',d:'geki'},
+  {w:'天下泰平',r:'てんかたいへい',g:'yoji',d:'geki'},{w:'泰山北斗',r:'たいざんほくと',g:'yoji',d:'geki'},
+  {w:'蛍雪之功',r:'けいせつのこう',g:'yoji',d:'geki'},{w:'牛刀割鶏',r:'ぎゅうとうかっけい',g:'yoji',d:'geki'},
+  {w:'一葉知秋',r:'いちようちしゅう',g:'yoji',d:'geki'},{w:'落花流水',r:'らっかりゅうすい',g:'yoji',d:'geki'},
+  {w:'水魚之交',r:'すいぎょのまじわり',g:'yoji',d:'geki'},{w:'刎頸之交',r:'ふんけいのまじわり',g:'yoji',d:'geki'},
+  {w:'桃李不言',r:'とうりふげん',g:'yoji',d:'geki'},{w:'推敲',r:'すいこう',g:'general',d:'geki',hint:'詩の字句を練り直すこと'},
+  {w:'白眉',r:'はくび',g:'general',d:'geki',hint:'最も優れた人や物'},
+  {w:'登竜門',r:'とうりゅうもん',g:'general',d:'geki',hint:'出世の関門'},
+  {w:'呉牛喘月',r:'ごぎゅうぜんげつ',g:'yoji',d:'geki'},{w:'杞憂',r:'きゆう',g:'general',d:'geki',hint:'取り越し苦労'},
 ];
 
 // ===== GAME STATE =====
@@ -397,7 +667,7 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 
-function showDiffSelect() { showScreen('diff-screen'); }
+function showDiffSelect() { showScreen('diff-screen'); updateDiffBests(); }
 function selectDiff(d) { G.diff=d; showScreen('genre-screen'); }
 function selectGenre(g) { G.genre=g; startGame(); }
 
@@ -557,10 +827,31 @@ function endGame(outOfLives) {
   document.getElementById('res-combo').textContent=`${G.maxCombo}`;
   document.getElementById('res-skip').textContent=`${G.skipUsed}回`;
   document.getElementById('res-rank').textContent=rank;
+  saveScore(G.diff, G.score, G.qi);
+  document.getElementById('res-best').textContent = getBestScore(G.diff) + '問';
   showScreen('result-screen');
 }
 
 function retryGame() { startGame(); }
+
+// ===== SCORE PERSISTENCE =====
+function saveScore(diff, score, total) {
+  const key = 'kanji_best_' + diff;
+  const prev = parseInt(localStorage.getItem(key) || '0');
+  if (score > prev) localStorage.setItem(key, score);
+}
+
+function getBestScore(diff) {
+  return parseInt(localStorage.getItem('kanji_best_' + diff) || '0');
+}
+
+function updateDiffBests() {
+  ['beginner','inter','adv','ultra','geki'].forEach(d => {
+    const best = getBestScore(d);
+    const el = document.querySelector(`[onclick="selectDiff('${d}')"] .diff-best`);
+    if (el) el.textContent = best > 0 ? `ベスト: ${best}問` : '';
+  });
+}
 
 // ===== ANIMATED BG =====
 (function(){

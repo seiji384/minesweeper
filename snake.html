@@ -413,6 +413,7 @@ function startGame() {
   initGame();
   gameState = 'running';
   hideOverlay();
+  document.getElementById('home-btn').style.display = 'block';
   clearInterval(loopTimer);
   loopTimer = setInterval(gameLoop, getInterval());
 }
@@ -421,6 +422,7 @@ function resetGame() {
   localStorage.removeItem('snake_save');
   clearInterval(loopTimer);
   gameState = 'idle';
+  document.getElementById('home-btn').style.display = 'none';
   setupCanvas();
   initGame();
   drawGame();
@@ -466,6 +468,7 @@ function endGame() {
   localStorage.removeItem('snake_save');
   clearInterval(loopTimer);
   gameState = 'over';
+  document.getElementById('home-btn').style.display = 'none';
   best = Math.max(best || 0, score);
   saveBest(best);
   saveHiRec('snake', score);
@@ -604,6 +607,16 @@ function saveBest(val) {
   if (val > cur) localStorage.setItem('snake_best', val);
 }
 
+function goHome() {
+  if (!confirm('タイトル画面に戻りますか？（進行中のゲームは終了します）')) return;
+  clearInterval(loopTimer);
+  gameState = 'idle';
+  document.getElementById('home-btn').style.display = 'none';
+  localStorage.removeItem('snake_save');
+  setupCanvas(); initGame(); drawGame();
+  showOverlay('SNAKE', 'タップ / スペースでスタート', '');
+}
+
 function saveGame() {
   if (gameState !== 'running') return;
   localStorage.setItem('snake_save', JSON.stringify({
@@ -636,6 +649,7 @@ window.resumeSnake = function() {
   score = s.score; level = s.level;
   gameState = 'running';
   hideOverlay();
+  document.getElementById('home-btn').style.display = 'block';
   updateLEDs();
   drawGame();
   clearInterval(loopTimer);
@@ -768,6 +782,7 @@ drawGame();
 updateLEDs();
 if (!tryLoadSave()) showOverlay('SNAKE', 'タップ / スペースでスタート', '');
 </script>
+<button id="home-btn" onclick="goHome()" style="position:fixed;top:52px;left:8px;z-index:9999;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;display:none;backdrop-filter:blur(4px)">🏠 戻る</button>
 <script id="home-nav-js">
 (function(){
   window.showHomeConfirm=function(){document.getElementById('home-confirm-overlay').classList.add('visible');};

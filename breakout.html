@@ -583,6 +583,7 @@ function startGame(){
   updateHUD();
   document.getElementById('overlay').style.display='none';
   document.getElementById('pauseBtn').disabled=false;
+  document.getElementById('home-btn').style.display = 'block';
 }
 
 function startGameAtStage(n){
@@ -596,6 +597,7 @@ function startGameAtStage(n){
   updateHUD();
   document.getElementById('overlay').style.display='none';
   document.getElementById('pauseBtn').disabled=false;
+  document.getElementById('home-btn').style.display = 'block';
   if(animId) cancelAnimationFrame(animId);
   startLoop();
 }
@@ -640,6 +642,7 @@ function loseLife(){
     cancelAnimationFrame(animId);
     showOverlay('ゲームオーバー','スコア',score);
     document.getElementById('pauseBtn').disabled=true;
+    document.getElementById('home-btn').style.display = 'none';
   } else {
     balls=[mkBall()];
   }
@@ -1039,7 +1042,18 @@ function showSaveToast(){
 window.addEventListener('beforeunload', ()=>{ if(state==='playing') saveGame(); });
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&state==='playing') saveGame(); });
 setInterval(()=>{ if(state==='playing') saveGame(); }, 30000);
+
+function goHome() {
+  if (!confirm('タイトル画面に戻りますか？（進行中のゲームは終了します）')) return;
+  if (animId) cancelAnimationFrame(animId);
+  state = 'idle';
+  document.getElementById('home-btn').style.display = 'none';
+  document.getElementById('pauseBtn').disabled = true;
+  showOverlay('ブロック崩し', 'タップ or クリックでスタート\n← → キーでパドルを移動', null);
+  draw();
+}
 </script>
+<button id="home-btn" onclick="goHome()" style="position:fixed;top:52px;left:8px;z-index:9999;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;display:none;backdrop-filter:blur(4px)">🏠 戻る</button>
 <script id="home-nav-js">
 (function(){
   window.showHomeConfirm=function(){document.getElementById('home-confirm-overlay').classList.add('visible');};

@@ -267,6 +267,7 @@ body{padding-top:44px!important;}
 </head>
 <body>
 <div id="home-top-bar"><button id="home-top-btn" onclick="showHomeConfirm()">&#x1F3E0; ホーム</button></div><div id="home-confirm-overlay"><div id="home-confirm-box"><p class="hcb-title">&#x1F3E0; ホーム画面に戻りますか？</p><p class="hcb-msg">※ゲームの進捗はブラウザに自動保存されます。</p><div class="hcb-btns"><button class="hcb-ok" onclick="location.href='index.html'">戻る</button><button class="hcb-cancel" onclick="document.getElementById('home-confirm-overlay').classList.remove('visible')">キャンセル</button></div></div></div>
+<button id="home-btn" onclick="goHome()" style="position:fixed;top:8px;left:8px;z-index:9999;background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;display:none;backdrop-filter:blur(4px)">🏠 戻る</button>
 
 <canvas id="stars"></canvas>
 <canvas id="confetti"></canvas>
@@ -478,6 +479,7 @@ function newPuzzle() {
   closeAllModals();
   renderGrid();
   updateTimer();
+  document.getElementById('home-btn').style.display = 'block';
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
@@ -822,6 +824,12 @@ newPuzzle();
 tryLoadSave(); // restore previous session if within 7 days and not complete
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
 window.addEventListener('beforeunload', ()=>{ saveGame(); });
+function goHome() {
+  if (!confirm('ホーム画面に戻りますか？')) return;
+  stopTimer();
+  document.getElementById('home-btn').style.display = 'none';
+  location.href = 'index.html';
+}
 </script>
 <script id="home-nav-js">
 (function(){

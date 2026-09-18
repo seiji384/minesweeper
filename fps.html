@@ -64,14 +64,10 @@ canvas{display:block;}
 
 /* Mobile controls */
 #mobile-controls{position:fixed;inset:0;pointer-events:none;z-index:22;display:none;}
-#joy-zone{position:absolute;bottom:20px;left:10px;width:150px;height:150px;pointer-events:all;}
-#joy-base{width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.18);position:absolute;top:10px;left:10px;}
-#joy-knob{width:52px;height:52px;border-radius:50%;background:rgba(0,255,136,0.25);border:2px solid rgba(0,255,136,0.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
-#fire-btn{position:absolute;bottom:30px;right:90px;width:82px;height:82px;border-radius:50%;background:rgba(220,0,60,0.5);border:3px solid rgba(255,80,80,0.8);pointer-events:all;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-family:monospace;letter-spacing:1px;font-weight:bold;user-select:none;}
-#ads-btn{position:absolute;bottom:130px;right:10px;width:56px;height:56px;border-radius:50%;background:rgba(0,120,255,0.35);border:2px solid rgba(0,200,255,0.6);pointer-events:all;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-family:monospace;user-select:none;}
-#weapon-btns{position:absolute;bottom:125px;right:80px;display:flex;flex-direction:column;gap:5px;pointer-events:all;}
-.weapon-btn{width:48px;height:30px;background:rgba(0,0,0,0.65);border:1px solid #445;color:#aaa;font-size:10px;font-family:monospace;display:flex;align-items:center;justify-content:center;border-radius:3px;user-select:none;}
-.weapon-btn.active{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,0.1);}
+.mob-btn{pointer-events:all;}
+#joy-zone{pointer-events:all;}
+#cam-zone{pointer-events:all;}
+#btn-layout-edit{pointer-events:all;}
 
 #loading{position:fixed;inset:0;background:#000;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 #loading h2{color:#00ff88;font-size:24px;letter-spacing:6px;margin-bottom:20px;font-family:monospace;}
@@ -125,14 +121,46 @@ canvas{display:block;}
 <div id="big-text"></div>
 <div id="dmg-layer"></div>
 
-<div id="mobile-controls">
-  <div id="joy-zone"><div id="joy-base"></div><div id="joy-knob"></div></div>
-  <div id="fire-btn">FIRE</div>
-  <div id="ads-btn">ADS</div>
-  <div id="weapon-btns">
-    <div class="weapon-btn active" data-w="0">AR</div>
-    <div class="weapon-btn" data-w="1">SG</div>
-    <div class="weapon-btn" data-w="2">SR</div>
+<div id="mobile-controls" style="display:none">
+  <!-- Move joystick (bottom-left) -->
+  <div id="joy-zone" style="position:fixed;bottom:30px;left:20px;width:130px;height:130px;z-index:500;touch-action:none">
+    <div id="joy-base" style="width:130px;height:130px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.25);border-radius:50%"></div>
+    <div id="joy-knob" style="position:absolute;width:52px;height:52px;background:rgba(255,255,255,0.4);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none"></div>
+  </div>
+
+  <!-- SHOOT button (top-left, big) -->
+  <div id="btn-shoot" class="mob-btn draggable-btn" data-id="shoot"
+    style="position:fixed;left:20px;top:80px;width:80px;height:80px;background:rgba(220,40,40,0.8);border:3px solid rgba(255,100,100,0.6);border-radius:50%;font-size:28px;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;user-select:none">
+    &#x1F52B;
+  </div>
+
+  <!-- ADS/Scope button (top-right) -->
+  <div id="btn-ads" class="mob-btn draggable-btn" data-id="ads"
+    style="position:fixed;right:20px;top:80px;width:64px;height:64px;background:rgba(40,100,220,0.7);border:2px solid rgba(100,150,255,0.5);border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;user-select:none">
+    &#x1F52D;
+  </div>
+
+  <!-- Weapon buttons (right side) -->
+  <div id="btn-w1" class="mob-btn draggable-btn" data-id="w1"
+    style="position:fixed;right:16px;bottom:220px;width:56px;height:40px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">AR</div>
+  <div id="btn-w2" class="mob-btn draggable-btn" data-id="w2"
+    style="position:fixed;right:16px;bottom:170px;width:56px;height:40px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">SG</div>
+  <div id="btn-w3" class="mob-btn draggable-btn" data-id="w3"
+    style="position:fixed;right:16px;bottom:120px;width:56px;height:40px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">SN</div>
+
+  <!-- Reload button -->
+  <div id="btn-reload" class="mob-btn draggable-btn" data-id="reload"
+    style="position:fixed;right:82px;bottom:30px;width:60px;height:44px;background:rgba(180,140,0,0.7);border:1px solid rgba(255,220,0,0.4);border-radius:10px;font-size:12px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">&#x30EA;&#x30ED;&#x30FC;&#x30C9;</div>
+
+  <!-- Layout edit toggle -->
+  <div id="btn-layout-edit"
+    style="position:fixed;top:8px;right:8px;width:50px;height:28px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-size:10px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:600;cursor:pointer;touch-action:none;pointer-events:all">
+    &#x914D;&#x7F6E;
+  </div>
+
+  <!-- Camera drag zone (right half) - invisible overlay -->
+  <div id="cam-zone"
+    style="position:fixed;right:0;top:0;width:55%;height:100%;z-index:400;touch-action:none;pointer-events:all">
   </div>
 </div>
 
@@ -828,6 +856,7 @@ function switchWeapon(i){
   document.getElementById('scope-overlay').style.display='none';
   buildGunMesh(WDEFS[i].id);
   document.querySelectorAll('.weapon-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  ['w1','w2','w3'].forEach((wid,j)=>{const b=document.getElementById('btn-'+wid);if(b)b.style.borderColor=j===i?'#00ff88':'rgba(255,255,255,0.3)';});
   updateHUD();
 }
 
@@ -1042,6 +1071,7 @@ function resetGame(){
   document.getElementById('mobile-controls').style.display=IS_MOBILE?'block':'none';
   buildGunMesh('ar');
   document.querySelectorAll('.weapon-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  ['w1','w2','w3'].forEach((wid,j)=>{const b=document.getElementById('btn-'+wid);if(b)b.style.borderColor=j===0?'#00ff88':'rgba(255,255,255,0.3)';});
   clock.start();
   startRound(1);
   gameState='playing';
@@ -1089,18 +1119,21 @@ function requestPointerLock(){ document.getElementById('c').requestPointerLock()
 
 // ─── MOBILE TOUCH ─────────────────────────────────────────────
 let joyTouchId=null, joyOriX=0, joyOriZ=0, joyX=0, joyY=0;
-let lookTouchId=null, lookLastX=0, lookLastY=0;
 let fireTouchId=null;
+let layoutEditMode=false;
+let camTouch=null, camLast={x:0,y:0};
 
 const joyZone=document.getElementById('joy-zone');
 const joyKnob=document.getElementById('joy-knob');
 
+// Joystick
 joyZone.addEventListener('touchstart',e=>{
   if(joyTouchId!==null) return;
   const t=e.changedTouches[0]; joyTouchId=t.identifier;
   const r=joyZone.getBoundingClientRect();
   joyOriX=r.left+r.width/2; joyOriZ=r.top+r.height/2;
-},{passive:true});
+  e.preventDefault();
+},{passive:false});
 joyZone.addEventListener('touchmove',e=>{
   for(const t of e.changedTouches) if(t.identifier===joyTouchId){
     const dx=t.clientX-joyOriX, dy=t.clientY-joyOriZ;
@@ -1117,41 +1150,136 @@ joyZone.addEventListener('touchmove',e=>{
   }
 },{passive:true}));
 
-const fireBtn=document.getElementById('fire-btn');
-fireBtn.addEventListener('touchstart',e=>{
-  e.preventDefault(); if(gameState!=='playing') return;
+// SHOOT button (top-left, big)
+const btnShoot=document.getElementById('btn-shoot');
+btnShoot.addEventListener('touchstart',e=>{
+  if(layoutEditMode) return;
+  e.preventDefault();
+  if(gameState!=='playing') return;
   if(fireTouchId!==null) return;
   fireTouchId=e.changedTouches[0].identifier;
   tryShoot();
   if(PW().auto){ clearInterval(autoFI); autoFI=setInterval(tryShoot,PW().rate*1000); }
 },{passive:false});
-['touchend','touchcancel'].forEach(ev=>fireBtn.addEventListener(ev,e=>{
+['touchend','touchcancel'].forEach(ev=>btnShoot.addEventListener(ev,e=>{
   for(const t of e.changedTouches) if(t.identifier===fireTouchId){ fireTouchId=null; clearInterval(autoFI); autoFI=null; }
 },{passive:true}));
 
-document.getElementById('ads-btn').addEventListener('touchstart',e=>{e.preventDefault();toggleADS();},{passive:false});
+// ADS button (hold to scope, release to un-scope)
+const btnAds=document.getElementById('btn-ads');
+btnAds.addEventListener('touchstart',e=>{
+  if(layoutEditMode) return;
+  e.preventDefault();
+  if(!player.isADS) toggleADS();
+},{passive:false});
+btnAds.addEventListener('touchend',e=>{
+  if(layoutEditMode) return;
+  e.preventDefault();
+  if(player.isADS) toggleADS();
+},{passive:false});
 
-document.querySelectorAll('.weapon-btn').forEach(btn=>{
-  btn.addEventListener('touchstart',e=>{ e.preventDefault(); switchWeapon(+btn.dataset.w); },{passive:false});
+// Weapon buttons
+['w1','w2','w3'].forEach((id,i)=>{
+  document.getElementById('btn-'+id).addEventListener('touchstart',e=>{
+    if(layoutEditMode) return;
+    e.preventDefault();
+    switchWeapon(i);
+  },{passive:false});
 });
 
-// Right-side look area
-document.addEventListener('touchstart',e=>{
+// Reload button
+document.getElementById('btn-reload').addEventListener('touchstart',e=>{
+  if(layoutEditMode) return;
+  e.preventDefault();
+  tryReload();
+},{passive:false});
+
+// Camera drag zone (right half of screen)
+const camZone=document.getElementById('cam-zone');
+camZone.addEventListener('touchstart',e=>{
+  if(layoutEditMode) return;
+  const t=e.changedTouches[0];
+  if(camTouch===null){ camTouch=t.identifier; camLast={x:t.clientX,y:t.clientY}; }
+  e.preventDefault();
+},{passive:false});
+camZone.addEventListener('touchmove',e=>{
+  if(layoutEditMode||camTouch===null) return;
   for(const t of e.changedTouches){
-    if(t.clientX>window.innerWidth*0.38 && t.target!==fireBtn && !t.target.closest('#weapon-btns') && t.target!==document.getElementById('ads-btn')){
-      if(lookTouchId===null){ lookTouchId=t.identifier; lookLastX=t.clientX; lookLastY=t.clientY; }
+    if(t.identifier!==camTouch) continue;
+    if(gameState==='playing'){
+      const s=player.isADS?0.0025:0.005;
+      player.yaw-=(t.clientX-camLast.x)*s;
+      player.pitch=Math.max(-1.4,Math.min(1.4,player.pitch-(t.clientY-camLast.y)*s));
     }
+    camLast={x:t.clientX,y:t.clientY};
   }
+  e.preventDefault();
+},{passive:false});
+camZone.addEventListener('touchend',e=>{
+  for(const t of e.changedTouches) if(t.identifier===camTouch) camTouch=null;
 },{passive:true});
-document.addEventListener('touchmove',e=>{
-  for(const t of e.changedTouches) if(t.identifier===lookTouchId&&gameState==='playing'){
-    const s=player.isADS?0.0025:0.005;
-    player.yaw-=(t.clientX-lookLastX)*s;
-    player.pitch=Math.max(-1.4,Math.min(1.4,player.pitch-(t.clientY-lookLastY)*s));
-    lookLastX=t.clientX; lookLastY=t.clientY;
-  }
-},{passive:true});
-document.addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===lookTouchId) lookTouchId=null; },{passive:true});
+
+// ─── LAYOUT CUSTOMIZATION ─────────────────────────────────────
+function loadBtnPositions(){
+  document.querySelectorAll('.draggable-btn').forEach(btn=>{
+    const id=btn.dataset.id;
+    const saved=localStorage.getItem('fps_btn_'+id);
+    if(saved){
+      const p=JSON.parse(saved);
+      if(p.left!==undefined){ btn.style.left=p.left; btn.style.right=''; }
+      if(p.right!==undefined){ btn.style.right=p.right; btn.style.left=''; }
+      if(p.top!==undefined){ btn.style.top=p.top; btn.style.bottom=''; }
+      if(p.bottom!==undefined){ btn.style.bottom=p.bottom; btn.style.top=''; }
+    }
+  });
+}
+
+function toggleLayoutEdit(){
+  layoutEditMode=!layoutEditMode;
+  const editBtn=document.getElementById('btn-layout-edit');
+  editBtn.textContent=layoutEditMode?'完了':'配置';
+  editBtn.style.background=layoutEditMode?'rgba(255,100,0,0.8)':'rgba(0,0,0,0.6)';
+  document.querySelectorAll('.draggable-btn').forEach(btn=>{
+    btn.style.outline=layoutEditMode?'2px dashed #ffcc00':'none';
+  });
+}
+
+document.querySelectorAll('.draggable-btn').forEach(btn=>{
+  let dragTouch=null, startX, startY, startLeft, startTop;
+  btn.addEventListener('touchstart',e=>{
+    if(!layoutEditMode) return;
+    e.preventDefault(); e.stopPropagation();
+    const t=e.touches[0];
+    dragTouch=t.identifier;
+    const rect=btn.getBoundingClientRect();
+    startX=t.clientX; startY=t.clientY;
+    startLeft=rect.left; startTop=rect.top;
+    btn.style.left=startLeft+'px'; btn.style.right='';
+    btn.style.top=startTop+'px'; btn.style.bottom='';
+  },{passive:false});
+  btn.addEventListener('touchmove',e=>{
+    if(!layoutEditMode||dragTouch===null) return;
+    e.preventDefault(); e.stopPropagation();
+    for(const t of e.changedTouches){
+      if(t.identifier!==dragTouch) continue;
+      const newLeft=Math.max(0,Math.min(innerWidth-btn.offsetWidth,startLeft+t.clientX-startX));
+      const newTop=Math.max(0,Math.min(innerHeight-btn.offsetHeight,startTop+t.clientY-startY));
+      btn.style.left=newLeft+'px'; btn.style.top=newTop+'px';
+    }
+  },{passive:false});
+  btn.addEventListener('touchend',e=>{
+    if(!layoutEditMode) return;
+    dragTouch=null;
+    localStorage.setItem('fps_btn_'+btn.dataset.id, JSON.stringify({left:btn.style.left,top:btn.style.top}));
+  },{passive:false});
+});
+
+document.getElementById('btn-layout-edit').addEventListener('touchstart',e=>{
+  e.preventDefault(); toggleLayoutEdit();
+},{passive:false});
+document.getElementById('btn-layout-edit').addEventListener('click',toggleLayoutEdit);
+
+loadBtnPositions();
 
 // ─── PLAYER COLLISION ─────────────────────────────────────────
 function movePlayer(dx,dz){

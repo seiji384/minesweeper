@@ -98,6 +98,7 @@
       keys:{}, joystick:{dx:0,dy:0},
       camAngleH:0, camAngleV:0.35,
       battle:null,
+      escapeCooldown:0,
       dayTime:0,
       sun:null, hemi:null, ambientLight:null,
       healCrystal:null, wildMonsters:[],
@@ -356,7 +357,7 @@
       const bt = S.battle;
       if (!bt || bt.phase!=='cmd') return;
       bt.phase='anim';
-      if (action==='run') { setBattleMsg('うまく逃げ切れた！'); setTimeout(endBattle,1200); return; }
+      if (action==='run') { setBattleMsg('うまく逃げ切れた！'); setTimeout(() => endBattle(true), 1200); return; }
       if (action==='item') { setBattleMsg('使えるどうぐがない！'); bt.phase='cmd'; return; }
       if (action==='catch') {
         const wdef = MONS.find(m=>m.id===bt.wild.id);
@@ -442,9 +443,17 @@
       mon.xpNext=mon.lv*50;
     }
 
-    function endBattle() {
+    function endBattle(escaped) {
       document.getElementById('battle').style.display='none';
       S.battle=null;
+      if (escaped) {
+        S.escapeCooldown = Date.now() + 3000;
+        // Push player away from danger zone
+        S.player.position.x += Math.sin(S.camAngleH) * 6;
+        S.player.position.z += Math.cos(S.camAngleH) * 6;
+        S.player.position.x = Math.max(-98, Math.min(98, S.player.position.x));
+        S.player.position.z = Math.max(-98, Math.min(98, S.player.position.z));
+      }
       saveGame();
     }
 
@@ -593,6 +602,7 @@
 
     function checkInteractions() {
       if (S.battle) return;
+      if (S.escapeCooldown && Date.now() < S.escapeCooldown) return; // escape cooldown
       const px=S.player.position.x, pz=S.player.position.z;
       for (let i=0;i<S.wildMonsters.length;i++) {
         const wm=S.wildMonsters[i];
