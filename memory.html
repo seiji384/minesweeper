@@ -113,29 +113,48 @@ body {
   overflow-x: auto; overflow-y: hidden;
   touch-action: pan-x pan-y;
 }
-.card { perspective: 600px; cursor: pointer; touch-action: manipulation; aspect-ratio: 1; }
-.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.4s; }
+.card { perspective: 700px; cursor: pointer; touch-action: manipulation; aspect-ratio: 1; }
+.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.34,1.1,0.64,1); }
 .card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
-.card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+/* Card back — dark blue with decorative pattern */
 .card-front {
-  background: linear-gradient(145deg, #5a3aaa 10%, #3a1a8a 60%, #28106a 100%);
-  border: 1px solid #6048b0; font-size: 20px; color: #6050a0;
+  background:
+    repeating-linear-gradient(45deg, rgba(123,237,159,0.04) 0px, rgba(123,237,159,0.04) 2px, transparent 2px, transparent 10px),
+    linear-gradient(145deg, #0d3020 10%, #082018 60%, #041410 100%);
+  border: 2px solid #308050;
+  box-shadow: inset 0 1px 0 rgba(123,237,159,0.15), 0 2px 8px rgba(0,0,0,0.4);
+  font-size: 20px; color: rgba(123,237,159,0.3);
+  font-weight: 900; letter-spacing: 1px;
 }
+/* card-back pattern overlay (no content needed, set in HTML) */
 .card-back {
-  background: linear-gradient(145deg, #2a1870 0%, #1a0a50 100%);
-  border: 1px solid #7060c0; transform: rotateY(180deg); font-size: 28px;
+  background: linear-gradient(145deg, #1a3028 0%, #102018 100%);
+  border: 2px solid #50c080; transform: rotateY(180deg); font-size: 30px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
 }
+/* Matched cards — green pulsing glow */
 .card.matched .card-back {
-  background: radial-gradient(circle, #3a2a00 0%, #1a1000 100%);
-  border-color: #f5c842;
-  box-shadow: 0 0 12px rgba(245,200,66,0.6);
+  background: radial-gradient(circle, #0d2a18 0%, #061410 100%);
+  border-color: #7bed9f;
+  box-shadow: 0 0 14px rgba(123,237,159,0.7), 0 0 28px rgba(123,237,159,0.3);
+  animation: matchGlow 1.6s ease-in-out infinite;
+}
+@keyframes matchGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(123,237,159,0.5), 0 0 20px rgba(123,237,159,0.2); }
+  50% { box-shadow: 0 0 20px rgba(123,237,159,0.9), 0 0 40px rgba(123,237,159,0.5); }
 }
 
 /* Win message */
 .win-msg {
-  text-align: center; color: #f5c842; font-size: 20px; font-weight: 900;
+  text-align: center; color: #7bed9f; font-size: 22px; font-weight: 900;
   padding: 12px; display: none;
-  text-shadow: 0 0 16px rgba(245,200,66,0.8);
+  text-shadow: 0 0 20px rgba(123,237,159,0.9);
+  animation: winPulse 1.2s ease-in-out infinite;
+}
+@keyframes winPulse {
+  0%, 100% { text-shadow: 0 0 16px rgba(123,237,159,0.7); }
+  50% { text-shadow: 0 0 30px rgba(123,237,159,1), 0 0 60px rgba(64,200,100,0.5); }
 }
 .hs-table{width:100%;}
 .hs-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(80,60,180,0.1);border:1px solid rgba(80,60,180,0.2);border-radius:8px;margin:3px 0;}
@@ -160,7 +179,13 @@ body {
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
-<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(120,15,135,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(95,8,110,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #1a0820 0%, #100514 100%) !important; }</style>
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(20,100,50,0.5) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(10,70,30,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #041810 0%, #020e08 100%) !important; }
+.window { border-color: #7bed9f !important; box-shadow: 0 0 30px rgba(123,237,159,0.35), 0 0 80px rgba(123,237,159,0.12), 0 24px 64px rgba(0,0,0,0.85) !important; }
+.led { color: #7bed9f !important; text-shadow: 0 0 10px #7bed9f, 0 0 20px #40c070 !important; border-color: #2a6040 !important; }
+.led-label { color: #308050 !important; }
+.act-btn { background: linear-gradient(160deg, #0a3020 0%, #061810 100%) !important; color: #7bed9f !important; border-color: #308050 !important; }
+.diff-btn.active { background: linear-gradient(160deg, #205040 0%, #102820 100%) !important; color: #a0ffcc !important; border-color: #50c080 !important; box-shadow: 0 0 10px rgba(123,237,159,0.5) !important; }
+</style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">

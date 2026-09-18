@@ -5,15 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ブロック崩し</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f1a;
+    --bg2: #1a1a2e;
+    --panel: rgba(30,30,53,0.95);
+    --accent: #a855f7;
+    --text: #ffffff;
+    --text-sub: #aaaacc;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
-    background: radial-gradient(ellipse at center, #120830 0%, #050210 100%);
+    background: var(--bg);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Helvetica Neue', 'Segoe UI', sans-serif;
     overflow: hidden;
+    color: var(--text);
   }
   #starCanvas {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -25,27 +36,29 @@
   }
   .window {
     position: relative; z-index: 10;
-    background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
-    border: 2px solid #7060ff;
-    border-radius: 16px;
-    box-shadow: 0 0 40px rgba(112,96,255,0.4), 0 0 80px rgba(112,96,255,0.15), inset 0 0 30px rgba(112,96,255,0.05);
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: 0 0 40px rgba(168,85,247,0.3), 0 0 80px rgba(168,85,247,0.1), var(--shadow);
     width: min(480px, 98vw);
     display: flex;
     flex-direction: column;
     max-height: 98vh;
+    backdrop-filter: blur(20px);
   }
   .titlebar {
-    background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
-    color: #3a1a00;
+    background: linear-gradient(90deg, rgba(168,85,247,0.1) 0%, rgba(168,85,247,0.25) 50%, rgba(168,85,247,0.1) 100%);
+    color: var(--accent);
     font-weight: 900;
     font-size: 16px;
-    padding: 8px 14px;
-    border-radius: 14px 14px 0 0;
+    padding: 10px 14px;
+    border-radius: var(--radius) var(--radius) 0 0;
     display: flex;
     align-items: center;
     gap: 10px;
-    letter-spacing: 1px;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    letter-spacing: 3px;
+    border-bottom: 1px solid rgba(168,85,247,0.3);
+    text-shadow: 0 0 20px rgba(168,85,247,0.8);
   }
   .titlebar .home-btn {
     text-decoration: none;
@@ -69,27 +82,23 @@
     gap: 2px;
   }
   .hud-label {
-    color: #8070cc;
-    font-size: 9px;
+    color: var(--text-sub);
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
   }
   .led {
-    background: #0a0018;
-    color: #ff60c0;
-    border: 1px solid #ff40a0;
-    border-radius: 6px;
-    font-family: monospace;
-    font-size: 20px;
-    padding: 4px 10px;
-    box-shadow: 0 0 10px rgba(255,80,160,0.5);
-    letter-spacing: 3px;
-    min-width: 70px;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 16px rgba(168,85,247,0.7);
+    min-width: 60px;
     text-align: center;
+    display: block;
   }
-  .led.lives { color: #ff6080; border-color: #ff4060; box-shadow: 0 0 10px rgba(255,64,96,0.5); }
-  .led.stage { color: #60ffb0; border-color: #40ffa0; box-shadow: 0 0 10px rgba(64,255,160,0.5); }
+  .led.lives { color: #ff6080; text-shadow: 0 0 12px rgba(255,96,128,0.7); font-size: 18px; }
+  .led.stage { color: #60ffb0; text-shadow: 0 0 12px rgba(96,255,176,0.7); }
   .canvas-wrap {
     position: relative;
     display: flex;
@@ -123,64 +132,63 @@
     display: inline-block;
   }
   .action-bar {
-    background: linear-gradient(0deg, #060412 0%, rgba(10,6,28,0.97) 100%);
-    border-top: 1px solid #4030a0;
-    border-radius: 0 0 14px 14px;
-    padding: 8px 14px;
+    background: rgba(15,15,26,0.97);
+    border-top: 1px solid rgba(168,85,247,0.2);
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 10px 14px 14px;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
+    flex-wrap: wrap;
+    backdrop-filter: blur(12px);
   }
   .btn {
-    background: linear-gradient(160deg, #3a2080 0%, #22105a 100%);
-    color: #b898ff;
-    border: 1px solid #5a3aaa;
-    border-radius: 10px;
-    padding: 8px 22px;
-    font-size: 14px;
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, white));
+    border: none;
+    border-radius: var(--radius);
+    color: #1a0030;
+    padding: 8px 18px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    letter-spacing: 1px;
-    transition: all 0.15s;
-    box-shadow: 0 2px 8px rgba(90,58,170,0.3);
+    letter-spacing: 0.5px;
+    transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
+    box-shadow: 0 4px 16px rgba(168,85,247,0.3);
+    touch-action: manipulation;
   }
-  .btn:hover {
-    background: linear-gradient(160deg, #5030b0 0%, #32187a 100%);
-    box-shadow: 0 0 16px rgba(140,100,255,0.4);
-    transform: translateY(-1px);
-  }
-  .btn:active { transform: translateY(1px); }
+  .btn:active { transform: scale(0.94); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
   #overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     border-radius: 6px;
-    background: rgba(5,2,16,0.88);
+    background: rgba(5,5,15,0.90);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
     z-index: 20;
+    backdrop-filter: blur(4px);
   }
   #overlay h2 {
-    color: #ffe870;
-    font-size: 24px;
+    color: var(--accent);
+    font-size: 26px;
     font-weight: 900;
-    text-shadow: 0 0 20px rgba(255,232,112,0.7);
-    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(168,85,247,0.9);
+    letter-spacing: 3px;
   }
   #overlay p {
-    color: #b898ff;
+    color: var(--text-sub);
     font-size: 13px;
     text-align: center;
-    line-height: 1.6;
+    line-height: 1.7;
   }
   #overlay .big-score {
-    color: #ff60c0;
-    font-size: 32px;
-    font-family: monospace;
+    color: var(--accent);
+    font-size: 36px;
+    font-weight: 900;
     letter-spacing: 4px;
-    text-shadow: 0 0 20px rgba(255,96,192,0.7);
+    text-shadow: 0 0 24px rgba(168,85,247,0.8);
   }
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:10000;justify-content:center;align-items:center;padding:16px;}
   .modal-overlay.visible{display:flex;}
@@ -216,7 +224,7 @@
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
-<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(180,20,30,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(150,10,20,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #380810 0%, #1e0408 100%) !important; }</style>
+<style>body { background: var(--bg) !important; }</style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -231,8 +239,8 @@ body{padding-top:44px!important;}
 
 <div class="window">
   <div class="titlebar">
-    <a href="index.html" class="home-btn" title="ホームへ戻る">🏠</a>
-    <span class="title-text">🧱 ブロック崩し</span>
+    <a href="index.html" class="home-btn" title="ホームへ戻る" style="color:var(--accent);font-size:18px;">🏠</a>
+    <span class="title-text">BREAKOUT</span>
     <span style="width:28px"></span>
   </div>
 
@@ -504,6 +512,20 @@ let lives = 3, stage = 1;
 let balls = [], paddle = {}, bricks = [], powerups = [], activePU = {};
 let animId = null;
 let stageClearTimeout = null;
+let ballTrails = []; // { x, y, alpha }
+
+// Web Audio
+function playBeep(freq=440, dur=0.06, type='sine') {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.frequency.value = freq; o.type = type;
+    g.gain.setValueAtTime(0.1, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+    o.start(); o.stop(ac.currentTime + dur);
+  } catch(e) {}
+}
 
 function lerp(a,b,t){ return a+(b-a)*t; }
 
@@ -666,6 +688,12 @@ function update(dt){
     }
   });
 
+  // Track ball trails
+  balls.forEach(ball => {
+    ballTrails.push({ x: ball.x, y: ball.y, alpha: 1, fire: ball.fire });
+  });
+  ballTrails = ballTrails.filter(t => { t.alpha -= 0.08; return t.alpha > 0; });
+
   // Move balls
   let aliveBalls = [];
   for(let ball of balls){
@@ -703,6 +731,7 @@ function update(dt){
         }
         if(!b.indestructible){
           b.hp--;
+          playBeep(440 + b.r * 40, 0.05, 'sine');
           if(b.hp<=0){
             const rowsTotal = getStageCfg().rows;
             const mult = rowsTotal - b.r;
@@ -795,13 +824,13 @@ function draw(){
 
   // Background
   const bg=ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#0d0830');
-  bg.addColorStop(1,'#050210');
+  bg.addColorStop(0,'#0f0f1a');
+  bg.addColorStop(1,'#070712');
   ctx.fillStyle=bg;
   ctx.fillRect(0,0,W,H);
 
   // Grid lines subtle
-  ctx.strokeStyle='rgba(112,96,255,0.07)';
+  ctx.strokeStyle='rgba(168,85,247,0.07)';
   ctx.lineWidth=1;
   for(let x=0;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
   for(let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
@@ -827,15 +856,28 @@ function draw(){
 
   // Paddle
   const pg=ctx.createLinearGradient(paddle.x-paddle.w/2, PADDLE_Y, paddle.x+paddle.w/2, PADDLE_Y+PADDLE_H);
-  pg.addColorStop(0, activePU.fire?'#ff8040': activePU.slow?'#c070ff':'#b898ff');
-  pg.addColorStop(1, activePU.fire?'#ff4000': activePU.slow?'#6020aa':'#5030b0');
+  pg.addColorStop(0, activePU.fire?'#ff8040': activePU.slow?'#c084fc':'#d8b4fe');
+  pg.addColorStop(1, activePU.fire?'#ff4000': activePU.slow?'#7e22ce':'#a855f7');
   ctx.fillStyle=pg;
-  ctx.shadowColor = activePU.fire?'#ff6020': activePU.slow?'#a040ff':'#8060ff';
+  ctx.shadowColor = activePU.fire?'#ff6020': activePU.slow?'#c084fc':'#a855f7';
   ctx.shadowBlur=15;
   ctx.beginPath();
   ctx.roundRect(paddle.x-paddle.w/2, PADDLE_Y, paddle.w, PADDLE_H, 5);
   ctx.fill();
   ctx.shadowBlur=0;
+
+  // Ball trails
+  ballTrails.forEach(t => {
+    ctx.globalAlpha = t.alpha * 0.5;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, BALL_R * t.alpha, 0, Math.PI*2);
+    ctx.fillStyle = t.fire ? '#ff6040' : '#a855f7';
+    ctx.shadowColor = t.fire ? '#ff4020' : '#a855f7';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
 
   // Balls
   balls.forEach(ball=>{

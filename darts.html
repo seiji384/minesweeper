@@ -66,16 +66,17 @@ body {
 #throw-zone { display:flex; flex-direction:column; align-items:center; gap:6px; padding:6px 8px; }
 #throw-btn {
   width:100%; padding:14px; font-size:16px; font-weight:900; border-radius:12px;
-  background: linear-gradient(160deg, #6020c0 0%, #3a0a80 100%);
-  color: #ffe870; border: 2px solid #a060ff;
-  box-shadow: 0 0 20px rgba(160,100,255,0.5), 0 4px 12px rgba(0,0,0,0.6);
+  background: linear-gradient(135deg, #fb8500 0%, #d45f00 100%);
+  color: #fff; border: 2px solid #ff9c2a;
+  box-shadow: 0 0 24px rgba(251,133,0,0.6), 0 4px 16px rgba(0,0,0,0.6);
   cursor:pointer; letter-spacing:2px; touch-action:manipulation;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 #throw-btn:active { transform:scale(0.96); }
 #throw-btn:disabled { opacity:0.4; }
 #score-log { background:linear-gradient(160deg,#100a30 0%,#08051a 100%); border:1px solid #4030a0; border-radius:10px; padding:6px 10px; margin:0 8px 8px; min-height:36px; color:#c0b0e8; font-size:12px; text-align:center; }
-#turn-scores { font-size:13px; color:#ffe870; font-weight:bold; margin-top:2px; }
-#msg-flash { height:28px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#ffe870; text-shadow:0 0 12px #ffcc00; letter-spacing:2px; }
+#turn-scores { font-size:13px; color:#fb8500; font-weight:bold; margin-top:2px; text-shadow: 0 0 8px rgba(251,133,0,0.5); }
+#msg-flash { height:32px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900; color:#fb8500; text-shadow:0 0 16px rgba(251,133,0,0.8), 0 0 32px rgba(251,133,0,0.4); letter-spacing:3px; }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -227,15 +228,15 @@ const TRIPLE_OUT = R*0.58;
 const DOUBLE_IN = R*0.82;
 const DOUBLE_OUT = R*0.97;
 
-const SEG_COLORS_A=['#3a1060','#0a0820']; // purple/black alternating
-const SEG_COLORS_B=['#5a20a0','#1a0840'];
+const SEG_COLORS_A=['#1a1a1a','#f5f5f0']; // black/cream alternating
+const SEG_COLORS_B=['#2a2a2a','#e8e8e0'];
 
 function drawBoard(reticle, darts){
   ctx.clearRect(0,0,W,H);
 
   // outer circle bg
   ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2);
-  ctx.fillStyle='#0a0615'; ctx.fill();
+  ctx.fillStyle='#111111'; ctx.fill();
   ctx.strokeStyle='#604080'; ctx.lineWidth=2; ctx.stroke();
 
   const segAngle = Math.PI*2/20;
@@ -258,7 +259,7 @@ function drawBoard(reticle, darts){
     ctx.arc(CX,CY,DOUBLE_OUT,a1,a2);
     ctx.arc(CX,CY,DOUBLE_IN,a2,a1,true);
     ctx.closePath();
-    ctx.fillStyle=ci===0?'#8020e0':'#50c030'; ctx.fill();
+    ctx.fillStyle=ci===0?'#cc1a2a':'#1a8a3a'; ctx.fill();
     ctx.strokeStyle='#c0a030'; ctx.lineWidth=0.5; ctx.stroke();
 
     // Single outer (between triple and double)
@@ -275,7 +276,7 @@ function drawBoard(reticle, darts){
     ctx.arc(CX,CY,TRIPLE_OUT,a1,a2);
     ctx.arc(CX,CY,TRIPLE_IN,a2,a1,true);
     ctx.closePath();
-    ctx.fillStyle=ci===0?'#8020e0':'#50c030'; ctx.fill();
+    ctx.fillStyle=ci===0?'#cc1a2a':'#1a8a3a'; ctx.fill();
     ctx.strokeStyle='#c0a030'; ctx.lineWidth=0.5; ctx.stroke();
 
     // Single inner (between bull and triple)
@@ -293,27 +294,27 @@ function drawBoard(reticle, darts){
     ctx.beginPath();
     ctx.moveTo(CX+Math.cos(a)*SBULL_R,CY+Math.sin(a)*SBULL_R);
     ctx.lineTo(CX+Math.cos(a)*DOUBLE_OUT,CY+Math.sin(a)*DOUBLE_OUT);
-    ctx.strokeStyle='#c0a030'; ctx.lineWidth=0.8; ctx.stroke();
+    ctx.strokeStyle='#888880'; ctx.lineWidth=0.8; ctx.stroke();
   }
 
   // Ring borders
   [SBULL_R,TRIPLE_IN,TRIPLE_OUT,DOUBLE_IN,DOUBLE_OUT].forEach(r=>{
     ctx.beginPath(); ctx.arc(CX,CY,r,0,Math.PI*2);
-    ctx.strokeStyle='#c0a030'; ctx.lineWidth=1; ctx.stroke();
+    ctx.strokeStyle='#999990'; ctx.lineWidth=1; ctx.stroke();
   });
 
   // Single bull (green)
   ctx.beginPath(); ctx.arc(CX,CY,SBULL_R,0,Math.PI*2);
-  ctx.fillStyle='#30b030'; ctx.fill();
-  ctx.strokeStyle='#c0a030'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#1a9a2a'; ctx.fill();
+  ctx.strokeStyle='#666666'; ctx.lineWidth=1.5; ctx.stroke();
 
   // Bull (red)
   ctx.beginPath(); ctx.arc(CX,CY,BULL_R,0,Math.PI*2);
-  ctx.fillStyle='#cc2020'; ctx.fill();
-  ctx.strokeStyle='#c0a030'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#dd1a1a'; ctx.fill();
+  ctx.strokeStyle='#666666'; ctx.lineWidth=1.5; ctx.stroke();
 
   // Numbers
-  ctx.fillStyle='#ffe870'; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#ffffff'; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
   for(let i=0;i<20;i++){
     const a=offset+i*segAngle+segAngle/2;
     const nr=DOUBLE_OUT+8;
@@ -323,20 +324,20 @@ function drawBoard(reticle, darts){
   // Draw landed darts
   if(darts) darts.forEach(d=>{
     ctx.beginPath(); ctx.arc(d.x,d.y,4,0,Math.PI*2);
-    ctx.fillStyle='#ffe060'; ctx.fill();
-    ctx.strokeStyle='#ff8800'; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.fillStyle='#ffe060'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
+    ctx.fillStyle='#fb8500'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#fb8500'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
     ctx.fillText(d.label, d.x, d.y-10);
   });
 
   // Reticle
   if(reticle){
     const {x,y}=reticle;
-    ctx.strokeStyle='rgba(255,220,0,0.85)'; ctx.lineWidth=1.5;
+    ctx.strokeStyle='rgba(251,133,0,0.9)'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(x-14,y); ctx.lineTo(x+14,y); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x,y-14); ctx.lineTo(x,y+14); ctx.stroke();
     ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
-    ctx.strokeStyle='rgba(255,100,0,0.9)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
   }
 }
 

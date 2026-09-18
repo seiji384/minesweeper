@@ -65,7 +65,7 @@ body {
 }
 
 /* ── Game area ── */
-.game-area { padding: 12px 14px 0; }
+.game-area { padding: 12px 14px 0; background: radial-gradient(ellipse at 50% 40%, rgba(30,110,50,0.25) 0%, transparent 70%); }
 
 /* ── Section labels ── */
 .section-label {
@@ -76,11 +76,7 @@ body {
 .section-label span { flex:1; height:1px; background: #2a1868; }
 
 /* ── Hand names ── */
-.hand-name {
-  text-align: center; min-height: 18px;
-  font-size: 13px; font-weight: bold; color: #ffe870;
-  letter-spacing: 1px; margin-top: 4px; margin-bottom: 2px;
-}
+.hand-name { text-align: center; min-height: 24px; font-size: 16px; font-weight: 900; color: #f4d03f; letter-spacing: 2px; margin-top: 6px; margin-bottom: 2px; text-shadow: 0 0 16px rgba(244,208,63,0.6); }
 
 /* ── Card hand row ── */
 .hand {
@@ -89,27 +85,10 @@ body {
 }
 
 /* ── Cards ── */
-.card {
-  width: 58px; height: 84px;
-  border-radius: 7px;
-  border: 2px solid rgba(200,200,200,0.8);
-  background: #fff;
-  display: flex; flex-direction: column;
-  align-items: stretch;
-  cursor: pointer;
-  position: relative;
-  font-family: Arial, sans-serif;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  flex-shrink: 0;
-}
+.card { width: 58px; height: 84px; border-radius: 7px; border: 2px solid rgba(200,200,200,0.8); background: #fff; display: flex; flex-direction: column; align-items: stretch; cursor: pointer; position: relative; font-family: Arial, sans-serif; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; box-shadow: 2px 4px 12px rgba(0,0,0,0.6), 0 1px 3px rgba(255,255,255,0.1); flex-shrink: 0; }
 .card.red { color: #cc0000; }
 .card.black { color: #111; }
-.card.selected {
-  border-color: #ff60c0;
-  transform: translateY(-14px);
-  box-shadow: 0 6px 18px rgba(255,96,192,0.7), 0 0 0 1px #ff60c0;
-}
+.card.selected { border-color: #f4d03f; transform: translateY(-14px); box-shadow: 0 6px 18px rgba(244,208,63,0.7), 0 0 0 2px #f4d03f; }
 .card-corner-tl {
   position: absolute; top: 3px; left: 4px;
   font-size: 12px; font-weight: bold; line-height: 1.1;
@@ -145,13 +124,7 @@ body {
   font-size: 24px; opacity: 0.5;
 }
 /* Discard label on selected card */
-.card.selected::before {
-  content: '捨'; position: absolute; bottom: -1px; left: 0; right: 0;
-  background: #ff60c0; color: #fff;
-  font-size: 9px; font-weight: bold; text-align: center;
-  border-radius: 0 0 5px 5px; padding: 1px 0;
-  letter-spacing: 0;
-}
+.card.selected::before { content: '捨'; position: absolute; bottom: -1px; left: 0; right: 0; background: linear-gradient(135deg, #e63946, #c01020); color: #fff; font-size: 9px; font-weight: bold; text-align: center; border-radius: 0 0 5px 5px; padding: 1px 0; letter-spacing: 0; }
 
 /* ── Status row ── */
 .status-row {
@@ -171,8 +144,8 @@ body {
 
 /* ── Result badges ── */
 .badge { display: inline-block; padding: 4px 18px; border-radius: 16px; font-weight: 900; font-size: 16px; letter-spacing: 1px; }
-.badge-win  { background: linear-gradient(90deg, #40a020, #80ff40); color: #003000; box-shadow: 0 0 20px rgba(80,255,60,0.5); }
-.badge-lose { background: linear-gradient(90deg, #a00040, #ff4088); color: #200010; box-shadow: 0 0 16px rgba(255,60,120,0.4); }
+.badge-win  { background: linear-gradient(90deg, #2a7a20, #60dd40); color: #001a00; box-shadow: 0 0 24px rgba(80,255,60,0.6), 0 0 50px rgba(80,220,40,0.3); font-size: 18px; }
+.badge-lose { background: linear-gradient(90deg, #b00030, #e63946); color: #200010; box-shadow: 0 0 20px rgba(230,57,70,0.5); font-size: 18px; }
 .badge-push { background: linear-gradient(90deg, #707090, #b0b0d0); color: #101030; }
 
 /* ── Divider ── */
@@ -207,12 +180,8 @@ hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
 .btn:hover { background: linear-gradient(160deg, #4a30a0 0%, #32206a 100%); color: #d0b8ff; }
 .btn:active { transform: scale(0.93); }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-.btn-primary {
-  background: linear-gradient(160deg, #5a38c0 0%, #3a2095 100%);
-  border-color: #9070ff; color: #e0d0ff;
-  box-shadow: 0 2px 12px rgba(112,90,255,0.4);
-}
-.btn-primary:hover { background: linear-gradient(160deg, #6a48d0 0%, #4a30a5 100%); }
+.btn-primary { background: linear-gradient(160deg, #b01020 0%, #7a0a18 100%); border-color: #e63946; color: #ffd8da; box-shadow: 0 2px 12px rgba(230,57,70,0.4); }
+.btn-primary:hover { background: linear-gradient(160deg, #c01828 0%, #8a1222 100%); }
 .btn.bet-selected {
   border-color: #ff60c0; color: #ff80d0;
   box-shadow: 0 0 10px rgba(255,80,160,0.45);
@@ -248,6 +217,7 @@ hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
 .rankings-table td:first-child { color: #ffe870; font-weight: bold; min-width: 130px; }
 .rankings-table td:last-child { color: #8070c0; }
 .rank-num { color: #ff60c0; font-weight: bold; margin-right: 4px; }
+@keyframes cardDealIn { from { opacity: 0; transform: translateY(-40px) rotate(-5deg); } to { opacity: 1; transform: translateY(0) rotate(0deg); } }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -265,7 +235,7 @@ hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
-<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(150,15,20,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(120,8,15,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #28060a 0%, #180404 100%) !important; }</style>
+<style>body { background: radial-gradient(ellipse at 30% 25%, rgba(12,130,65,0.7) 0%, transparent 45%), radial-gradient(ellipse at 70% 75%, rgba(8,100,45,0.55) 0%, transparent 45%), radial-gradient(ellipse at 50% 50%, #051a0a 0%, #020d05 100%) !important; }</style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">

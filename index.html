@@ -1,603 +1,1127 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>🎮 ミニゲーム集</title>
+<title>🎮 MINI GAME COLLECTION</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@400;600;900&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
+<link rel="manifest" href="manifest.json">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+:root {
+  --bg: #0f0f1a;
+  --bg2: #1a1a2e;
+  --card-bg: #1e1e35;
+  --card-hover: #252545;
+  --accent1: #e63946;
+  --accent2: #4cc9f0;
+  --accent3: #f4d03f;
+  --accent4: #7bed9f;
+  --text: #ffffff;
+  --text-sub: #aaaacc;
+  --border: rgba(255,255,255,0.1);
+  --glow: rgba(76,201,240,0.3);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html { height: 100%; }
+
 body {
-  background: linear-gradient(160deg, #ece8ff 0%, #fff5fb 50%, #e8f2ff 100%);
-  display: flex; justify-content: center; align-items: flex-start;
-  min-height: 100vh; padding: 12px 8px 90px;
-  font-family: Arial, sans-serif; overflow-x: hidden;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Exo 2', 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-/* ── Main window ── */
-.window {
-  position: relative; z-index: 1;
-  background: #ffffff;
-  border: 1.5px solid #d4c8ff; border-radius: 18px;
-  box-shadow:
-    0 0 0 1px rgba(180,160,255,0.2),
-    0 4px 20px rgba(100,80,200,0.14),
-    0 12px 48px rgba(0,0,0,0.07);
-  max-width: 460px; width: 100%; overflow: hidden;
+/* ─────────────────────────────────────────
+   STARFIELD CANVAS
+───────────────────────────────────────── */
+#stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
 }
 
-/* ── Titlebar ── */
-.titlebar {
-  background: linear-gradient(180deg, #fff5a0 0%, #f5c842 30%, #c89010 100%);
-  color: #3a1a00; font-size: 15px; font-weight: 900; padding: 9px 14px;
-  text-align: center; letter-spacing: 2px;
-  text-shadow: 0 1px 0 rgba(255,255,200,0.9);
-  border-bottom: 2px solid #a06010;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.7);
-  display: flex; justify-content: space-between; align-items: center;
+/* ─────────────────────────────────────────
+   PAGE WRAPPER
+───────────────────────────────────────── */
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
-/* ── Offline badge ── */
-.offline-badge {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: linear-gradient(90deg, rgba(0,160,70,0.08), rgba(0,200,100,0.05));
-  border: 1px solid rgba(0,160,70,0.25);
-  padding: 5px 14px; font-size: 9px; color: #1a9448; font-weight: bold; letter-spacing: 0.8px;
+/* ─────────────────────────────────────────
+   HEADER
+───────────────────────────────────────── */
+.header {
+  position: relative;
+  padding: 36px 20px 20px;
+  text-align: center;
+  overflow: hidden;
 }
+
+.header-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 250px;
+  background: radial-gradient(ellipse at center, rgba(76,201,240,0.12) 0%, rgba(168,85,247,0.06) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.header-eyebrow {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--accent2);
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+
+.header-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  line-height: 1.15;
+  background: linear-gradient(90deg,
+    #e63946 0%, #f4d03f 20%, #7bed9f 40%,
+    #4cc9f0 60%, #a855f7 80%, #e63946 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleShine 6s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes titleShine {
+  0%   { background-position: 0% center; }
+  100% { background-position: 300% center; }
+}
+
+.header-badges {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  font-family: 'Exo 2', sans-serif;
+}
+
+.badge-count {
+  background: rgba(76,201,240,0.12);
+  border: 1px solid rgba(76,201,240,0.35);
+  color: var(--accent2);
+}
+
+.badge-offline {
+  background: rgba(123,237,159,0.1);
+  border: 1px solid rgba(123,237,159,0.3);
+  color: var(--accent4);
+}
+
 .offline-dot {
-  width: 6px; height: 6px; background: #22c060; border-radius: 50%;
-  box-shadow: 0 0 5px #22c060; animation: blink 2s ease-in-out infinite;
-}
-@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-
-/* ── Category tabs ── */
-.cat-wrap {
-  padding: 10px 10px 4px;
-  background: linear-gradient(180deg, #f8f5ff 0%, #ffffff 100%);
-  border-bottom: 1px solid #e8e0ff;
-}
-.cat-tabs {
-  display: flex; gap: 5px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; padding-bottom: 2px;
-}
-.cat-tabs::-webkit-scrollbar { display: none; }
-.cat-tab {
+  width: 6px;
+  height: 6px;
+  background: var(--accent4);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent4);
+  animation: dotPulse 2s ease-in-out infinite;
   flex-shrink: 0;
-  padding: 6px 13px; font-size: 10px; font-weight: 900;
-  border-radius: 20px; cursor: pointer; touch-action: manipulation;
-  background: #f0ecff; color: #6858c0; border: 1px solid #d8d0f0;
-  box-shadow: 0 2px 0 #d0c8e8, 0 3px 8px rgba(100,80,200,0.08);
-  transition: transform 0.1s, box-shadow 0.1s; letter-spacing: 0.5px;
 }
-.cat-tab.active {
-  background: linear-gradient(180deg, #8070ff 0%, #5040d0 100%);
-  color: #fff; border-color: #7060e0;
-  box-shadow: 0 2px 0 #2a18a0, 0 3px 12px rgba(112,90,255,0.4);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.35; transform: scale(0.7); }
 }
-.cat-tab:active { transform: translateY(2px); box-shadow: 0 0 0; }
 
-/* ── Content ── */
-.content { padding: 6px 6px 10px; }
-
-/* ── Section header ── */
-.section-header {
-  margin: 10px 4px 4px;
-  padding: 6px 12px;
-  background: linear-gradient(90deg, rgba(112,90,255,0.08) 0%, transparent 100%);
-  border-left: 3px solid #8070ff;
-  border-radius: 0 8px 8px 0;
-  display: flex; align-items: center; gap: 8px;
+/* ─────────────────────────────────────────
+   TAB BAR
+───────────────────────────────────────── */
+.tab-bar-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(15,15,26,0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px 10px;
 }
-.section-icon { font-size: 13px; }
-.section-text { color: #7060c0; font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
-.section-count { margin-left: auto; color: #a8a0c8; font-size: 9px; font-weight: bold; }
 
-/* ── Game grid ── */
-.game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 6px 4px; }
+.tab-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
 
-/* ── Game card base ── */
+.tab-btn {
+  flex-shrink: 0;
+  position: relative;
+  padding: 8px 16px 10px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-sub);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
+  outline: none;
+}
+
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--accent2);
+  transform: translateX(-50%);
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.tab-btn.active {
+  background: rgba(76,201,240,0.12);
+  border-color: rgba(76,201,240,0.3);
+  color: var(--accent2);
+}
+
+.tab-btn.active::after { width: 55%; }
+
+.tab-btn:active { transform: scale(0.93); }
+
+/* ─────────────────────────────────────────
+   MAIN CONTENT & GRID
+───────────────────────────────────────── */
+.main-content {
+  padding: 8px 12px 16px;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+  gap: 12px;
+}
+
+/* ─────────────────────────────────────────
+   SECTION LABEL
+───────────────────────────────────────── */
+.section-label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  margin-bottom: 2px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-sub);
+}
+
+.section-label-bar {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: var(--section-accent, var(--accent2));
+  box-shadow: 0 0 8px var(--section-accent, var(--accent2));
+}
+
+.section-label-count {
+  margin-left: auto;
+  color: var(--section-accent, var(--accent2));
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+}
+
+.section-label-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+.section-label:first-child { margin-top: 8px; }
+
+/* ─────────────────────────────────────────
+   GAME CARD
+───────────────────────────────────────── */
 .game-card {
   position: relative;
-  background: linear-gradient(160deg, #2a1a6a, #160e3c);
-  border: 1.5px solid #4030a0;
-  border-radius: 14px; padding: 14px 8px 11px;
-  text-align: center; cursor: pointer; text-decoration: none;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),
-    0 3px 0 rgba(0,0,0,0.25),
-    0 5px 14px rgba(0,0,0,0.18);
-  transition: transform 0.1s, box-shadow 0.1s;
-  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-}
-.game-card:active {
-  transform: translateY(3px);
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.4), 0 1px 0 rgba(0,0,0,0.2);
-}
-
-/* ── Per-card colors ── */
-.game-card[data-c="mine"]    { background: linear-gradient(160deg, #1e4d14, #0d2808); border-color: #2d7820; }
-.game-card[data-c="indigo"]  { background: linear-gradient(160deg, #16287a, #0a1850); border-color: #2a42b8; }
-.game-card[data-c="teal"]    { background: linear-gradient(160deg, #0c5252, #073232); border-color: #1898a0; }
-.game-card[data-c="amber"]   { background: linear-gradient(160deg, #8a4400, #5a2c00); border-color: #cc6800; }
-.game-card[data-c="gold"]    { background: linear-gradient(160deg, #6a5200, #443400); border-color: #a08000; }
-.game-card[data-c="brown"]   { background: linear-gradient(160deg, #6a3400, #422200); border-color: #a05200; }
-.game-card[data-c="violet"]  { background: linear-gradient(160deg, #480e72, #2d084a); border-color: #7022a8; }
-.game-card[data-c="cobalt"]  { background: linear-gradient(160deg, #102c8c, #081a5a); border-color: #1e4acc; }
-.game-card[data-c="sky"]     { background: linear-gradient(160deg, #0062a8, #003c6a); border-color: #0098e8; }
-.game-card[data-c="forest"]  { background: linear-gradient(160deg, #145618, #0d380e); border-color: #208020; }
-.game-card[data-c="earth"]   { background: linear-gradient(160deg, #6a3a08, #422404); border-color: #a05e0a; }
-.game-card[data-c="electric"]{ background: linear-gradient(160deg, #58009e, #380068); border-color: #8a22d8; }
-.game-card[data-c="crimson"] { background: linear-gradient(160deg, #9a1020, #621014); border-color: #d01828; }
-.game-card[data-c="slate"]   { background: linear-gradient(160deg, #222428, #141618); border-color: #484a50; }
-.game-card[data-c="dgn"]     { background: linear-gradient(160deg, #12401a, #0c2a12); border-color: #1e6a2a; }
-.game-card[data-c="rdyl"]    { background: linear-gradient(160deg, #981012, #621010); border-color: #d01a1a; }
-.game-card[data-c="navy"]    { background: linear-gradient(160deg, #101e6c, #0a1446); border-color: #1a32a8; }
-.game-card[data-c="plum"]    { background: linear-gradient(160deg, #5c106a, #3c0a46); border-color: #8a1aa8; }
-.game-card[data-c="casino"]  { background: linear-gradient(160deg, #06401a, #04280e); border-color: #0e6c2a; }
-.game-card[data-c="richgd"]  { background: linear-gradient(160deg, #6a4a00, #443200); border-color: #9a7400; }
-.game-card[data-c="darkred"] { background: linear-gradient(160deg, #6a0818, #440510); border-color: #9c1020; }
-.game-card[data-c="dart"]    { background: linear-gradient(160deg, #4a0808, #300505); border-color: #800c0c; }
-.game-card[data-c="lane"]    { background: linear-gradient(160deg, #08305c, #051e3c); border-color: #1052a8; }
-.game-card[data-c="hotpink"] { background: linear-gradient(160deg, #8c105c, #5a0838); border-color: #c01888; }
-.game-card[data-c="tealb"]   { background: linear-gradient(160deg, #084a62, #053040); border-color: #0e7a9a; }
-.game-card[data-c="rpg"]     { background: linear-gradient(160deg, #38066c, #22044a); border-color: #5c12a8; }
-
-.game-emoji { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6)); }
-.game-name  { color: #ffffff; font-size: 12px; font-weight: 900; letter-spacing: 0.3px; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
-.game-desc  { color: rgba(255,255,255,0.55); font-size: 9px; line-height: 1.4; }
-.game-tag {
-  font-size: 8px; padding: 2px 7px; border-radius: 8px; margin-top: 3px;
-  font-weight: 900; letter-spacing: 0.5px;
-  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, var(--g1, var(--card-bg)), var(--g2, var(--card-hover)));
+  border: 1px solid var(--card-border, var(--border));
+  border-radius: 16px;
+  padding: 18px 12px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  touch-action: manipulation;
+  transition:
+    transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
-.save-badge {
+/* Inner glass sheen */
+.game-card::before {
+  content: '';
   position: absolute;
-  top: 6px;
-  right: 6px;
-  font-size: 14px;
-  background: rgba(0,0,0,0.6);
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255,255,255,0.07) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Shimmer sweep */
+.game-card::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -60%;
+  width: 35%;
+  height: 300%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  transform: skewX(-18deg);
+  animation: shimmer 7s ease-in-out infinite;
+  animation-delay: var(--shimmer-delay, 0s);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes shimmer {
+  0%, 65%, 100% { left: -60%; opacity: 0; }
+  70%            { opacity: 1; }
+  82%            { left: 135%; opacity: 1; }
+  87%            { opacity: 0; }
+}
+
+.game-card:hover {
+  transform: scale(1.04) translateY(-3px);
+  border-color: var(--card-accent, var(--accent2));
+  box-shadow:
+    0 14px 40px rgba(0,0,0,0.45),
+    0 0 24px var(--card-glow, var(--glow));
+}
+
+.game-card:active {
+  transform: scale(0.96) translateY(0);
+  transition: transform 0.08s ease;
+}
+
+/* Top accent line */
+.card-topline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent2)), transparent);
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+
+/* Card content */
+.card-icon {
+  position: relative;
+  z-index: 1;
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
+  margin-top: 4px;
+  margin-bottom: 2px;
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.game-card:hover .card-icon {
+  transform: scale(1.12) translateY(-2px);
+}
+
+.card-name {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.25;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+}
+
+.card-cat-badge {
+  position: relative;
+  z-index: 1;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  padding: 3px 9px;
+  border-radius: 10px;
+  background: var(--badge-bg, rgba(76,201,240,0.15));
+  color: var(--card-accent, var(--accent2));
+  border: 1px solid var(--badge-border, rgba(76,201,240,0.3));
+}
+
+.card-play-btn {
+  position: relative;
+  z-index: 1;
+  margin-top: 7px;
+  padding: 6px 18px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid var(--card-accent, var(--accent2));
+  color: var(--card-accent, var(--accent2));
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  opacity: 0.85;
+}
+
+.game-card:hover .card-play-btn {
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 14px var(--card-glow, var(--glow));
+  transform: scale(1.04);
+  opacity: 1;
+}
+
+/* Save badge */
+.card-save-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  font-size: 11px;
+  border: 1px solid rgba(255,255,255,0.12);
 }
 
-.hidden { display: none !important; }
-
-/* ── Action bar ── */
-.action-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
-  display: flex; gap: 6px; padding: 8px 14px 12px;
-  background: rgba(255,255,255,0.96);
-  border-top: 1px solid #ddd8ff;
-  box-shadow: 0 -4px 20px rgba(100,80,200,0.12), 0 -1px 0 rgba(180,160,255,0.3);
-  flex-wrap: wrap; justify-content: center;
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+/* ─────────────────────────────────────────
+   RPG SPECIAL CARD
+───────────────────────────────────────── */
+.game-card.special {
+  animation: rpgBorderCycle 4s linear infinite;
 }
-.act-btn {
-  padding: 7px 18px; font-size: 11px; border-radius: 16px;
-  background: linear-gradient(180deg, #8070ff 0%, #5040d0 100%);
-  color: #fff; border: 1px solid #7060e0;
-  box-shadow: 0 3px 0 #2a18a0, 0 4px 10px rgba(100,80,200,0.25);
-  cursor: pointer; font-weight: 900; transition: transform 0.1s;
+
+@keyframes rpgBorderCycle {
+  0%   { border-color: rgba(230,57,70,0.7);  box-shadow: 0 4px 22px rgba(230,57,70,0.35); }
+  25%  { border-color: rgba(244,208,63,0.7); box-shadow: 0 4px 22px rgba(244,208,63,0.35); }
+  50%  { border-color: rgba(123,237,159,0.7); box-shadow: 0 4px 22px rgba(123,237,159,0.35); }
+  75%  { border-color: rgba(76,201,240,0.7); box-shadow: 0 4px 22px rgba(76,201,240,0.35); }
+  100% { border-color: rgba(230,57,70,0.7);  box-shadow: 0 4px 22px rgba(230,57,70,0.35); }
+}
+
+.game-card.special .card-cat-badge {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  animation: badgeRainbow 4s linear infinite;
+}
+
+.game-card.special .card-play-btn {
+  animation: playRainbow 4s linear infinite;
+}
+
+@keyframes badgeRainbow {
+  0%   { color: #e63946; }
+  25%  { color: #f4d03f; }
+  50%  { color: #7bed9f; }
+  75%  { color: #4cc9f0; }
+  100% { color: #e63946; }
+}
+
+@keyframes playRainbow {
+  0%   { color: #e63946; border-color: rgba(230,57,70,0.7); }
+  25%  { color: #f4d03f; border-color: rgba(244,208,63,0.7); }
+  50%  { color: #7bed9f; border-color: rgba(123,237,159,0.7); }
+  75%  { color: #4cc9f0; border-color: rgba(76,201,240,0.7); }
+  100% { color: #e63946; border-color: rgba(230,57,70,0.7); }
+}
+
+/* ─────────────────────────────────────────
+   FILTER STATE
+───────────────────────────────────────── */
+.card-hidden { display: none !important; }
+
+/* ─────────────────────────────────────────
+   FOOTER BAR
+───────────────────────────────────────── */
+.footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
+  background: rgba(15,15,26,0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+}
+
+.about-btn {
+  padding: 10px 28px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-sub);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
   touch-action: manipulation;
+  transition: all 0.2s ease;
+  outline: none;
 }
-.act-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #2a18a0; }
 
-/* ── Modals ── */
+.about-btn:hover {
+  background: rgba(76,201,240,0.1);
+  border-color: rgba(76,201,240,0.35);
+  color: var(--accent2);
+}
+
+.about-btn:active { transform: scale(0.95); }
+
+/* ─────────────────────────────────────────
+   MODAL (bottom sheet)
+───────────────────────────────────────── */
 .modal-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75); z-index: 10000;
-  justify-content: center; align-items: center; padding: 16px;
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  z-index: 10000;
+  justify-content: center;
+  align-items: flex-end;
 }
+
 .modal-overlay.visible { display: flex; }
+
 .modal-box {
-  background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
-  border: 2px solid #7060ff; border-radius: 16px;
-  box-shadow: 0 0 40px rgba(112,90,255,0.5), 0 20px 60px rgba(0,0,0,0.9);
-  max-width: 360px; width: 100%; max-height: 88vh; overflow-y: auto;
+  background: linear-gradient(180deg, #1e1e38 0%, #13131f 100%);
+  border: 1px solid rgba(76,201,240,0.25);
+  border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(76,201,240,0.2);
 }
+
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.18);
+  margin: 12px auto 0;
+}
+
 .modal-title {
-  background: linear-gradient(180deg, #fff0a0 0%, #f5c842 40%, #c89010 100%);
-  color: #3a1a00; font-size: 14px; font-weight: 900; padding: 9px 14px;
-  text-align: center; letter-spacing: 2px; border-radius: 14px 14px 0 0;
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--accent2);
 }
-.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #3a1a00; }
-.modal-body { padding: 16px; color: #c0b0e8; font-size: 13px; line-height: 1.7; }
-.info-block { background: rgba(0,180,80,0.1); border: 1px solid rgba(0,200,100,0.3); border-radius: 10px; padding: 10px 12px; margin: 10px 0; }
-.info-block-title { color: #50d878; font-weight: 900; font-size: 12px; margin-bottom: 4px; }
-.info-block-body { color: #90c8a0; font-size: 11px; }
+
+.modal-close {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.modal-close:hover {
+  border-color: rgba(76,201,240,0.5);
+  color: var(--accent2);
+}
+
+.modal-body {
+  padding: 16px 20px calc(28px + env(safe-area-inset-bottom));
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-sub);
+}
+
+.modal-section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.modal-section-title {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent4);
+  margin-bottom: 7px;
+}
+
+.modal-section ul {
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.modal-section li { margin: 4px 0; }
+
+/* ─────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
 </style>
-<!-- pwa-meta -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="ミニゲーム集">
-<link rel="manifest" href="manifest.json">
 </head>
 <body>
 
-<div class="window">
-  <div class="titlebar">
-    <span></span>
-    <span>🎮 ミニゲーム集</span>
-    <span></span>
+<canvas id="stars"></canvas>
+
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-glow"></div>
+    <p class="header-eyebrow">✈ OFFLINE ARCADE</p>
+    <h1 class="header-title">MINI GAME<br>COLLECTION</h1>
+    <div class="header-badges">
+      <span class="badge badge-count">🎮 29 GAMES</span>
+      <span class="badge badge-offline"><span class="offline-dot"></span>OFFLINE OK</span>
+    </div>
+  </header>
+
+  <!-- ── Tab filter ── -->
+  <div class="tab-bar-wrap">
+    <div class="tab-bar" id="tabBar">
+      <button class="tab-btn active" data-filter="all">🎮 ALL</button>
+      <button class="tab-btn" data-filter="RPG">⚔️ RPG</button>
+      <button class="tab-btn" data-filter="アクション">⚡ アクション</button>
+      <button class="tab-btn" data-filter="パズル">🧩 パズル</button>
+      <button class="tab-btn" data-filter="カード">🃏 カード</button>
+      <button class="tab-btn" data-filter="ボード">♟ ボード</button>
+      <button class="tab-btn" data-filter="教育">📚 教育</button>
+      <button class="tab-btn" data-filter="クイズ">💣 クイズ</button>
+    </div>
   </div>
 
-  <div class="offline-badge">
-    <div class="offline-dot"></div>
-    ✈ オフライン完全対応 — Wi-Fiなし・機内でも全ゲーム遊べる
-  </div>
+  <!-- ── Game grid ── -->
+  <main class="main-content">
+    <div class="game-grid" id="gameGrid"></div>
+  </main>
 
-  <div class="cat-wrap">
-    <div class="cat-tabs">
-      <button class="cat-tab active" onclick="filterCat(this,'all')">🎮 全て</button>
-      <button class="cat-tab" onclick="filterCat(this,'puzzle')">🧩 パズル</button>
-      <button class="cat-tab" onclick="filterCat(this,'action')">⚡ アクション</button>
-      <button class="cat-tab" onclick="filterCat(this,'board')">♟ 対戦</button>
-      <button class="cat-tab" onclick="filterCat(this,'card')">🃏 カード</button>
-      <button class="cat-tab" onclick="filterCat(this,'sports')">🎯 スポーツ</button>
-      <button class="cat-tab" onclick="filterCat(this,'rhythm')">🎵 リズム</button>
-      <button class="cat-tab" onclick="filterCat(this,'rpg')">⚔️ RPG</button>
-      <button class="cat-tab" onclick="filterCat(this,'saved')">💾 保存中</button>
-    </div>
-  </div>
+</div><!-- /page -->
 
-  <div class="content">
-
-    <!-- ── パズル ── -->
-    <div class="section-header" id="sec-puzzle">
-      <span class="section-icon">🧩</span>
-      <span class="section-text">パズル</span>
-      <span class="section-count" id="cnt-puzzle"></span>
-    </div>
-    <div class="game-grid" id="grid-puzzle">
-      <a class="game-card" href="minesweeper.html" data-cat="puzzle" data-c="mine">
-        <div class="game-emoji">💣</div>
-        <div class="game-name">マインスイーパー</div>
-        <div class="game-desc">地雷を避けて<br>全マスを開け</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-      <a class="game-card" href="sudoku.html" data-cat="puzzle" data-c="indigo">
-        <div class="game-emoji">🔢</div>
-        <div class="game-name">数独</div>
-        <div class="game-desc">1〜9を重ならず<br>埋めるパズル</div>
-        <div class="game-tag">🎯 ソロ</div>
-      </a>
-      <a class="game-card" href="puzzle15.html" data-cat="puzzle" data-c="teal">
-        <div class="game-emoji">🔲</div>
-        <div class="game-name">15パズル</div>
-        <div class="game-desc">スライドして<br>数字を並べろ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-      <a class="game-card" href="2048.html" data-cat="puzzle" data-c="amber">
-        <div class="game-emoji">✨</div>
-        <div class="game-name">2048</div>
-        <div class="game-desc">タイルを合わせて<br>2048を目指せ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-      <a class="game-card" href="lightsout.html" data-cat="puzzle" data-c="gold">
-        <div class="game-emoji">💡</div>
-        <div class="game-name">ライツアウト</div>
-        <div class="game-desc">全ての電球を<br>消せ</div>
-        <div class="game-tag">🎯 ソロ</div>
-      </a>
-      <a class="game-card" href="sokoban.html" data-cat="puzzle" data-c="brown">
-        <div class="game-emoji">📦</div>
-        <div class="game-name">倉庫番</div>
-        <div class="game-desc">箱を押して<br>所定位置へ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-      <a class="game-card" href="mastermind.html" data-cat="puzzle" data-c="violet">
-        <div class="game-emoji">🔍</div>
-        <div class="game-name">数字当て</div>
-        <div class="game-desc">ヒントを読んで<br>4桁を推理せよ</div>
-        <div class="game-tag">🎯 ソロ</div>
-      </a>
-      <a class="game-card" href="tetris.html" data-cat="puzzle" data-c="cobalt">
-        <div class="game-emoji">🟦</div>
-        <div class="game-name">テトリス</div>
-        <div class="game-desc">ブロックを積んで<br>ラインを消せ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-    </div>
-
-    <!-- ── アクション ── -->
-    <div class="section-header" id="sec-action">
-      <span class="section-icon">⚡</span>
-      <span class="section-text">アクション</span>
-      <span class="section-count" id="cnt-action"></span>
-    </div>
-    <div class="game-grid" id="grid-action">
-      <a class="game-card" href="flappybird.html" data-cat="action" data-c="sky">
-        <div class="game-emoji">🐦</div>
-        <div class="game-name">フラッピーバード</div>
-        <div class="game-desc">障害物を<br>くぐり抜けろ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-      <a class="game-card" href="snake.html" data-cat="action" data-c="forest">
-        <div class="game-emoji">🐍</div>
-        <div class="game-name">スネーク</div>
-        <div class="game-desc">蛇を操って<br>餌を食べろ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-      <a class="game-card" href="whackamole.html" data-cat="action" data-c="earth">
-        <div class="game-emoji">🔨</div>
-        <div class="game-name">モグラ叩き</div>
-        <div class="game-desc">出てくるモグラを<br>素早く叩け</div>
-        <div class="game-tag">🎯 ソロ</div>
-      </a>
-      <a class="game-card" href="breakout.html" data-cat="action" data-c="crimson">
-        <div class="game-emoji">🎾</div>
-        <div class="game-name">ブロック崩し</div>
-        <div class="game-desc">ボールでブロックを<br>全部壊せ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-    </div>
-
-    <!-- ── ボード対戦 ── -->
-    <div class="section-header" id="sec-board">
-      <span class="section-icon">♟</span>
-      <span class="section-text">ボード対戦（VS CPU）</span>
-      <span class="section-count" id="cnt-board"></span>
-    </div>
-    <div class="game-grid" id="grid-board">
-      <a class="game-card" href="gomoku.html" data-cat="board" data-c="slate">
-        <div class="game-emoji">⚫</div>
-        <div class="game-name">五目並べ</div>
-        <div class="game-desc">5つ先に並べた<br>方の勝ち</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-      <a class="game-card" href="reversi.html" data-cat="board" data-c="dgn">
-        <div class="game-emoji">⭕</div>
-        <div class="game-name">リバーシ</div>
-        <div class="game-desc">石を挟んで<br>ひっくり返せ</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-      <a class="game-card" href="connect4.html" data-cat="board" data-c="rdyl">
-        <div class="game-emoji">🔴</div>
-        <div class="game-name">4目並べ</div>
-        <div class="game-desc">縦横斜めに<br>4つ並べろ</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-      <a class="game-card" href="dotsboxes.html" data-cat="board" data-c="navy">
-        <div class="game-emoji">🟦</div>
-        <div class="game-name">ドット＆ボックス</div>
-        <div class="game-desc">線を引いて<br>箱を多く作れ</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-    </div>
-
-    <!-- ── カードゲーム ── -->
-    <div class="section-header" id="sec-card">
-      <span class="section-icon">🃏</span>
-      <span class="section-text">カードゲーム</span>
-      <span class="section-count" id="cnt-card"></span>
-    </div>
-    <div class="game-grid" id="grid-card">
-      <a class="game-card" href="memory.html" data-cat="card" data-c="plum">
-        <div class="game-emoji">🎴</div>
-        <div class="game-name">神経衰弱</div>
-        <div class="game-desc">同じ絵柄を探して<br>ペアを作れ</div>
-        <div class="game-tag">🎯 ソロ</div>
-      </a>
-      <a class="game-card" href="blackjack.html" data-cat="card" data-c="casino">
-        <div class="game-emoji">🃏</div>
-        <div class="game-name">ブラックジャック</div>
-        <div class="game-desc">21を超えずに<br>ディーラーに勝て</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-      <a class="game-card" href="daifugou.html" data-cat="card" data-c="richgd">
-        <div class="game-emoji">👑</div>
-        <div class="game-name">大富豪</div>
-        <div class="game-desc">手札を全て出して<br>大富豪になれ</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-      <a class="game-card" href="poker.html" data-cat="card" data-c="darkred">
-        <div class="game-emoji">♠️</div>
-        <div class="game-name">ポーカー</div>
-        <div class="game-desc">役を作って<br>ディーラーに勝て</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-    </div>
-
-    <!-- ── スポーツ ── -->
-    <div class="section-header" id="sec-sports">
-      <span class="section-icon">🎯</span>
-      <span class="section-text">スポーツ</span>
-      <span class="section-count" id="cnt-sports"></span>
-    </div>
-    <div class="game-grid" id="grid-sports">
-      <a class="game-card" href="darts.html" data-cat="sports" data-c="dart">
-        <div class="game-emoji">🎯</div>
-        <div class="game-name">ダーツ</div>
-        <div class="game-desc">501点を先に<br>ゼロにしろ</div>
-        <div class="game-tag">🤖 VS CPU</div>
-      </a>
-      <a class="game-card" href="bowling.html" data-cat="sports" data-c="lane">
-        <div class="game-emoji">🎳</div>
-        <div class="game-name">ボウリング</div>
-        <div class="game-desc">10フレームで<br>高スコアを狙え</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-    </div>
-
-    <!-- ── リズム・音楽 ── -->
-    <div class="section-header" id="sec-rhythm">
-      <span class="section-icon">🎵</span>
-      <span class="section-text">リズム・音楽</span>
-      <span class="section-count" id="cnt-rhythm"></span>
-    </div>
-    <div class="game-grid" id="grid-rhythm">
-      <a class="game-card" href="rhythm.html" data-cat="rhythm" data-c="hotpink">
-        <div class="game-emoji">🥁</div>
-        <div class="game-name">リズム天国</div>
-        <div class="game-desc">リズムに乗って<br>タップせよ</div>
-        <div class="game-tag">🎵 7種類</div>
-      </a>
-      <a class="game-card" href="simon.html" data-cat="rhythm" data-c="tealb">
-        <div class="game-emoji">🎵</div>
-        <div class="game-name">サイモン</div>
-        <div class="game-desc">色の順番を覚えて<br>繰り返せ</div>
-        <div class="game-tag">💾 記録保存</div>
-      </a>
-    </div>
-
-    <!-- ── RPG ── -->
-    <div class="section-header" id="sec-rpg">
-      <span class="section-icon">⚔️</span>
-      <span class="section-text">RPG</span>
-      <span class="section-count" id="cnt-rpg"></span>
-    </div>
-    <div class="game-grid" id="grid-rpg">
-      <a class="game-card" href="rpg.html" data-cat="rpg" data-c="rpg">
-        <div class="game-emoji">⚔️</div>
-        <div class="game-name">ミニRPG</div>
-        <div class="game-desc">勇者と仲間で<br>魔王を倒せ</div>
-        <div class="game-tag">💾 自動セーブ</div>
-      </a>
-    </div>
-
-  </div><!-- /content -->
-</div><!-- /window -->
-
-<div class="action-bar">
-  <button class="act-btn" onclick="document.getElementById('infoModal').classList.add('visible')">📖 このアプリについて</button>
+<!-- ── Footer ── -->
+<div class="footer-bar">
+  <button class="about-btn" id="aboutBtn">📖 このアプリについて</button>
 </div>
 
-<!-- Info Modal -->
-<div class="modal-overlay" id="infoModal">
+<!-- ── About modal ── -->
+<div class="modal-overlay" id="aboutModal">
   <div class="modal-box">
+    <div class="modal-handle"></div>
     <div class="modal-title">
-      <span>🎮 ミニゲーム集について</span>
-      <button class="modal-close" onclick="document.getElementById('infoModal').classList.remove('visible')">✕</button>
+      <span>🎮 MINI GAME COLLECTION</span>
+      <button class="modal-close" id="closeModal">✕</button>
     </div>
     <div class="modal-body">
-      <p><strong style="color:#ffe870">🎮 ミニゲーム集へようこそ！</strong></p>
-      <p style="margin-top:6px">全 <strong style="color:#d0c0ff">26種類</strong> のミニゲームが収録されています。</p>
-      <div class="info-block" style="margin-top:12px">
-        <div class="info-block-title">✈ オフライン完全対応</div>
-        <div class="info-block-body">Wi-Fiなし・圏外・機内モードでも全ゲームが遊べます。外部サーバーへの接続は一切不要。長距離フライト中でも安心です。</div>
+      <p style="color:var(--text); font-weight:900;">全 29種類のミニゲームが収録されています。</p>
+
+      <div class="modal-section">
+        <div class="modal-section-title">✈ オフライン完全対応</div>
+        <p style="font-size:12px">Wi-Fiなし・圏外・機内モードでも全ゲームが遊べます。外部サーバーへの接続は一切不要。長距離フライト中でも安心です。</p>
       </div>
-      <p style="margin-top:4px"><strong style="color:#ffe870">特徴：</strong></p>
-      <ul style="margin-left:16px; margin-top:6px; color:#b0a0d8;">
-        <li>広告なし・完全無料</li>
-        <li>ハイスコア・進捗をデバイスに保存</li>
-        <li>スワイプ操作でスマホ最適化</li>
-        <li>全ゲームがブラウザで動作（アプリ不要）</li>
-      </ul>
-      <p style="margin-top:10px"><strong style="color:#ffe870">遊び方：</strong></p>
-      <ul style="margin-left:16px; margin-top:6px; color:#b0a0d8;">
-        <li>タブでカテゴリ絞り込み</li>
-        <li>カードをタップしてゲーム開始</li>
-        <li>各ゲームの 🏠 ボタンでここへ戻れます</li>
-      </ul>
-      <p style="color:#5040a0; font-size:11px; margin-top:12px;">※ データはこのデバイスのみに保存されます。</p>
+
+      <div class="modal-section">
+        <div class="modal-section-title">✨ 特徴</div>
+        <ul>
+          <li>広告なし・完全無料</li>
+          <li>ハイスコア・進捗をデバイスに保存</li>
+          <li>スワイプ操作でスマホ最適化</li>
+          <li>全ゲームがブラウザで動作（アプリ不要）</li>
+        </ul>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title" style="color:var(--accent2)">🎮 遊び方</div>
+        <ul>
+          <li>タブでカテゴリ絞り込み</li>
+          <li>カードをタップしてゲーム開始</li>
+          <li>各ゲームの 🏠 ボタンでここへ戻れます</li>
+          <li>💾 バッジは保存データがあるゲームを示します</li>
+        </ul>
+      </div>
+
+      <p style="color:rgba(255,255,255,0.25); font-size:10px; margin-top:18px; text-align:center; letter-spacing:0.5px;">
+        データはこのデバイスのみに保存されます
+      </p>
     </div>
   </div>
 </div>
 
 <script>
-function filterCat(btn, cat) {
-  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  const allCards   = document.querySelectorAll('.game-card');
-  const allHeaders = document.querySelectorAll('.section-header');
-  const allGrids   = document.querySelectorAll('.game-grid');
-  if (cat === 'all') {
-    allCards.forEach(c   => c.classList.remove('hidden'));
-    allHeaders.forEach(h => h.classList.remove('hidden'));
-    allGrids.forEach(g   => g.classList.remove('hidden'));
-    return;
+/* ══════════════════════════════════════════
+   STARFIELD
+══════════════════════════════════════════ */
+(function initStarfield() {
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
-  allCards.forEach(c   => c.classList.add('hidden'));
-  allHeaders.forEach(h => h.classList.add('hidden'));
-  allGrids.forEach(g   => g.classList.add('hidden'));
-  const selector = cat === 'saved'
-    ? '.game-card[data-saved="1"]'
-    : `.game-card[data-cat="${cat}"]`;
-  document.querySelectorAll(selector).forEach(card => {
-    card.classList.remove('hidden');
-    const grid = card.closest('.game-grid');
-    if (!grid) return;
-    grid.classList.remove('hidden');
-    let prev = grid.previousElementSibling;
-    while (prev) {
-      if (prev.classList.contains('section-header')) { prev.classList.remove('hidden'); break; }
-      prev = prev.previousElementSibling;
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  const stars = Array.from({ length: 180 }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: Math.random() * 1.4 + 0.3,
+    speed: Math.random() * 0.25 + 0.05,
+    opacity: Math.random(),
+    delta: (Math.random() - 0.5) * 0.014
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${Math.max(0.05, Math.min(0.9, s.opacity))})`;
+      ctx.fill();
+      s.opacity += s.delta;
+      if (s.opacity > 1 || s.opacity < 0.05) s.delta = -s.delta;
+      s.y += s.speed;
+      if (s.y > canvas.height) {
+        s.y = -2;
+        s.x = Math.random() * canvas.width;
+      }
     }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ══════════════════════════════════════════
+   GAME DATA
+══════════════════════════════════════════ */
+const GAMES = [
+  // ── RPG ──
+  {
+    file: 'rpg.html', name: 'ドラゴンクエスト風RPG', icon: '⚔️', cat: 'RPG', special: true,
+    g1: '#2d0a4e', g2: '#080818', accent: '#a855f7', saveKey: 'rpg_save'
+  },
+
+  // ── アクション ──
+  {
+    file: 'fps.html', name: 'FPS ARENA', icon: '🔫', cat: 'アクション',
+    g1: '#3a0808', g2: '#180404', accent: '#e63946', saveKey: null
+  },
+  {
+    file: 'flappybird.html', name: 'フラッピーバード', icon: '🐦', cat: 'アクション',
+    g1: '#3e1800', g2: '#1e0c00', accent: '#ff7040', saveKey: null
+  },
+  {
+    file: 'snake.html', name: 'スネーク', icon: '🐍', cat: 'アクション',
+    g1: '#3a0c14', g2: '#1a060a', accent: '#e63946', saveKey: 'snake_save'
+  },
+  {
+    file: 'breakout.html', name: 'ブロック崩し', icon: '🧱', cat: 'アクション',
+    g1: '#3a0018', g2: '#1a000c', accent: '#ff4060', saveKey: null
+  },
+  {
+    file: 'whackamole.html', name: 'もぐら叩き', icon: '🐹', cat: 'アクション',
+    g1: '#3a1e00', g2: '#1a0e00', accent: '#ff8c42', saveKey: null
+  },
+  {
+    file: 'rhythm.html', name: 'リズム天国', icon: '🎵', cat: 'アクション',
+    g1: '#38002e', g2: '#1a0016', accent: '#e040fb', saveKey: null
+  },
+
+  // ── パズル ──
+  {
+    file: 'tetris.html', name: 'テトリス', icon: '🟦', cat: 'パズル',
+    g1: '#001e3e', g2: '#000e1e', accent: '#4cc9f0', saveKey: 'tetris_save'
+  },
+  {
+    file: '2048.html', name: '2048', icon: '🔢', cat: 'パズル',
+    g1: '#003c2a', g2: '#001c14', accent: '#00d4aa', saveKey: '2048_save'
+  },
+  {
+    file: 'sudoku.html', name: '数独', icon: '🔲', cat: 'パズル',
+    g1: '#12003e', g2: '#090020', accent: '#818cf8', saveKey: 'sudoku_save'
+  },
+  {
+    file: 'minesweeper.html', name: 'マインスイーパー', icon: '💣', cat: 'パズル',
+    g1: '#003c3c', g2: '#001c1c', accent: '#22d3ee', saveKey: 'ms_save_v1'
+  },
+  {
+    file: 'sokoban.html', name: '倉庫番', icon: '📦', cat: 'パズル',
+    g1: '#001c3e', g2: '#000e20', accent: '#60a5fa', saveKey: 'sokoban_save'
+  },
+  {
+    file: 'memory.html', name: '神経衰弱', icon: '🃏', cat: 'パズル',
+    g1: '#1e003c', g2: '#0e001e', accent: '#c084fc', saveKey: 'memory_save'
+  },
+  {
+    file: 'simon.html', name: 'サイモンゲーム', icon: '🔴', cat: 'パズル',
+    g1: '#003618', g2: '#001a0c', accent: '#4ade80', saveKey: null
+  },
+  {
+    file: 'lightsout.html', name: 'ライツアウト', icon: '💡', cat: 'パズル',
+    g1: '#1a2c00', g2: '#0c1600', accent: '#a3e635', saveKey: 'lightsout_save'
+  },
+  {
+    file: 'puzzle15.html', name: '15パズル', icon: '🔀', cat: 'パズル',
+    g1: '#003820', g2: '#001c10', accent: '#34d399', saveKey: 'puzzle15_save'
+  },
+  {
+    file: 'mastermind.html', name: 'マスターマインド', icon: '🎯', cat: 'パズル',
+    g1: '#160038', g2: '#0a001c', accent: '#818cf8', saveKey: 'mastermind_save'
+  },
+  {
+    file: 'reaction.html', name: '反射神経テスト', icon: '⚡', cat: 'パズル',
+    g1: '#00303e', g2: '#001820', accent: '#38bdf8', saveKey: null
+  },
+
+  // ── カード ──
+  {
+    file: 'blackjack.html', name: 'ブラックジャック', icon: '🂡', cat: 'カード',
+    g1: '#00260a', g2: '#001205', accent: '#4ade80', saveKey: 'bj_save'
+  },
+  {
+    file: 'poker.html', name: 'ポーカー', icon: '♠️', cat: 'カード',
+    g1: '#3c2800', g2: '#1e1400', accent: '#f4d03f', saveKey: 'poker_save'
+  },
+  {
+    file: 'daifugou.html', name: '大富豪', icon: '👑', cat: 'カード',
+    g1: '#3c1e00', g2: '#1e0e00', accent: '#fbbf24', saveKey: 'daifugou_save'
+  },
+
+  // ── ボード ──
+  {
+    file: 'gomoku.html', name: '五目並べ', icon: '⚫', cat: 'ボード',
+    g1: '#003018', g2: '#00180c', accent: '#7bed9f', saveKey: 'gomoku_save'
+  },
+  {
+    file: 'reversi.html', name: 'リバーシ', icon: '🔵', cat: 'ボード',
+    g1: '#003c1e', g2: '#001c0e', accent: '#4ade80', saveKey: 'reversi_save'
+  },
+  {
+    file: 'connect4.html', name: '四目並べ', icon: '🟡', cat: 'ボード',
+    g1: '#302a00', g2: '#181500', accent: '#fbbf24', saveKey: 'connect4_save'
+  },
+  {
+    file: 'dotsboxes.html', name: '点と線', icon: '🔲', cat: 'ボード',
+    g1: '#002a3c', g2: '#00141e', accent: '#67e8f9', saveKey: 'dotsboxes_save'
+  },
+  {
+    file: 'darts.html', name: 'ダーツ', icon: '🎯', cat: 'ボード',
+    g1: '#360800', g2: '#1a0400', accent: '#f87171', saveKey: 'darts_save'
+  },
+  {
+    file: 'bowling.html', name: 'ボウリング', icon: '🎳', cat: 'ボード',
+    g1: '#003038', g2: '#00181c', accent: '#7bed9f', saveKey: 'bowling_save'
+  },
+
+  // ── 教育 ──
+  {
+    file: 'kanji.html', name: '漢字でGO！', icon: '漢', cat: '教育',
+    g1: '#3a2c00', g2: '#1a1400', accent: '#f4d03f', saveKey: null,
+    desc: '漢字読み・5段階難易度'
+  },
+
+  // ── クイズ ──
+  {
+    file: 'fivebomber.html', name: 'ファイブボンバー', icon: '💣', cat: 'クイズ',
+    g1: '#3a2a00', g2: '#1a1200', accent: '#ffcc00', saveKey: null,
+    desc: '爆弾クイズ・5連続正解！'
+  }
+];
+
+const CAT_CONFIG = {
+  'RPG':      { accent: '#a855f7', icon: '⚔️' },
+  'アクション': { accent: '#e63946', icon: '⚡' },
+  'パズル':   { accent: '#4cc9f0', icon: '🧩' },
+  'カード':   { accent: '#f4d03f', icon: '🃏' },
+  'ボード':   { accent: '#7bed9f', icon: '♟' },
+  '教育':     { accent: '#f4d03f', icon: '📚' },
+  'クイズ':   { accent: '#ffcc00', icon: '💣' }
+};
+
+const CAT_ORDER = ['RPG', 'アクション', 'パズル', 'カード', 'ボード', '教育', 'クイズ'];
+
+/* ══════════════════════════════════════════
+   SAVE DETECTION
+══════════════════════════════════════════ */
+const SAVE_TTL = 7 * 24 * 60 * 60 * 1000;
+
+function isSaved(key) {
+  if (!key) return false;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    return !!(data.savedAt && (Date.now() - data.savedAt) < SAVE_TTL);
+  } catch (e) { return false; }
+}
+
+/* ══════════════════════════════════════════
+   UTILITY
+══════════════════════════════════════════ */
+function hexToRgba(hex, a) {
+  const m = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return `rgba(76,201,240,${a})`;
+  return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${a})`;
+}
+
+/* ══════════════════════════════════════════
+   BUILD CARDS
+══════════════════════════════════════════ */
+function buildCards() {
+  const grid = document.getElementById('gameGrid');
+
+  CAT_ORDER.forEach(cat => {
+    const catGames = GAMES.filter(g => g.cat === cat);
+    if (!catGames.length) return;
+    const cfg = CAT_CONFIG[cat];
+
+    // Section label
+    const lbl = document.createElement('div');
+    lbl.className = 'section-label';
+    lbl.dataset.sectionCat = cat;
+    lbl.style.setProperty('--section-accent', cfg.accent);
+    lbl.innerHTML = `
+      <span class="section-label-bar"></span>
+      ${cfg.icon} ${cat}
+      <span class="section-label-line"></span>
+      <span class="section-label-count">${catGames.length}</span>
+    `;
+    grid.appendChild(lbl);
+
+    // Cards
+    catGames.forEach((game, idx) => {
+      const saved = isSaved(game.saveKey);
+      const glow  = hexToRgba(game.accent, 0.35);
+      const bbg   = hexToRgba(game.accent, 0.14);
+      const bbd   = hexToRgba(game.accent, 0.32);
+      const shimmerDelay = (idx * 0.7 + Math.random() * 0.5).toFixed(2);
+
+      const card = document.createElement('a');
+      card.className = 'game-card' + (game.special ? ' special' : '');
+      card.href = game.file;
+      card.dataset.cat = game.cat;
+      card.style.cssText = [
+        `--g1:${game.g1}`,
+        `--g2:${game.g2}`,
+        `--card-accent:${game.accent}`,
+        `--card-glow:${glow}`,
+        `--badge-bg:${bbg}`,
+        `--badge-border:${bbd}`,
+        `--shimmer-delay:${shimmerDelay}s`
+      ].join(';');
+
+      card.innerHTML = `
+        <div class="card-topline"></div>
+        <div class="card-icon">${game.icon}</div>
+        <div class="card-name">${game.name}</div>
+        <div class="card-cat-badge">${game.cat}</div>
+        <div class="card-play-btn">PLAY ▶</div>
+        ${saved ? '<div class="card-save-badge">💾</div>' : ''}
+      `;
+
+      grid.appendChild(card);
+    });
   });
 }
 
-(function updateCounts(){
-  ['puzzle','action','board','card','sports','rhythm','rpg'].forEach(cat => {
-    const n = document.querySelectorAll(`.game-card[data-cat="${cat}"]`).length;
-    const el = document.getElementById('cnt-' + cat);
-    if (el) el.textContent = n + ' ゲーム';
+/* ══════════════════════════════════════════
+   TAB FILTER
+══════════════════════════════════════════ */
+function initTabs() {
+  const btns = document.querySelectorAll('.tab-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterCards(btn.dataset.filter);
+    });
   });
-})();
+}
 
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if(e.target === el) el.classList.remove('visible'); });
-});
+function filterCards(cat) {
+  const cards  = [...document.querySelectorAll('.game-card')];
+  const labels = [...document.querySelectorAll('.section-label')];
 
-(function checkSaves() {
-  const SAVE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
-  const saveKeyMap = {
-    'tetris.html':      'tetris_save',
-    'snake.html':       'snake_save',
-    '2048.html':        '2048_save',
-    'blackjack.html':   'bj_save',
-    'poker.html':       'poker_save',
-    'mastermind.html':  'mastermind_save',
-    'darts.html':       'darts_save',
-    'bowling.html':     'bowling_save',
-    'memory.html':      'memory_save',
-    'connect4.html':    'connect4_save',
-    'dotsboxes.html':   'dotsboxes_save',
-    'gomoku.html':      'gomoku_save',
-    'lightsout.html':   'lightsout_save',
-    'puzzle15.html':    'puzzle15_save',
-    'sokoban.html':     'sokoban_save',
-    'sudoku.html':      'sudoku_save',
-    'minesweeper.html': 'ms_save_v1',
-    'reversi.html':     'reversi_save',
-    'rpg.html':         'rpg_save',
-    'daifugou.html':    'daifugou_save'
-  };
+  // Determine matching cards
+  const matching = cat === 'all' ? cards : cards.filter(c => c.dataset.cat === cat);
+  const hiding   = cat === 'all' ? []    : cards.filter(c => c.dataset.cat !== cat);
 
-  const now = Date.now();
-  const savedHrefs = new Set();
+  // Hide non-matching immediately
+  hiding.forEach(c => c.classList.add('card-hidden'));
 
-  for (const [href, key] of Object.entries(saveKeyMap)) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      const data = JSON.parse(raw);
-      if (data.savedAt && (now - data.savedAt) < SAVE_TTL) {
-        savedHrefs.add(href);
-      }
-    } catch(e) {}
-  }
-
-  if (savedHrefs.size === 0) return;
-
-  document.querySelectorAll('.game-card').forEach(card => {
-    const href = (card.getAttribute('href') || '').replace(/^\.\//, '');
-    if (!savedHrefs.has(href)) return;
-    card.setAttribute('data-saved', '1');
-    const badge = document.createElement('div');
-    badge.className = 'save-badge';
-    badge.textContent = '💾';
-    card.appendChild(badge);
+  // Hide/show section labels
+  labels.forEach(l => {
+    l.classList.toggle('card-hidden', cat !== 'all' && l.dataset.sectionCat !== cat);
   });
-})();
+
+  // Animate matching in with stagger
+  matching.forEach(c => {
+    c.classList.remove('card-hidden');
+    c.style.transition = 'none';
+    c.style.opacity = '0';
+    c.style.transform = 'scale(0.88) translateY(12px)';
+  });
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      matching.forEach((c, i) => {
+        const delay = (i * 30).toFixed(0);
+        c.style.transition = `opacity 0.3s ${delay}ms ease, transform 0.35s ${delay}ms cubic-bezier(0.34,1.56,0.64,1)`;
+        c.style.opacity    = '1';
+        c.style.transform  = 'scale(1) translateY(0)';
+      });
+
+      // Clean up inline styles after animation
+      const cleanDelay = 350 + matching.length * 30 + 80;
+      setTimeout(() => {
+        matching.forEach(c => {
+          c.style.transition = '';
+          c.style.opacity    = '';
+          c.style.transform  = '';
+        });
+      }, cleanDelay);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════
+   ENTRY ANIMATION
+══════════════════════════════════════════ */
+function entryAnimation() {
+  const cards = [...document.querySelectorAll('.game-card')];
+  cards.forEach(c => {
+    c.style.opacity   = '0';
+    c.style.transform = 'scale(0.84) translateY(22px)';
+  });
+
+  cards.forEach((c, i) => {
+    const delay = 120 + i * 38;
+    setTimeout(() => {
+      c.style.transition = 'opacity 0.4s ease, transform 0.45s cubic-bezier(0.34,1.56,0.64,1)';
+      c.style.opacity    = '1';
+      c.style.transform  = 'scale(1) translateY(0)';
+      setTimeout(() => {
+        c.style.transition = '';
+        c.style.opacity    = '';
+        c.style.transform  = '';
+      }, 500);
+    }, delay);
+  });
+}
+
+/* ══════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════ */
+function initModal() {
+  const overlay = document.getElementById('aboutModal');
+  document.getElementById('aboutBtn').addEventListener('click', () => {
+    overlay.classList.add('visible');
+  });
+  document.getElementById('closeModal').addEventListener('click', () => {
+    overlay.classList.remove('visible');
+  });
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('visible');
+  });
+}
+
+/* ══════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════ */
+buildCards();
+initTabs();
+initModal();
+entryAnimation();
 </script>
 </body>
 </html>

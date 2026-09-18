@@ -78,19 +78,20 @@ body {
 /* Aim bar */
 #aim-zone { padding:4px 8px 8px; }
 #aim-track { position:relative; height:36px; background:linear-gradient(160deg,#100a30,#080518); border:1px solid #4030a0; border-radius:8px; overflow:hidden; cursor:pointer; }
-#aim-fill { height:100%; background:linear-gradient(90deg,#6020c0,#a060ff); width:50%; transition:none; border-radius:8px; }
-#aim-marker { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:4px; height:28px; background:#ffe870; border-radius:2px; box-shadow:0 0 8px #ffe060; pointer-events:none; }
+#aim-fill { height:100%; background:linear-gradient(90deg,#0060a0,#4cc9f0,#80ddff); width:50%; transition:none; border-radius:8px; box-shadow: 0 0 10px rgba(76,201,240,0.4); }
+#aim-marker { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:4px; height:28px; background:#fff; border-radius:2px; box-shadow:0 0 10px rgba(76,201,240,0.9); pointer-events:none; }
 #aim-label { text-align:center; font-size:11px; color:#a898d8; margin-top:3px; }
 #throw-btn {
   width:100%; padding:12px; font-size:15px; font-weight:900; border-radius:12px; margin-top:6px;
-  background: linear-gradient(160deg, #6020c0 0%, #3a0a80 100%);
-  color: #ffe870; border: 2px solid #a060ff;
-  box-shadow: 0 0 20px rgba(160,100,255,0.5), 0 4px 12px rgba(0,0,0,0.6);
+  background: linear-gradient(135deg, #0090c0 0%, #4cc9f0 100%);
+  color: #fff; border: 2px solid #80ddff;
+  box-shadow: 0 0 24px rgba(76,201,240,0.5), 0 4px 16px rgba(0,0,0,0.6);
   cursor:pointer; letter-spacing:2px; touch-action:manipulation;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 #throw-btn:active { transform:scale(0.96); }
 #throw-btn:disabled { opacity:0.4; }
-#msg-flash { height:28px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; color:#ffe870; text-shadow:0 0 12px #ffcc00; letter-spacing:3px; }
+#msg-flash { height:36px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:900; color:#4cc9f0; text-shadow:0 0 20px rgba(76,201,240,0.9), 0 0 40px rgba(76,201,240,0.4); letter-spacing:4px; transition: all 0.3s; }
 .hs-table{width:100%;}
 .hs-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(80,60,180,0.1);border:1px solid rgba(80,60,180,0.2);border-radius:8px;margin:3px 0;}
 .hs-period{color:#a090d0;font-size:12px;font-weight:bold;min-width:50px;}
@@ -435,24 +436,24 @@ function drawLane(pins, ballX, ballY, knocked){
   lctx.clearRect(0,0,LW,LH);
 
   // Lane background
-  lctx.fillStyle='#100820';
+  lctx.fillStyle='#c8a870';
   lctx.fillRect(LANE_LEFT,0,LANE_W,LH);
 
   // Wood grain lines
-  lctx.strokeStyle='rgba(60,40,100,0.3)'; lctx.lineWidth=1;
+  lctx.strokeStyle='rgba(140,90,30,0.25)'; lctx.lineWidth=1;
   for(let x=LANE_LEFT;x<LANE_RIGHT;x+=8){
     lctx.beginPath(); lctx.moveTo(x,0); lctx.lineTo(x,LH); lctx.stroke();
   }
 
   // Gutters
-  lctx.fillStyle='#0a0615';
+  lctx.fillStyle='#2a1a0a';
   lctx.fillRect(0,0,LANE_LEFT,LH);
   lctx.fillRect(LANE_RIGHT,0,LW-LANE_RIGHT,LH);
-  lctx.strokeStyle='#3020a0'; lctx.lineWidth=2;
+  lctx.strokeStyle='#6a3a10'; lctx.lineWidth=2;
   lctx.strokeRect(LANE_LEFT,0,LANE_W,LH);
 
   // Arrow markers on lane
-  lctx.fillStyle='rgba(200,160,40,0.4)';
+  lctx.fillStyle='rgba(180,120,40,0.5)';
   for(let i=0;i<5;i++){
     const ax=LANE_LEFT+LANE_W*(0.2+i*0.15);
     lctx.beginPath(); lctx.arc(ax,LH*0.65,3,0,Math.PI*2); lctx.fill();
@@ -468,12 +469,12 @@ function drawLane(pins, ballX, ballY, knocked){
       lctx.fillStyle='#666';
     } else {
       lctx.globalAlpha=1;
-      lctx.fillStyle='#fff';
+      lctx.fillStyle='#f8f4e8';
     }
     lctx.beginPath(); lctx.arc(p.x,p.y,8,0,Math.PI*2);
     lctx.fill();
     if(!isDown&&!isKnocked){
-      lctx.strokeStyle='#c0c0e0'; lctx.lineWidth=1.5; lctx.stroke();
+      lctx.strokeStyle='#888860'; lctx.lineWidth=1.5; lctx.stroke();
     }
     lctx.globalAlpha=1;
   }
@@ -481,14 +482,14 @@ function drawLane(pins, ballX, ballY, knocked){
   // Ball
   if(ballX!==null&&ballY!==null){
     const grad=lctx.createRadialGradient(ballX-4,ballY-4,2,ballX,ballY,14);
-    grad.addColorStop(0,'#d0a0ff');
-    grad.addColorStop(0.5,'#8030e0');
-    grad.addColorStop(1,'#3010a0');
+    grad.addColorStop(0,'#a0eeff');
+    grad.addColorStop(0.5,'#1090c0');
+    grad.addColorStop(1,'#005080');
     lctx.beginPath(); lctx.arc(ballX,ballY,14,0,Math.PI*2);
     lctx.fillStyle=grad; lctx.fill();
-    lctx.strokeStyle='#c080ff'; lctx.lineWidth=2; lctx.stroke();
+    lctx.strokeStyle='#4cc9f0'; lctx.lineWidth=2; lctx.stroke();
     // glow
-    lctx.shadowColor='#a060ff'; lctx.shadowBlur=20;
+    lctx.shadowColor='#4cc9f0'; lctx.shadowBlur=24;
     lctx.beginPath(); lctx.arc(ballX,ballY,14,0,Math.PI*2);
     lctx.stroke(); lctx.shadowBlur=0;
   }

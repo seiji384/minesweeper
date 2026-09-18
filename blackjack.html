@@ -105,16 +105,18 @@ body {
   color: transparent;
   border-color: #7060cc;
 }
+@keyframes cardSlideIn { from { opacity: 0; transform: translateY(-30px) scale(0.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.card { animation: cardSlideIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
 
 /* ── Game-specific styles ───────────────────────────────── */
 .felt-area {
-  background: radial-gradient(ellipse at 50% 40%, #1d6030 0%, #0e3a1a 60%, #081e0e 100%);
-  border: 2px solid #2a7a44;
+  background: radial-gradient(ellipse at 50% 40%, #1e6835 0%, #0f3d1c 60%, #071f0d 100%);
+  border: 2px solid #2a8a4a;
   border-radius: 12px;
   padding: 8px 10px 10px;
   margin: 4px 0;
   min-height: 118px;
-  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,50,0,0.3);
 }
 .area-label {
   font-size: 9px; color: rgba(255,255,255,0.4);
@@ -169,7 +171,7 @@ body {
   padding: 2px 8px;
 }
 .message-text { font-size: 26px; font-weight: 900; letter-spacing: 3px; text-shadow: 0 0 24px currentColor; }
-.message-text.win       { color: #00ff88; }
+.message-text.win       { color: #f4d03f; text-shadow: 0 0 24px rgba(244,208,63,0.8); }
 .message-text.lose      { color: #ff5555; }
 .message-text.blackjack { color: #ffd700; font-size: 21px; }
 .message-text.push      { color: #9988ff; }
@@ -208,10 +210,11 @@ body {
 .clear-btn:active { transform: scale(0.93); }
 .deal-btn {
   padding: 9px 24px;
-  background: linear-gradient(160deg, #1a5020 0%, #0d2810 100%);
-  color: #66ff88; border: 2px solid #336640;
+  background: linear-gradient(160deg, #5a3a00, #3a2000);
+  color: #f4d03f; border: 2px solid #c08020;
   border-radius: 10px; font-size: 14px; font-weight: 900;
   cursor: pointer; touch-action: manipulation; letter-spacing: 1px;
+  box-shadow: 0 0 12px rgba(244,208,63,0.3);
 }
 .deal-btn:active { transform: scale(0.93); }
 .deal-btn:disabled { opacity: 0.36; cursor: default; transform: none !important; }
@@ -223,17 +226,17 @@ body {
 /* ── Play buttons ───────────────────────────────────────── */
 .play-buttons { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; padding: 8px 4px; }
 .play-btn {
-  padding: 10px 16px; border-radius: 12px;
-  font-size: 13px; font-weight: 900; cursor: pointer;
+  padding: 12px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 900; cursor: pointer;
   touch-action: manipulation; border: 2px solid;
   transition: transform 0.1s; letter-spacing: 0.5px;
 }
 .play-btn:active { transform: scale(0.90); }
 .play-btn:disabled { opacity: 0.28; cursor: default; transform: none !important; }
-.hit-btn    { background: linear-gradient(160deg, #1a3d7a, #0d1f40); color: #88ccff; border-color: #2a5dba; }
-.stand-btn  { background: linear-gradient(160deg, #5a1a1a, #2a0d0d); color: #ffaa88; border-color: #aa3030; }
-.double-btn { background: linear-gradient(160deg, #4a3010, #251808); color: #ffe077; border-color: #aa7020; }
-.split-btn  { background: linear-gradient(160deg, #301860, #180c30); color: #cc88ff; border-color: #7040c0; }
+.hit-btn    { background: linear-gradient(160deg, #1a4a20, #0d2810); color: #7bed9f; border-color: #2a7a30; }
+.stand-btn  { background: linear-gradient(160deg, #5a1a1a, #2a0d0d); color: #ff9977; border-color: #cc3333; }
+.double-btn { background: linear-gradient(160deg, #5a4010, #2a2000); color: #f4d03f; border-color: #c08020; box-shadow: 0 0 12px rgba(244,208,63,0.3); }
+.split-btn  { background: linear-gradient(160deg, #381868, #1c0c38); color: #cc88ff; border-color: #7040c0; }
 
 /* ── Result buttons ─────────────────────────────────────── */
 .result-actions { display: flex; gap: 10px; justify-content: center; padding: 8px 4px; flex-wrap: wrap; }
@@ -275,7 +278,7 @@ body {
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
-<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(10,120,60,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(6,95,45,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #042210 0%, #02160a 100%) !important; }</style>
+<style>body { background: radial-gradient(ellipse at 30% 25%, rgba(12,130,65,0.7) 0%, transparent 45%), radial-gradient(ellipse at 70% 75%, rgba(8,100,45,0.55) 0%, transparent 45%), radial-gradient(ellipse at 50% 50%, #051a0a 0%, #020d05 100%) !important; }</style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">

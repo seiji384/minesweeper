@@ -577,8 +577,9 @@ function launchGame(idx){
   if(pui){pui.style.display=idx===4?'flex':'none';}
   document.getElementById('tap-zone').style.display=idx===4?'none':'flex';
   const a=getAudio();
-  startAudioTime=a.currentTime+0.3;
-  startPerfTime=performance.now()+300;
+  const leadTime=idx===0?2.0:0.3; // tambourine needs 1.5s of countdown before game start
+  startAudioTime=a.currentTime+leadTime;
+  startPerfTime=performance.now()+(leadTime*1000);
   if(idx===0)initTambourine();
   else if(idx===1)initFrog();
   else if(idx===2)initSamurai();
@@ -735,6 +736,7 @@ canvas.addEventListener('mousedown',handleTap);
 (function(){
   var txStart=0, tyStart=0, touchMoved=false;
   canvas.addEventListener('touchstart', function(e) {
+    getAudio(); // unlock AudioContext on iOS on first touch
     txStart = e.touches[0].clientX;
     tyStart = e.touches[0].clientY;
     touchMoved = e.touches.length > 1;
@@ -753,6 +755,7 @@ canvas.addEventListener('mousedown',handleTap);
   var tz = document.getElementById('tap-zone');
   var txStart=0, tyStart=0, touchMoved=false;
   tz.addEventListener('touchstart', function(e) {
+    getAudio(); // unlock AudioContext on iOS on first touch
     txStart = e.touches[0].clientX;
     tyStart = e.touches[0].clientY;
     touchMoved = e.touches.length > 1;
@@ -774,6 +777,7 @@ canvas.addEventListener('mousedown',handleTap);
     if (!btns[key]) return;
     var txStart=0, tyStart=0, touchMoved=false;
     btns[key].addEventListener('touchstart', function(e) {
+      getAudio(); // unlock AudioContext on iOS on first touch
       txStart = e.touches[0].clientX;
       tyStart = e.touches[0].clientY;
       touchMoved = e.touches.length > 1;
@@ -2290,12 +2294,12 @@ window._pianoKeyTap=function(key){
 (function(){
   document.querySelectorAll('.game-card').forEach(function(card){
     var moved=false,txS=0,tyS=0;
-    card.addEventListener('touchstart',function(e){txS=e.touches[0].clientX;tyS=e.touches[0].clientY;moved=false;},{passive:true});
+    card.addEventListener('touchstart',function(e){getAudio();txS=e.touches[0].clientX;tyS=e.touches[0].clientY;moved=false;},{passive:true});
     card.addEventListener('touchmove',function(e){if(Math.abs(e.touches[0].clientX-txS)>10||Math.abs(e.touches[0].clientY-tyS)>10)moved=true;},{passive:true});
-    card.addEventListener('touchend',function(e){if(!moved){e.preventDefault();card.click();}},{passive:false});
+    card.addEventListener('touchend',function(e){if(!moved){e.preventDefault();getAudio();card.click();}},{passive:false});
   });
   document.querySelectorAll('.all-stages-btn').forEach(function(btn){
-    btn.addEventListener('touchend',function(e){e.preventDefault();btn.click();},{passive:false});
+    btn.addEventListener('touchend',function(e){e.preventDefault();getAudio();btn.click();},{passive:false});
   });
 })();
 

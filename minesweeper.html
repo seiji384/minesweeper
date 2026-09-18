@@ -9,27 +9,27 @@
 
     body {
       background:
-        radial-gradient(ellipse at 25% 20%, rgba(80,30,180,0.5) 0%, transparent 50%),
-        radial-gradient(ellipse at 75% 80%, rgba(20,60,180,0.4) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, #120830 0%, #050210 100%);
+        radial-gradient(ellipse at 25% 20%, rgba(200,80,10,0.45) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 80%, rgba(160,50,5,0.35) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, #1a0e04 0%, #0e0602 100%);
       display: flex; justify-content: center; align-items: center;
       min-height: 100vh; padding: 16px 8px 72px;
-      font-family: Arial, sans-serif; overflow-x: hidden;
+      font-family: 'Helvetica Neue', Arial, sans-serif; overflow-x: hidden;
     }
     #stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
 
     .window {
       position: relative; z-index: 1;
-      background: linear-gradient(160deg, #1e1248 0%, #0d0830 100%);
-      border: 2px solid #7060ff; border-radius: 16px;
-      box-shadow: 0 0 30px rgba(112,90,255,0.55), 0 0 80px rgba(112,90,255,0.2), 0 24px 64px rgba(0,0,0,0.85);
+      background: linear-gradient(160deg, #1a1010 0%, #0e0808 100%);
+      border: 2px solid #fb8500; border-radius: 16px;
+      box-shadow: 0 0 30px rgba(251,133,0,0.4), 0 0 80px rgba(251,133,0,0.15), 0 24px 64px rgba(0,0,0,0.85);
       max-width: 100%; overflow: hidden;
     }
     .titlebar {
-      background: linear-gradient(90deg, #a06008 0%, #f5c842 28%, #ffe870 50%, #f5c842 72%, #a06008 100%);
-      color: #3a1a00; font-size: 14px; font-weight: 900; padding: 7px 14px;
-      text-align: center; letter-spacing: 3px; text-shadow: 0 1px 0 rgba(255,255,200,0.8);
-      border-bottom: 2px solid #804000;
+      background: linear-gradient(90deg, #7a3000 0%, #c06010 28%, #fb8500 50%, #c06010 72%, #7a3000 100%);
+      color: #fff0e0; font-size: 14px; font-weight: 900; padding: 7px 14px;
+      text-align: center; letter-spacing: 3px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      border-bottom: 2px solid #7a3000;
     }
 
     .diff-bar {
@@ -93,50 +93,65 @@
 
     .content { padding: 8px; }
     .status-panel {
-      background: linear-gradient(160deg, #100a30 0%, #08051a 100%);
-      border: 1px solid #4030a0; border-radius: 10px;
+      background: linear-gradient(160deg, #180e08 0%, #0e0804 100%);
+      border: 1px solid #7a3810; border-radius: 10px;
       padding: 6px 12px; margin-bottom: 8px;
       display: flex; justify-content: space-between; align-items: center;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), 0 0 12px rgba(251,133,0,0.1);
     }
     .led-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .led-label { font-size: 9px; color: #6050a0; white-space: nowrap; }
     .led {
-      background: linear-gradient(160deg, #080518 0%, #040210 100%);
-      color: #ff44aa; font-family: 'Courier New', monospace;
+      background: linear-gradient(160deg, #120800 0%, #0a0400 100%);
+      color: #fb8500; font-family: 'Courier New', monospace;
       font-size: 22px; font-weight: bold; padding: 3px 10px;
-      min-width: 54px; text-align: right; border-radius: 6px; border: 1px solid #4020a0;
-      text-shadow: 0 0 10px #ff44aa, 0 0 20px #ff2288;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,170,0.3);
+      min-width: 54px; text-align: right; border-radius: 6px; border: 1px solid #7a4000;
+      text-shadow: 0 0 10px #fb8500, 0 0 20px #c05000;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(251,133,0,0.3);
     }
     .smiley-btn {
-      font-size: 20px; width: 52px; height: 52px;
+      font-size: 22px; width: 56px; height: 56px;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
-      background: radial-gradient(circle at 38% 32%, #ffe060 0%, #c88010 60%, #804000 100%);
-      border-radius: 50%; border: 2px solid #ffe080;
-      box-shadow: 0 0 16px rgba(245,200,66,0.7), 0 4px 10px rgba(0,0,0,0.6);
+      background: radial-gradient(circle at 38% 32%, #ffcc40 0%, #fb8500 60%, #804000 100%);
+      border-radius: 50%; border: 2px solid #fb8500;
+      box-shadow: 0 0 18px rgba(251,133,0,0.8), 0 4px 12px rgba(0,0,0,0.6);
       transition: transform 0.1s;
     }
     .smiley-btn:active { transform: scale(0.88); }
+    .act-btn {
+      background: linear-gradient(160deg, #4a2800 0%, #2a1400 100%) !important;
+      color: #ffb060 !important; border-color: #8a4800 !important;
+    }
+    .act-btn.on {
+      background: linear-gradient(160deg, #c05000 0%, #802800 100%) !important;
+      color: #ffe0a0 !important; border-color: #ff8030 !important;
+    }
+    .diff-btn.active {
+      background: linear-gradient(160deg, #7a3800 0%, #4a2000 100%) !important;
+      color: #ffb070 !important; border-color: #c06020 !important;
+      box-shadow: 0 0 10px rgba(251,133,0,0.5) !important;
+    }
 
     .grid-wrap {
-      border: 2px solid #4030a0; border-radius: 10px; background: #04020e; padding: 5px;
-      box-shadow: inset 0 4px 16px rgba(0,0,0,0.9), 0 0 20px rgba(64,48,160,0.3);
+      border: 2px solid #7a3810; border-radius: 10px; background: #0e0806; padding: 5px;
+      box-shadow: inset 0 4px 16px rgba(0,0,0,0.9), 0 0 20px rgba(251,133,0,0.2);
       overflow: auto; max-width: calc(100vw - 30px);
     }
     .grid { display: grid; gap: 2px; }
     .cell {
       display: flex; align-items: center; justify-content: center;
       font-weight: 900; cursor: pointer; border-radius: 7px;
-      background: linear-gradient(145deg, #5a3aaa 10%, #3a1a8a 60%, #28106a 100%);
-      box-shadow: inset 0 2px 3px rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.6), 0 3px 6px rgba(0,0,0,0.7);
-      border: 1px solid #6048b0; line-height: 1;
+      /* Unrevealed: #252545 slightly lighter dark */
+      background: linear-gradient(145deg, #3a2a1a 10%, #2a1c0e 60%, #201408 100%);
+      box-shadow: inset 0 2px 3px rgba(255,200,100,0.18), inset 0 -2px 4px rgba(0,0,0,0.6), 0 3px 6px rgba(0,0,0,0.7);
+      border: 1px solid #5a3810; line-height: 1;
       touch-action: manipulation; transition: transform 0.08s;
     }
     .cell.open {
-      background: linear-gradient(145deg, #0e0a22 0%, #08051a 100%);
+      /* Revealed: darker #1e1e35 style */
+      background: linear-gradient(145deg, #1e1210 0%, #140c08 100%);
       box-shadow: inset 0 2px 6px rgba(0,0,0,0.9);
-      border: 1px solid #1a1040; cursor: default;
+      border: 1px solid #281808; cursor: default;
     }
     .cell.mine-hit {
       background: radial-gradient(circle at 38% 32%, #ff8840 0%, #cc2200 60%, #880000 100%);
@@ -149,8 +164,8 @@
     }
     .cell.replay-hl { background: linear-gradient(145deg, #8a6000 0%, #604000 100%); border-color: #c09020; }
     .cell.pressing {
-      background: linear-gradient(145deg, #8060cc 0%, #5840aa 100%); transform: scale(0.84);
-      box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 22px rgba(160,128,255,0.7);
+      background: linear-gradient(145deg, #c06010 0%, #804008 100%); transform: scale(0.84);
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 22px rgba(251,133,0,0.7);
     }
     @keyframes explode { 0%{transform:scale(1)} 40%{transform:scale(1.38)} 100%{transform:scale(1)} }
 
@@ -206,10 +221,15 @@
     #confetti { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
     .win-msg {
       display: none; margin-top: 7px; text-align: center;
-      font-size: 14px; font-weight: 900; color: #f5c842;
-      border-radius: 10px; border: 1px solid #c08010; padding: 7px;
-      background: linear-gradient(160deg, #3a2400 0%, #1a1000 100%);
-      text-shadow: 0 0 12px #f5c842, 0 0 25px #c09010; letter-spacing: 1px;
+      font-size: 15px; font-weight: 900; color: #fb8500;
+      border-radius: 10px; border: 1px solid #c06010; padding: 8px;
+      background: linear-gradient(160deg, #2a1400 0%, #160a00 100%);
+      text-shadow: 0 0 14px #fb8500, 0 0 28px #c05000; letter-spacing: 1px;
+      animation: winGlow 1.4s ease-in-out infinite;
+    }
+    @keyframes winGlow {
+      0%,100% { text-shadow: 0 0 10px #fb8500, 0 0 20px #c05000; }
+      50% { text-shadow: 0 0 22px #ffaa40, 0 0 44px #fb8500; }
     }
     .win-msg.visible { display: block; }
 

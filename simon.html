@@ -213,7 +213,32 @@ body {
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
-<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(10,150,140,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(5,120,110,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #063838 0%, #042020 100%) !important; }</style>
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(180,20,30,0.45) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(120,10,15,0.35) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #1a0405 0%, #0e0203 100%) !important; }
+.window { border-color: #e63946 !important; box-shadow: 0 0 30px rgba(230,57,70,0.4), 0 0 80px rgba(230,57,70,0.15), 0 24px 64px rgba(0,0,0,0.85) !important; }
+.led { color: #ff6677 !important; text-shadow: 0 0 10px #ff6677, 0 0 20px #e63946 !important; border-color: #801020 !important; }
+.led-label { color: #801828 !important; }
+.act-btn { background: linear-gradient(160deg, #4a0810 0%, #280408 100%) !important; color: #ffaaaa !important; border-color: #8a2030 !important; }
+#led-round { font-size: 36px !important; min-width: 80px !important; padding: 4px 14px !important; }
+#led-best { font-size: 28px !important; min-width: 70px !important; padding: 4px 12px !important; }
+.status-panel { padding: 10px 16px !important; }
+/* Simon layout: bigger quadrant buttons in a centered square */
+.simon-grid { gap: 10px !important; padding: 10px !important; max-width: 340px; margin: 0 auto; }
+.simon-btn { border-radius: 18px !important; font-size: 14px !important; font-weight: 900 !important; color: rgba(255,255,255,0.55) !important; letter-spacing: 1px !important; transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.12s !important; }
+/* Green button */
+#btn-green { background: radial-gradient(circle at 38% 32%, #40cc55, #008030 60%, #004818) !important; border-color: #00cc44 !important; }
+#btn-green.lit { background: radial-gradient(circle at 38% 32%, #80ffaa, #00cc44 50%, #008030) !important; border-color: #80ffaa !important; box-shadow: 0 0 36px rgba(0,204,68,0.95), 0 0 72px rgba(0,180,50,0.6) !important; transform: scale(1.05); color: rgba(0,0,0,0.9) !important; }
+/* Red button */
+#btn-red { background: radial-gradient(circle at 38% 32%, #cc3040, #aa0020 60%, #660010) !important; border-color: #cc2200 !important; }
+#btn-red.lit { background: radial-gradient(circle at 38% 32%, #ff6080, #ff0030 50%, #cc0020) !important; border-color: #ff6080 !important; box-shadow: 0 0 36px rgba(255,0,40,0.95), 0 0 72px rgba(200,0,20,0.6) !important; transform: scale(1.05); color: rgba(255,255,255,0.9) !important; }
+/* Yellow button */
+#btn-yellow { background: radial-gradient(circle at 38% 32%, #ddb820, #aa8000 60%, #664800) !important; border-color: #ccaa00 !important; }
+#btn-yellow.lit { background: radial-gradient(circle at 38% 32%, #fff070, #ffcc00 50%, #ddaa00) !important; border-color: #fff070 !important; box-shadow: 0 0 36px rgba(255,220,0,0.95), 0 0 72px rgba(220,180,0,0.6) !important; transform: scale(1.05); color: rgba(0,0,0,0.9) !important; }
+/* Blue button */
+#btn-blue { background: radial-gradient(circle at 38% 32%, #2040aa, #0020aa 60%, #001060) !important; border-color: #0044cc !important; }
+#btn-blue.lit { background: radial-gradient(circle at 38% 32%, #6090ff, #0044cc 50%, #0020aa) !important; border-color: #6090ff !important; box-shadow: 0 0 36px rgba(0,80,255,0.95), 0 0 72px rgba(0,60,220,0.6) !important; transform: scale(1.05); color: rgba(255,255,255,0.9) !important; }
+.msg-area { font-size: 18px !important; font-weight: 900 !important; padding: 10px 8px 6px !important; letter-spacing: 0.5px !important; }
+.start-btn { font-size: 20px !important; padding: 16px 48px !important; background: linear-gradient(160deg, #e63946, #9a0010) !important; border-color: #ff5060 !important; box-shadow: 0 0 24px rgba(230,57,70,0.7), 0 4px 16px rgba(0,0,0,0.5) !important; }
+</style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -255,7 +280,7 @@ body{padding-top:44px!important;}
         <div class="simon-btn" id="btn-green" data-id="green" onclick="onBtnClick('green')">緑</div>
       </div>
       <div class="start-overlay" id="start-overlay">
-        <div style="color:#b898ff;font-size:14px;text-align:center">コンピューターの色の順番を<br>覚えて繰り返そう！</div>
+        <div style="color:#ffffff;font-size:15px;font-weight:900;text-align:center;text-shadow:0 0 12px rgba(230,57,70,0.8)">コンピューターの色の順番を<br>覚えて繰り返そう！</div>
         <button class="start-btn" onclick="startGame()">▶ スタート</button>
       </div>
     </div>
@@ -415,7 +440,7 @@ function nextRound() {
   round++;
   document.getElementById('led-round').textContent = round;
   sequence.push(COLORS[Math.floor(Math.random() * 4)]);
-  setMsg('コンピューターの番...', '');
+  setMsg('記憶中... 🎵', '');
   setBtnsDisabled(true);
   setTimeout(() => playSequence(), 600);
 }
@@ -433,7 +458,7 @@ function playSequence() {
   function next() {
     if (i >= sequence.length) {
       setTimeout(() => {
-        setMsg('あなたの番！', 'success');
+        setMsg('あなたの番！ 👆', 'success');
         setBtnsDisabled(false);
         accepting = true;
       }, 300);
@@ -446,9 +471,26 @@ function playSequence() {
   next();
 }
 
+// Audio: distinct pitch per button (AudioContext)
+const SIMON_FREQS = { red: 330, green: 415, blue: 220, yellow: 554 };
+function playTone(color, duration) {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'sine';
+    osc.frequency.value = SIMON_FREQS[color] || 440;
+    gain.gain.setValueAtTime(0.22, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration / 1000);
+    osc.start(); osc.stop(ac.currentTime + duration / 1000);
+  } catch(e) {}
+}
+
 function lightBtn(color, duration) {
   const el = document.getElementById('btn-' + color);
   el.classList.add('lit');
+  playTone(color, Math.min(duration, 500));
   setTimeout(() => el.classList.remove('lit'), duration);
 }
 

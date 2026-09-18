@@ -119,7 +119,13 @@ select.act-btn { -webkit-appearance: none; appearance: none; text-align: center;
 .hcb-cancel:active{transform:translateY(2px);}
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
-<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(15,90,40,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(8,70,30,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #062010 0%, #04140a 100%) !important; }</style>
+<style>body { background: radial-gradient(ellipse at 25% 20%, rgba(10,80,60,0.55) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(5,60,40,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #041a14 0%, #020e0a 100%) !important; }
+.window { border-color: #4cc9f0 !important; box-shadow: 0 0 30px rgba(76,201,240,0.35), 0 0 80px rgba(76,201,240,0.12), 0 24px 64px rgba(0,0,0,0.85) !important; }
+.led { color: #4cc9f0 !important; text-shadow: 0 0 10px #4cc9f0, 0 0 20px #0099cc !important; }
+.led-label { color: #2a7a8a !important; }
+.act-btn { background: linear-gradient(160deg, #0a3a4a 0%, #061c28 100%) !important; color: #80e8ff !important; border-color: #2a6a80 !important; }
+#turnDisplay { font-size: 16px !important; font-weight: 900 !important; color: #ffffff !important; text-shadow: 0 0 10px rgba(76,201,240,0.8); }
+</style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -140,16 +146,16 @@ body{padding-top:44px!important;}
   </div>
   <div class="status-panel">
     <div class="led-group">
-      <span class="led" id="blackCount">2</span>
-      <span class="led-label">⚫ あなた</span>
+      <span class="led" id="blackCount" style="font-size:28px;min-width:64px;">2</span>
+      <span class="led-label" style="font-size:11px;font-weight:bold;">⚫ あなた</span>
     </div>
     <div class="led-group">
       <span class="turn-text" id="turnDisplay">あなた ⚫</span>
       <span class="turn-sub">ターン</span>
     </div>
     <div class="led-group">
-      <span class="led" id="whiteCount">2</span>
-      <span class="led-label">⚪ CPU</span>
+      <span class="led" id="whiteCount" style="font-size:28px;min-width:64px;color:#ffffff !important;text-shadow:0 0 10px #aaccff, 0 0 20px #88aaff !important;">2</span>
+      <span class="led-label" style="font-size:11px;font-weight:bold;">⚪ CPU</span>
     </div>
   </div>
   <div class="content">
@@ -344,22 +350,25 @@ function drawBoard(validMoves) {
   const w = canvas.width;
   const cs = cellSize();
 
-  // Board background — dark green tinted
-  ctx.fillStyle = '#0a1e0a';
+  // Board background — dark green #1a4731
+  const boardGrad = ctx.createLinearGradient(0, 0, 0, w);
+  boardGrad.addColorStop(0, '#1a4731');
+  boardGrad.addColorStop(1, '#123322');
+  ctx.fillStyle = boardGrad;
   ctx.fillRect(0, 0, w, w);
 
-  // Subtle texture
+  // Subtle checkerboard texture
   for (let r = 0; r < N; r++) {
     for (let c = 0; c < N; c++) {
       const x = c * cs, y = r * cs;
       const alt = (r + c) % 2 === 0;
-      ctx.fillStyle = alt ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.05)';
+      ctx.fillStyle = alt ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.06)';
       ctx.fillRect(x, y, cs, cs);
     }
   }
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(30,90,30,0.8)';
+  // Grid lines — bright green
+  ctx.strokeStyle = 'rgba(60,160,80,0.7)';
   ctx.lineWidth = 1;
   for (let i = 0; i <= N; i++) {
     ctx.beginPath(); ctx.moveTo(i * cs, 0); ctx.lineTo(i * cs, w); ctx.stroke();
@@ -368,23 +377,33 @@ function drawBoard(validMoves) {
 
   // Corner star dots
   [[2,2],[2,6],[6,2],[6,6]].forEach(([r,c]) => {
-    ctx.fillStyle = 'rgba(30,120,30,0.7)';
+    ctx.fillStyle = 'rgba(76,201,240,0.8)';
     ctx.beginPath();
-    ctx.arc(c * cs, r * cs, 4, 0, Math.PI * 2);
+    ctx.arc(c * cs, r * cs, 4.5, 0, Math.PI * 2);
     ctx.fill();
   });
 
-  // Valid move highlights
+  // Valid move highlights — pulsing cyan dots
   if (validMoves && !gameOver) {
+    const pulse = 0.45 + 0.45 * Math.sin(Date.now() * 0.005);
     validMoves.forEach(({ r, c }) => {
       const x = c * cs, y = r * cs;
-      ctx.fillStyle = 'rgba(245,200,66,0.12)';
+      // Cell highlight
+      ctx.fillStyle = `rgba(76,201,240,${0.06 + pulse * 0.06})`;
       ctx.fillRect(x + 1, y + 1, cs - 2, cs - 2);
-      ctx.fillStyle = 'rgba(245,200,66,0.5)';
+      // Pulsing dot
+      ctx.shadowColor = '#4cc9f0';
+      ctx.shadowBlur = 8 * pulse;
+      ctx.fillStyle = `rgba(76,201,240,${0.55 + pulse * 0.35})`;
       ctx.beginPath();
-      ctx.arc(x + cs/2, y + cs/2, cs * 0.12, 0, Math.PI * 2);
+      ctx.arc(x + cs/2, y + cs/2, cs * (0.1 + pulse * 0.05), 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
     });
+    // Keep animating while player's turn
+    if (currentTurn === PLAYER && !cpuThinking) {
+      requestAnimationFrame(() => drawBoard(validMoves));
+    }
   }
 
   // Discs
@@ -404,29 +423,35 @@ function drawBoard(validMoves) {
 
 function drawDisc(cx, cy, radius, color) {
   if (color === BLACK) {
-    const grad = ctx.createRadialGradient(cx - radius*0.25, cy - radius*0.25, radius*0.05, cx, cy, radius);
-    grad.addColorStop(0, '#505060');
-    grad.addColorStop(0.4, '#202030');
-    grad.addColorStop(1, '#05050e');
-    ctx.shadowColor = 'rgba(80,80,255,0.3)';
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath(); ctx.ellipse(cx - radius*0.2, cy - radius*0.24, radius*0.18, radius*0.1, -0.4, 0, Math.PI*2); ctx.fill();
-  } else {
-    const grad = ctx.createRadialGradient(cx - radius*0.25, cy - radius*0.25, radius*0.05, cx, cy, radius);
-    grad.addColorStop(0, '#fffaf0');
-    grad.addColorStop(0.5, '#ffe8b0');
-    grad.addColorStop(1, '#c09030');
-    ctx.shadowColor = 'rgba(255,220,100,0.4)';
+    // Black disc with gradient and white highlight
+    const grad = ctx.createRadialGradient(cx - radius*0.28, cy - radius*0.28, radius*0.04, cx, cy, radius);
+    grad.addColorStop(0, '#555566');
+    grad.addColorStop(0.35, '#222233');
+    grad.addColorStop(0.7, '#111120');
+    grad.addColorStop(1, '#050510');
+    ctx.shadowColor = 'rgba(0,0,30,0.8)';
     ctx.shadowBlur = 8;
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.beginPath(); ctx.ellipse(cx - radius*0.2, cy - radius*0.24, radius*0.18, radius*0.1, -0.4, 0, Math.PI*2); ctx.fill();
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.beginPath(); ctx.ellipse(cx - radius*0.22, cy - radius*0.26, radius*0.2, radius*0.11, -0.4, 0, Math.PI*2); ctx.fill();
+  } else {
+    // White disc: creamy white gradient
+    const grad = ctx.createRadialGradient(cx - radius*0.28, cy - radius*0.28, radius*0.04, cx, cy, radius);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, '#eeeeee');
+    grad.addColorStop(0.7, '#cccccc');
+    grad.addColorStop(1, '#aaaaaa');
+    ctx.shadowColor = 'rgba(200,220,255,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    // Strong white highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.beginPath(); ctx.ellipse(cx - radius*0.22, cy - radius*0.26, radius*0.2, radius*0.11, -0.4, 0, Math.PI*2); ctx.fill();
   }
 }
 
