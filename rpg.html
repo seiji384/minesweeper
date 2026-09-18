@@ -1266,6 +1266,7 @@ function defaultState() {
     quests: {accepted:[], completed:[], unlocked:[]},
     stepsToEnc: ri(8,14),
     totalBattles: 0,
+    monstersKilled: 0,
     monsterParty: [],
     companions: [],
     mainParty: [],    // active non-hero party (up to 3)
@@ -1320,6 +1321,8 @@ function loadGame()  {
     if (G.exitPos === undefined) G.exitPos = null;
     if (!G.items) G.items = [];
     if (!G.hero.equip) G.hero.equip = { weapon:null, armor:null, accessory:null };
+    if (G.monstersKilled === undefined) G.monstersKilled = 0;
+    if (G.flags.dungeon1Entered === undefined) G.flags.dungeon1Entered = false;
     // Migration: new party arrays
     if (!G.mainParty) {
       // Merge old companions + monsterParty into mainParty
@@ -1965,11 +1968,6 @@ function renderField() {
         drawDungeonTile(MAP[row][col], col*S, row*S, G.dungeonFloor);
       }
     }
-    for (let row=0;row<MAP_H;row++) {
-      for (let col=0;col<MAP_W;col++) {
-        if (TILE_NAMES[MAP[row][col]]) drawMapLabel(MAP[row][col], col*S, row*S);
-      }
-    }
   } else {
     // Multi-map world rendering
     const mapData = WORLD_MAPS[G.currentMap];
@@ -2393,15 +2391,30 @@ function onMapEnter(mapId, prevMapId) {
       'gatara_town': 'quest_gatara',
     };
     const qid = questTriggers[mapId];
-    if (qid) {
-      if (!G.quests) G.quests = {accepted:[], completed:[], unlocked:[]};
-      if (!G.quests.unlocked) G.quests.unlocked = [];
-      if (!G.quests.unlocked.includes(qid)) {
-        G.quests.unlocked.push(qid);
-        saveGame();
-        setTimeout(() => showQuestUnlocked(qid), 900);
-      }
+    if (!G.quests) G.quests = {accepted:[], completed:[], unlocked:[]};
+    if (!G.quests.unlocked) G.quests.unlocked = [];
+    if (qid && !G.quests.unlocked.includes(qid)) {
+      G.quests.unlocked.push(qid);
+      saveGame();
+      setTimeout(() => showQuestUnlocked(qid), 900);
     }
+    // Casual quest unlocks based on flags
+    const casualUnlocks = [];
+    if (G.flags.castleVisited && !G.quests.unlocked.includes('quest_herb_elder'))
+      casualUnlocks.push('quest_herb_elder');
+    if (mapId === 'azuran_town' && !G.quests.unlocked.includes('quest_lost_sword'))
+      casualUnlocks.push('quest_lost_sword');
+    if (mapId === 'gren_town' && !G.quests.unlocked.includes('quest_letter_delivery'))
+      casualUnlocks.push('quest_letter_delivery');
+    if (mapId === 'gatara_town' && !G.quests.unlocked.includes('quest_cooking'))
+      casualUnlocks.push('quest_cooking');
+    if ((G.flags.emblems||0) >= 3 && !G.quests.unlocked.includes('quest_treasure_hunt'))
+      casualUnlocks.push('quest_treasure_hunt');
+    casualUnlocks.forEach((cid, i) => {
+      G.quests.unlocked.push(cid);
+      saveGame();
+      if (i === 0 && !qid) setTimeout(() => showQuestUnlocked(cid), 900);
+    });
   }
 }
 
@@ -2489,6 +2502,8 @@ function enterDungeon(dungeonId) {
   G.dungeonName = dungeonId;
   G.dungeonFloorCleared = false;
   G.stepsToEnc = ri(3,5);
+  // Track dungeon entry for casual quests
+  if (dungeonId === 'dun1') G.flags.dungeon1Entered = true;
   updateDungeonHUD();
   sndMenu();
   const loc = document.getElementById('field-location');
@@ -3205,66 +3220,21 @@ function initBattleTurns() {
   // Clear battle buffs on each combatant at start (if not yet set)
   [G.hero, ...G.mainParty].forEach(c => { if (!c.btBuffs) c.btBuffs = {}; });
   if (BT.mon && !BT.mon.btBuffs) BT.mon.btBuffs = {};
-
-  // Build combined turn order: party + enemy, sorted by subayasa descending
-  const partyCombatants = [G.hero, ...G.mainParty].map((char, idx) => ({
-    char, idx, isPlayer: true,
-    spd: getEffectiveStat(char, 'subayasa') || (idx === 0 ? 15 : 10)
-  }));
-  const enemyEntry = {
-    char: BT.mon, isEnemy: true,
-    spd: getEffectiveStat(BT.mon, 'subayasa') || (BT.mon ? BT.mon.lv * 3 + 5 : 10)
-  };
-  const combined = [...partyCombatants, enemyEntry];
-  combined.sort((a, b) => b.spd - a.spd);
-
-  BT.turnOrder  = combined;
-  BT.turnCurrent= 0;
-  // Keep partyOrder + partyActed for HUD highlighting (set dynamically in doCurrentTurn)
-  BT.partyOrder = [G.hero, ...G.mainParty];
-  BT.partyActed = 0;
-  BT.defends  = new Set();
-  BT.atkBuffs = new Set();
-  BT.pendingSwaps = [];
-  BT.busy = false;
-  doCurrentTurn();
+  startSelectPhase();
 }
 
 function doCurrentTurn() {
-  if (BT.over) return;
-  if (BT.turnCurrent >= (BT.turnOrder||[]).length) {
-    endRound();
-    return;
-  }
-  const entry = BT.turnOrder[BT.turnCurrent];
-  if (entry.isEnemy) {
-    BT.busy = true;
-    doEnemyTurn();
-  } else {
-    const {char, idx} = entry;
-    // Skip KO'd characters (companions and hero)
-    const isCharKo = idx === 0
-      ? (G.hero.ko || G.hero.hp <= 0)
-      : (char.ko || (char.currentHp !== undefined && char.currentHp <= 0));
-    if (isCharKo) {
-      BT.turnCurrent++;
-      doCurrentTurn();
-      return;
-    }
-    BT.partyActed = idx; // for showCharCmd / cmdCharAttack compatibility
-    updateBattleHUD();
-    showCharCmd();
-  }
+  executeNextAction();
 }
 
 function nextPartyTurn() {
   BT.turnCurrent++;
   BT.busy = false;
-  doCurrentTurn();
+  executeNextAction();
 }
 
 // Alias for backward compat
-function doPartyTurn() { doCurrentTurn(); }
+function doPartyTurn() { executeNextAction(); }
 
 function endRound() {
   if (BT.over) return;
@@ -3281,6 +3251,90 @@ function endRound() {
   }
 }
 
+// ── DQ3-style: select-then-execute phase system ──
+
+function startSelectPhase() {
+  if (!G.mainParty) G.mainParty = [];
+  BT.selectingIdx = 0;
+  BT.pendingActions = [];
+  BT.pendingSwaps = [];
+  BT.defends = new Set();
+  BT.atkBuffs = new Set();
+  BT.partyOrder = [G.hero, ...G.mainParty];
+  BT.busy = false;
+  const msgEl = document.getElementById('msg-text');
+  if (msgEl) msgEl.textContent = 'コマンドを　えらんでください';
+  selectNextMember();
+}
+
+function selectNextMember() {
+  const allMembers = [G.hero, ...(G.mainParty || [])];
+  while (BT.selectingIdx < allMembers.length) {
+    const char = allMembers[BT.selectingIdx];
+    const isKo = BT.selectingIdx === 0
+      ? (G.hero.ko || G.hero.hp <= 0)
+      : (char.ko || (char.currentHp !== undefined && char.currentHp <= 0));
+    if (!isKo) {
+      BT.partyActed = BT.selectingIdx;
+      updateBattleHUD();
+      showCharCmd();
+      return;
+    }
+    BT.selectingIdx++;
+  }
+  // All members have selected — execute
+  executeTurnOrder();
+}
+
+function advanceTurnSelect() {
+  BT.selectingIdx++;
+  selectNextMember();
+}
+
+function executeTurnOrder() {
+  if (BT.over) return;
+  clearCmdPanel();
+  // Add enemy action with speed
+  const enemySpd = getEffectiveStat(BT.mon, 'subayasa') || (BT.mon ? BT.mon.lv * 3 + 5 : 10);
+  const combined = [
+    ...BT.pendingActions,
+    { isEnemy: true, speed: enemySpd }
+  ];
+  combined.sort((a, b) => b.speed - a.speed);
+  BT.turnOrder = combined;
+  BT.turnCurrent = 0;
+  BT.busy = false;
+  executeNextAction();
+}
+
+function executeNextAction() {
+  if (BT.over) return;
+  if (BT.turnCurrent >= (BT.turnOrder || []).length) {
+    endRound();
+    return;
+  }
+  const entry = BT.turnOrder[BT.turnCurrent];
+  if (entry.isEnemy) {
+    BT.busy = true;
+    doEnemyTurn();
+  } else {
+    const { char, charIdx } = entry;
+    // Skip KO'd characters
+    const isKo = charIdx === 0
+      ? (G.hero.ko || G.hero.hp <= 0)
+      : (char.ko || (char.currentHp !== undefined && char.currentHp <= 0));
+    if (isKo) {
+      BT.turnCurrent++;
+      executeNextAction();
+      return;
+    }
+    BT.partyActed = charIdx;
+    updateBattleHUD();
+    BT.busy = true;
+    entry.run();
+  }
+}
+
 // Show command panel for current party member's turn
 function showCharCmd() {
   if (BT.over || BT.busy) return;
@@ -3292,7 +3346,7 @@ function showCharCmd() {
   const magicSkills = (char.skills || []).filter(k => ALL_SKILLS[k] && ALL_SKILLS[k].cost > 0);
   const isBoss = BT.mon && BT.mon.boss;
   const hasReserve = G.reserveParty && G.reserveParty.some(m => m && !m.ko && !(m.currentHp !== undefined && m.currentHp <= 0));
-  const indicator = `<div class="turn-indicator">▶ ${char.name}の　ターン</div>`;
+  const indicator = `<div class="turn-indicator">▶ ${char.name}の　コマンド</div>`;
   // 2×2 main grid (DQ5 style)
   const swapDisabled = !hasReserve ? 'disabled style="opacity:0.4"' : '';
   const swapClick    = hasReserve ? `onclick="showSwapMenu(${idx})"` : '';
@@ -3324,42 +3378,49 @@ function showSwapMenu(charIdx) {
   document.getElementById('cmd-panel').innerHTML = html;
 }
 
-// Execute a party swap as the current character's battle action
+// Queue a party swap as the current character's battle action
 function doSwapAction(charIdx, reserveIdx) {
-  if (BT.over || BT.busy) return;
-  BT.busy = true;
-  clearCmdPanel();
+  if (BT.over) return;
   const outChar = BT.partyOrder[charIdx];
   const inChar  = G.reserveParty[reserveIdx];
-  if (!inChar) { BT.busy = false; showCharCmd(); return; }
-  // Perform the swap in G state
-  if (charIdx === 0) {
-    // Hero cannot be swapped (shouldn't be reachable normally)
-    BT.busy = false; showCharCmd(); return;
-  }
-  const partySlot = charIdx - 1; // index into G.mainParty
-  G.mainParty[partySlot] = inChar;
-  G.reserveParty[reserveIdx] = outChar;
-  // Update BT.partyOrder to reflect new lineup
-  BT.partyOrder = [G.hero, ...G.mainParty];
-  typeMsg(`${outChar.name}と　${inChar.name}が　いれかわった！`, () => {
-    updateBattleHUD();
-    if (typeof renderBattlePartySprites === 'function') renderBattlePartySprites();
-    nextPartyTurn();
+  if (!inChar) { showCharCmd(); return; }
+  if (charIdx === 0) { showCharCmd(); return; }
+  clearCmdPanel();
+  BT.pendingActions.push({
+    charIdx, char: outChar, speed: 9999,
+    run: () => {
+      const partySlot = charIdx - 1;
+      const currentOut = BT.partyOrder[charIdx];
+      const currentIn  = G.reserveParty[reserveIdx];
+      if (!currentIn) { nextPartyTurn(); return; }
+      G.mainParty[partySlot] = currentIn;
+      G.reserveParty[reserveIdx] = currentOut;
+      BT.partyOrder = [G.hero, ...G.mainParty];
+      typeMsg(`${currentOut.name}と　${currentIn.name}が　いれかわった！`, () => {
+        updateBattleHUD();
+        if (typeof renderBattlePartySprites === 'function') renderBattlePartySprites();
+        nextPartyTurn();
+      });
+    }
   });
+  advanceTurnSelect();
 }
 
-// Alias for old code that calls showMainCmd
-function showMainCmd() { initBattleTurns(); }
+// Entry point for each battle round — select phase then execute
+function showMainCmd() { startSelectPhase(); }
 
 // ── たたかう (current party member) ──
 function cmdCharAttack() {
-  if (BT.busy || BT.over) return;
-  BT.busy = true; clearCmdPanel();
-  const idx  = BT.partyActed;
+  if (BT.over) return;
+  const idx  = BT.selectingIdx;
   const char = BT.partyOrder[idx];
+  const speed = getEffectiveStat(char, 'subayasa') || (idx === 0 ? 15 : 10);
+  clearCmdPanel();
+  BT.pendingActions.push({ charIdx: idx, char, speed, run: () => _execCharAttack(idx, char) });
+  advanceTurnSelect();
+}
+function _execCharAttack(idx, char) {
   const mon  = BT.mon;
-
   // Metal slime shortcut
   if (mon.metal) {
     const dmg = Math.random() < 0.3 ? 1 : 0;
@@ -3370,22 +3431,18 @@ function cmdCharAttack() {
     });
     return;
   }
-
   // Physical damage formula: (chikara*0.5 + weapon.atk) * rand(0.85-1.15) - mimamori*0.25
   const attackerChikara = getEffectiveStat(char, 'chikara') || char.atk || 10;
   const weaponAtk = (idx === 0 && G.hero.weapon) ? (WEAPON_DATA[G.hero.weapon] ? WEAPON_DATA[G.hero.weapon].atk : 0) : 0;
   const defMimamori = getEffectiveStat(mon, 'mimamori') || Math.floor((mon.def||0) * 2);
   const rand11 = () => 0.85 + Math.random() * 0.30;
   let dmg = Math.max(1, Math.floor((attackerChikara * 0.5 + weaponAtk) * rand11() - defMimamori * 0.25));
-
   // Critical hit: chance = kiyosa/200
   const critChance = (getEffectiveStat(char, 'kiyosa') || 10) / 200;
   const isCrit = Math.random() < critChance;
   if (isCrit) dmg = Math.floor(dmg * 1.5);
-
   // Attack buff (legacy atkBuffs set)
   if (BT.atkBuffs.has(idx)) { dmg = Math.floor(dmg * 2); BT.atkBuffs.delete(idx); }
-
   mon.currentHp = Math.max(0, mon.currentHp - dmg);
   sndAttack(); showFloatDmg(dmg,'monster'); shakeMonster(); updateBattleHUD();
   const critMsg = isCrit ? '\nクリティカルヒット！！' : '';
@@ -3418,15 +3475,28 @@ function cmdCharMahou() {
 function cmdMahou() { cmdCharMahou(); }
 
 function castCharSkill(key) {
-  if (BT.busy || BT.over) return;
+  if (BT.over) return;
   const sk = ALL_SKILLS[key];
   if (!sk) return;
-  const idx  = BT.partyActed;
+  const idx  = BT.selectingIdx;
   const char = BT.partyOrder[idx];
   const isHero = (idx === 0);
   const charMp = isHero ? G.hero.mp : (char.mp || 0);
   if (charMp < sk.cost) return;
-  BT.busy = true; clearCmdPanel();
+  const speed = getEffectiveStat(char, 'subayasa') || (idx === 0 ? 15 : 10);
+  clearCmdPanel();
+  BT.pendingActions.push({ charIdx: idx, char, speed, run: () => _execCharSkill(idx, char, key) });
+  advanceTurnSelect();
+}
+function _execCharSkill(idx, char, key) {
+  const sk = ALL_SKILLS[key];
+  if (!sk) { nextPartyTurn(); return; }
+  const isHero = (idx === 0);
+  const charMp = isHero ? G.hero.mp : (char.mp || 0);
+  if (charMp < sk.cost) {
+    typeMsg(`${char.name}は　MPが　たりない！`, () => nextPartyTurn());
+    return;
+  }
   if (isHero) G.hero.mp -= sk.cost; else char.mp = charMp - sk.cost;
   updateBattleHUD();
   const mon = BT.mon;
@@ -3437,7 +3507,7 @@ function castCharSkill(key) {
     const {stat, mult, turns, target} = sk;
     let targets = [];
     if (target === 'all_ally') targets = allPartyChars;
-    else if (target === 'one_ally') targets = [char]; // self or pick; default self
+    else if (target === 'one_ally') targets = [char];
     else if (target === 'self') targets = [char];
     else if (target === 'enemy') targets = [mon];
     targets.forEach(t => { if(t) applyBuff(t, stat, mult, turns); });
@@ -3470,7 +3540,6 @@ function castCharSkill(key) {
     sndHeal(); updateBattleHUD();
     typeMsg(`${char.name}は　${sk.name}を　となえた！\n全員のHPが　かいふくした！`, () => nextPartyTurn());
   } else if (sk.type === 'magic') {
-    // Magic damage: skill.power * (1 + atkMagic/30) * rand(0.9,1.1)
     const atkMagic = getEffectiveStat(char, 'atkMagic') || 8;
     const rand9 = () => 0.90 + Math.random() * 0.20;
     const dmg = Math.max(1, Math.floor(sk.power * (1 + atkMagic / 30) * rand9()));
@@ -3489,12 +3558,10 @@ function castCharSkill(key) {
       typeMsg(`${char.name}は　${sk.name}を　となえた！\nしかし　${mon.name}には　きかなかった！`, () => nextPartyTurn());
     }
   } else if (sk.type === 'buff_def') {
-    // Legacy — map to new buff system
     applyBuff(char, 'mimamori', 1.5, 5);
     BT.defends.add(idx);
     typeMsg(`${char.name}は　${sk.name}を　となえた！\nみのまもりが　あがった！`, () => nextPartyTurn());
   } else if (sk.type === 'buff_atk') {
-    // Legacy — map to new buff system
     applyBuff(char, 'chikara', 2.0, 5);
     BT.atkBuffs.add(idx);
     typeMsg(`${char.name}は　${sk.name}を　となえた！\nこうげきりょくが　あがった！`, () => nextPartyTurn());
@@ -3536,11 +3603,18 @@ function castSpell(name) {
 
 // ── ぼうぎょ ──
 function cmdCharDefend() {
-  if (BT.busy || BT.over) return;
-  BT.busy = true; clearCmdPanel();
-  const char = BT.partyOrder[BT.partyActed];
-  BT.defends.add(BT.partyActed);
-  typeMsg(`${char.name}は　みをまもる　かまえをとった！`, () => nextPartyTurn());
+  if (BT.over) return;
+  const idx  = BT.selectingIdx;
+  const char = BT.partyOrder[idx];
+  clearCmdPanel();
+  BT.pendingActions.push({
+    charIdx: idx, char, speed: 9998,
+    run: () => {
+      BT.defends.add(idx);
+      typeMsg(`${char.name}は　みをまもる　かまえをとった！`, () => nextPartyTurn());
+    }
+  });
+  advanceTurnSelect();
 }
 
 // ── どうぐ ──
@@ -3661,22 +3735,31 @@ function cmdScoutFree() {
         : `${mon.name}は　なかまに　なった！`;
       typeMsg(destMsg, () => { BT.over=true; showVictoryPanel(); });
     } else {
+      // Scout failed — hero used their turn; continue selecting for remaining party members
       typeMsg('スカウトは　しっぱいした……', () => {
-        BT.busy=false; nextPartyTurn();
+        BT.busy = false;
+        advanceTurnSelect();
       });
     }
   });
 }
 
 function useItem(id) {
-  if (BT.busy||BT.over) return;
+  if (BT.over) return;
   const it = ITEM_DATA[id];
   if (!it || !G.inventory[id]) return;
-  BT.busy=true; clearCmdPanel();
+  const idx  = BT.selectingIdx;
+  const char = BT.partyOrder[idx];
+  clearCmdPanel();
+  BT.pendingActions.push({
+    charIdx: idx, char, speed: 9997,
+    run: () => _execUseItem(idx, char, id, it)
+  });
+  advanceTurnSelect();
+}
+function _execUseItem(idx, char, id, it) {
+  if (!G.inventory[id]) { typeMsg('アイテムが　ない！', () => nextPartyTurn()); return; }
   G.inventory[id]--;
-  // Use on current party member (or hero if no party order)
-  const idx  = (BT.partyOrder) ? BT.partyActed : 0;
-  const char = (BT.partyOrder) ? BT.partyOrder[idx] : G.hero;
   const isHero = (char === G.hero);
   let msg;
   if (it.effect==='heal') {
@@ -3707,12 +3790,11 @@ function cmdNigeru() {
     BT.over=true; sndEscape();
     typeMsg('うまく　にげることが　できた！', ()=>returnToField());
   } else {
-    // Failed flee: skip to enemy turn in turnOrder
+    // Failed flee — skip all party selection, jump to enemy turn
     typeMsg('しかし　にげることが　できなかった！', ()=>{
-      const enemyPos = (BT.turnOrder||[]).findIndex(e => e.isEnemy);
-      BT.turnCurrent = (enemyPos >= 0) ? enemyPos : (BT.turnOrder||[]).length;
       BT.busy = false;
-      doCurrentTurn();
+      BT.pendingActions = [];
+      executeTurnOrder();
     });
   }
 }
@@ -3811,6 +3893,7 @@ function doVictory() {
   const goldGain = Math.floor((mon.gold ||  5) * 3);
   G.hero.gold += goldGain;
   G.hero.xp   += expGain;
+  G.monstersKilled = (G.monstersKilled || 0) + 1;
   sndVictory();
   const lvMsgs = checkLevelUp();
   updateBattleHUD();
@@ -4463,12 +4546,12 @@ function finishOpening() {
 // MISSION SYSTEM (Feature 4)
 // ============================================================
 const MISSIONS = {
-  0: { title: '旅のはじまり', desc: 'まず　グランゼドーラ城を　訪ねよう。\n城の中の　「城」マークの扉から\n王様に　会うことが　できる！\n\n王様が　旅の資金として\n1000ゴールドを　くれるぞ！\n\n城を出て　まず　装備を　整えよう。\nどうぐやで　武器と　防具を　買い\n冒険の準備を　万端に！' },
-  1: { title: 'アズランへ向かえ！', desc: '【第一の目標】ウェディ族の里\nアズランへ　向かおう！\n\n→ 平原の　北出口を　抜けよう。\n\nアズランに　到着したら\n冥府の洞窟(北の草原にある)を\n探索し　最深部の\n死霊の騎士を　倒して\nキーエンブレムを　手に入れよ！\n\n洞窟は　階段で　どんどん　深く\n潜ることが　できる。\n教会で　こまめに　セーブ！' },
-  2: { title: 'グレン王都へ！', desc: '【第二の目標】オーガ族の王都\nグレンへ　向かおう！\n\n→ 平原の　東出口を　抜けよう。\n\nグレンには　賢者マーリンが　いる。\n冥王の心臓(東の野原)を　踏破し\nダークドラゴンを　倒して\nエンブレムを　手に入れよ！\n\nマーリンが　なかまに　なってくれるぞ。\n呪文を　駆使して　戦え！' },
-  3: { title: 'ガタラ王国へ！', desc: '【第三の目標】ドワーフの王国\nガタラへ　向かおう！\n\n→ 平原の　南出口を　抜けよう。\n\nガタラには　戦士アリスが　いる。\nネルゲルの居城(南の山脈)の\n最深部を　目指し\nボスを　倒して　エンブレムを！\n\nガタラの　武器防具は　最強クラス。\n装備を　しっかり　整えよ！' },
-  4: { title: '決戦！冥王ネルゲル', desc: '三つのエンブレムが　そろった！\nいよいよ　最終決戦の　時！\n\n→ 南のガタラ山脈を　越え\n　 ネルゲルの居城　最深部へ！\n\n冥王ネルゲルは　強大な敵じゃ。\n・レベルは　10以上を　目指そう\n・HPを　回復アイテムで　十分に\n・マーリンの呪文で　一気に攻撃！\n\nアストルティアの　運命が\nそなたの　手に　かかっている！' },
-  5: { title: 'アストルティアに平和を！', desc: 'おめでとう！\n冥王ネルゲルを　倒し\nアストルティアに　平和が　戻った！\n\n終わりなき　冒険の　扉が　開いた。\nアストルティアを　自由に　探索し\n最強の　装備を　集めよう！\n\n伝道師から　強力な呪文を　習い\nモンスターを　スカウトして\n夢の　パーティを　組もう！' },
+  0: { title: '王様に会いに行こう', desc: '王様から　旅の資金を　もらおう。\nグランゼドーラ城の　奥に　いるはずだ。\n\n→ フィールドの「城」マークへ！' },
+  1: { title: 'キーエンブレムを集めよ', desc: '★ 北へ進む → アズランの町へ\n　冥府の洞窟ボス「死霊の騎士」を倒せ！\n　→ マーリンが　なかまに　なる\n\n★ 東へ進む → グレン王都へ\n　冥王の心臓ボス「ダークドラゴン」を倒せ！\n　→ アリスが　なかまに　なる\n\n★ 南へ進む → ガタラ王国へ\n　エンブレムを　3つ　集めよ！' },
+  2: { title: 'エンブレム 1/3 入手！', desc: 'アズランの　エンブレムを　手に入れた。\n次は → 東へ　グレン王都へ向かおう\n　または → 南へ　ガタラ王国へ向かおう' },
+  3: { title: 'エンブレム 2/3 入手！', desc: 'あと　ひとつ！\nまだ　集めていない　町へ向かおう。' },
+  4: { title: 'エンブレム 3つ 揃った！', desc: '冥王ネルゲルの居城が　解放された！\nネルゲルの居城へ　向かおう。\n仲間と共に　最終決戦へ！' },
+  5: { title: 'ネルゲルを倒した！', desc: '冥王ネルゲルを　打ち破った！\nアストルティアに　平和が　戻った。\nおめでとう！' },
 };
 
 // ============================================================
@@ -4582,6 +4665,84 @@ const SIDE_QUESTS = [
     },
     rewardText: '1000ゴールドと　けんじゃのつえを　もらった！\n(まほうりょく+25　かいふく+20)',
     available: () => G.quests && (G.quests.unlocked||[]).includes('quest_gatara'),
+  },
+  // ── Casual side quests (optional fetch/delivery tasks) ──
+  {
+    id: 'quest_herb_elder',
+    title: 'おじいさんのくすり',
+    giver: 'グランゼドーラの老人',
+    town: 'granzerdo',
+    desc: '「わしの　腰が　いたくて　のう……\nやくそうを　3つ　持ってきてくれ。」\n→ やくそう を　3個　持った状態で　報告しよう',
+    condition: () => (G.inventory && (G.inventory.herb||0) >= 3),
+    reward: () => {
+      G.inventory.herb = Math.max(0, (G.inventory.herb||0) - 3);
+      G.hero.gold = (G.hero.gold||0) + 300;
+      saveGame();
+    },
+    rewardText: '老人「ありがとう！　これを　もっていきなさい」\n300ゴールドを　もらった！',
+    available: () => G.flags && G.flags.castleVisited,
+  },
+  {
+    id: 'quest_lost_sword',
+    title: '消えた剣を探せ',
+    giver: 'アズランの鍛冶師',
+    town: 'azuran_town',
+    desc: '「わしの　作った　剣が　洞窟に　落ちてしまった。\n冥府の洞窟を　探してきてくれ！」\n→ 冥府の洞窟に　入ると　自動で　発見できる',
+    condition: () => G.flags && G.flags.dungeon1Entered,
+    reward: () => {
+      if (!G.items) G.items = [];
+      G.items.push({ name:'みかわしの剣', slot:'weapon', atk:15, description:'すばやく　かわせる　けん' });
+      G.hero.gold = (G.hero.gold||0) + 400;
+      saveGame();
+    },
+    rewardText: '鍛冶師「よく　見つけてくれた！\nその　剣を　おまえに　やろう」\n「みかわしの剣」と　400ゴールドを　もらった！',
+    available: () => G.quests && (G.quests.unlocked||[]).includes('quest_azuran'),
+  },
+  {
+    id: 'quest_letter_delivery',
+    title: '恋文を届けよう',
+    giver: 'グレンの若い兵士',
+    town: 'gren_town',
+    desc: '「アズランに　すむ　女の子に\nこの　てがみを　届けてほしいんだ。」\n→ アズランに　行くと　自動で　届けられる',
+    condition: () => G.flags && G.flags.azuranVisited,
+    reward: () => {
+      G.hero.gold = (G.hero.gold||0) + 500;
+      saveGame();
+    },
+    rewardText: '「ありがとう！　旅の　はなむけに　これを！」\n500ゴールドを　もらった！',
+    available: () => G.quests && (G.quests.unlocked||[]).includes('quest_gren'),
+  },
+  {
+    id: 'quest_cooking',
+    title: '料理人の依頼',
+    giver: 'ガタラの料理人',
+    town: 'gatara_town',
+    desc: '「モンスターから　とれる\n特別な　素材が　ほしいんだ。\n10匹　倒してきてくれ！」\n→ モンスターを　10匹　倒そう',
+    condition: () => (G.monstersKilled || 0) >= 10,
+    reward: () => {
+      if (!G.items) G.items = [];
+      G.items.push({ name:'まもりのたて', slot:'accessory', def:10, description:'まほうも　ふせぐ　たて' });
+      G.hero.gold = (G.hero.gold||0) + 600;
+      saveGame();
+    },
+    rewardText: '料理人「立派な　素材だ！\nこれは　おれの　お礼だ！」\n「まもりのたて」と　600ゴールドを　もらった！',
+    available: () => G.quests && (G.quests.unlocked||[]).includes('quest_gatara'),
+  },
+  {
+    id: 'quest_treasure_hunt',
+    title: '秘密の宝箱',
+    giver: '謎の商人',
+    town: 'granzerdo',
+    desc: '「むかし　冥府の　奥に　宝を　かくした。\n今は　もう　入れないが……\nおまえなら　見つけられるかもしれない」\n→ 冥王ネルゲルを　倒すと　自動で　発見',
+    condition: () => G.flags && G.flags.dungeon3Cleared,
+    reward: () => {
+      if (!G.items) G.items = [];
+      G.items.push({ name:'けんじゃのつえ', slot:'weapon', atk:0, mgk:25, heal:20, description:'けんじゃが　もちいる　しんぴの　つえ' });
+      G.hero.gold = (G.hero.gold||0) + 2000;
+      saveGame();
+    },
+    rewardText: '「おお！　本当に　見つけたか！\n伝説の　けんじゃのつえだ！」\n「けんじゃのつえ」と　2000ゴールドを　もらった！',
+    available: () => G.flags && (G.flags.emblems||0) >= 3,
   },
 ];
 
