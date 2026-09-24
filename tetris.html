@@ -337,7 +337,6 @@ body{padding-top:44px!important;}
     </div>
     <div class="ctrl-row">
       <button class="btn ctrl-btn" id="btn-hold">ホールド</button>
-      <button class="btn ctrl-btn" id="btn-drop">即落とし</button>
       <button class="btn ctrl-btn" id="btn-pause">一時停止</button>
       <button class="btn ctrl-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
       <button class="btn ctrl-btn" onclick="document.getElementById('tetris-rules-modal').classList.add('visible')">📖 ルール</button>
@@ -674,6 +673,8 @@ function holdPiece(){
     current={key:tmp, rot:0, x:3, y:0};
     if(current.key==='I') current.x=3;
     if(current.key==='O') current.x=4;
+    drawBoard();
+    drawHold();
   }
   canHold=false;
 }
@@ -852,9 +853,36 @@ document.addEventListener('keydown',e=>{
 document.getElementById('btn-left').addEventListener('click',()=>move(-1));
 document.getElementById('btn-right').addEventListener('click',()=>move(1));
 document.getElementById('btn-rotate').addEventListener('click',()=>rotate(1));
-document.getElementById('btn-down').addEventListener('click',()=>softDrop());
 document.getElementById('btn-hold').addEventListener('click',()=>holdPiece());
-document.getElementById('btn-drop').addEventListener('click',()=>hardDrop());
+
+// ↓ボタン: 短押し=ソフトドロップ、長押し(350ms以上)=即落とし
+(function(){
+  const btn = document.getElementById('btn-down');
+  let hardTimer = null, softInterval = null, didHard = false;
+  const start = () => {
+    didHard = false;
+    softDrop();
+    hardTimer = setTimeout(() => {
+      didHard = true;
+      clearInterval(softInterval);
+      btn.style.background = 'rgba(255,150,0,0.5)';
+      hardDrop();
+      setTimeout(() => { btn.style.background = ''; }, 200);
+    }, 350);
+    softInterval = setInterval(() => { if (!didHard) softDrop(); }, 80);
+  };
+  const stop = () => {
+    clearTimeout(hardTimer); clearInterval(softInterval);
+    hardTimer = null; softInterval = null;
+  };
+  btn.addEventListener('mousedown', start);
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', stop);
+  btn.addEventListener('touchstart', e => { e.stopPropagation(); start(); }, {passive:true});
+  btn.addEventListener('touchend', e => { e.stopPropagation(); stop(); }, {passive:true});
+  btn.addEventListener('touchcancel', e => { e.stopPropagation(); stop(); }, {passive:true});
+  btn.title = '短押し: 1段落とす  長押し: 即落とし';
+})();
 document.getElementById('btn-pause').addEventListener('click',()=>togglePause());
 document.getElementById('overlay-btn').onclick = startGame;
 

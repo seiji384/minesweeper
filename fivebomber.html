@@ -244,6 +244,7 @@ body {
 
 <!-- GAME -->
 <div id="game-screen" class="screen">
+  <button onclick="if(confirm('ホームに戻りますか？'))location.href='index.html'" style="position:fixed;top:12px;left:12px;background:rgba(0,0,0,0.5);border:1.5px solid rgba(255,255,255,0.25);color:white;padding:7px 14px;border-radius:20px;font-size:13px;cursor:pointer;z-index:999">🏠 ホーム</button>
   <div id="cat-header">
     <div id="cat-name">カテゴリ</div>
     <div id="round-info">ラウンド 1/5</div>
@@ -294,6 +295,7 @@ body {
 
 <!-- CLEAR (per round) -->
 <div id="clear-screen" class="screen">
+  <button onclick="location.href='index.html'" style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;">🏠 ホーム</button>
   <div style="display:flex;gap:16px">
     <div class="firework">🎆</div><div class="firework">🎇</div><div class="firework">✨</div>
   </div>
