@@ -321,6 +321,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
   <button class="act-btn" onclick="goMenu()">🔄 メニュー</button>
   <button class="act-btn" onclick="showModal('hs-modal')">🏆 ハイスコア</button>
+  <button onclick="showHomeConfirm()" style="padding:5px 16px;font-size:12px;border-radius:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;cursor:pointer;font-weight:bold;touch-action:manipulation;">🏠 ホーム</button>
 </div>
 
 <!-- Rules Modal -->
@@ -577,17 +578,22 @@ function launchGame(idx){
   if(pui){pui.style.display=idx===4?'flex':'none';}
   document.getElementById('tap-zone').style.display=idx===4?'none':'flex';
   const a=getAudio();
-  const leadTime=idx===0?2.0:0.3; // tambourine needs 1.5s of countdown before game start
-  startAudioTime=a.currentTime+leadTime;
-  startPerfTime=performance.now()+(leadTime*1000);
-  if(idx===0)initTambourine();
-  else if(idx===1)initFrog();
-  else if(idx===2)initSamurai();
-  else if(idx===3)initDribble();
-  else if(idx===4)initPiano();
-  else if(idx===5)initChick();
-  else if(idx===6)initSinger();
-  animId=requestAnimationFrame(gameLoop);
+  // resume() is async — wait for 'running' before reading currentTime or scheduling audio
+  function _go(){
+    const leadTime=idx===0?2.0:0.3; // tambourine needs 1.5s of countdown before game start
+    startAudioTime=a.currentTime+leadTime;
+    startPerfTime=performance.now()+(leadTime*1000);
+    if(idx===0)initTambourine();
+    else if(idx===1)initFrog();
+    else if(idx===2)initSamurai();
+    else if(idx===3)initDribble();
+    else if(idx===4)initPiano();
+    else if(idx===5)initChick();
+    else if(idx===6)initSinger();
+    animId=requestAnimationFrame(gameLoop);
+  }
+  if(a.state==='running'){_go();}
+  else{a.resume().then(_go);}
 }
 
 function gameLoop(ts){

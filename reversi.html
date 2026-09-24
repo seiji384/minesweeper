@@ -526,12 +526,21 @@ function cpuBestMove(board) {
   const moves = getValidMoves(board, CPU);
   if (moves.length === 0) return null;
 
-  const depth = difficulty === 'easy' ? 2 : difficulty === 'normal' ? 4 : 6;
-
-  if (difficulty === 'easy' && Math.random() < 0.35) {
-    return moves[Math.floor(Math.random() * moves.length)];
+  // Easy: 55% fully random, 45% pick move that flips the most discs (no minimax)
+  if (difficulty === 'easy') {
+    if (Math.random() < 0.55) {
+      return moves[Math.floor(Math.random() * moves.length)];
+    }
+    let bestFlips = -1, bestMove = moves[0];
+    for (const mv of moves) {
+      const flips = getFlipped(board, mv.r, mv.c, CPU).length;
+      if (flips > bestFlips) { bestFlips = flips; bestMove = mv; }
+    }
+    return bestMove;
   }
 
+  // Normal: depth 3; Hard: depth 5
+  const depth = difficulty === 'normal' ? 3 : 5;
   let bestScore = -Infinity, bestMove = null;
   for (const mv of moves) {
     const nb = applyMove(board, mv.r, mv.c, CPU);

@@ -593,14 +593,71 @@ function hasAnyStone(board) {
   return false;
 }
 
+// Easy: pick any empty cell at random
+function getRandomMove(board) {
+  const empties = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (board[r][c] === EMPTY) empties.push({r, c});
+  if (empties.length === 0) return null;
+  return empties[Math.floor(Math.random() * empties.length)];
+}
+
+// Easy strategic: only block immediate 5-in-a-row; otherwise random nearby
+function getSimpleMove(board) {
+  const candidates = getCandidates(board, 1);
+  if (candidates.length === 0) return getRandomMove(board);
+  for (const {r, c} of candidates) {
+    board[r][c] = PLAYER;
+    const win = checkWin(board, r, c, PLAYER);
+    board[r][c] = EMPTY;
+    if (win) return {r, c};
+  }
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+// Normal: check win+block, then score-based depth-1
+function getMediumMove(board) {
+  const candidates = getCandidates(board, 2);
+  if (candidates.length === 0) return getRandomMove(board);
+  for (const {r, c} of candidates) {
+    board[r][c] = CPU;
+    const win = checkWin(board, r, c, CPU);
+    board[r][c] = EMPTY;
+    if (win) return {r, c};
+  }
+  for (const {r, c} of candidates) {
+    board[r][c] = PLAYER;
+    const win = checkWin(board, r, c, PLAYER);
+    board[r][c] = EMPTY;
+    if (win) return {r, c};
+  }
+  let best = -1, bestMove = candidates[0];
+  for (const {r, c} of candidates) {
+    const s = scoreAt(board, r, c, CPU) + scoreAt(board, r, c, PLAYER) * 0.8;
+    if (s > best) { best = s; bestMove = {r, c}; }
+  }
+  return bestMove;
+}
+
 function getBestMove(board, diff) {
   if (!hasAnyStone(board)) return { r: 7, c: 7 };
 
-  const range = diff === 'hard' ? 3 : 2;
-  const candidates = getCandidates(board, range);
+  // Easy: 55% fully random, 45% simple block only
+  if (diff === 'easy') {
+    if (Math.random() < 0.55) return getRandomMove(board) || { r: 7, c: 7 };
+    return getSimpleMove(board) || { r: 7, c: 7 };
+  }
+
+  // Normal: strategic but no deep lookahead
+  if (diff === 'normal') {
+    return getMediumMove(board) || { r: 7, c: 7 };
+  }
+
+  // Hard: full scoring with wide candidate range
+  const candidates = getCandidates(board, 3);
   if (candidates.length === 0) return { r: 7, c: 7 };
 
-  // Always check immediate win first
   for (const { r, c } of candidates) {
     board[r][c] = CPU;
     const win = checkWin(board, r, c, CPU);
@@ -608,7 +665,6 @@ function getBestMove(board, diff) {
     if (win) return { r, c };
   }
 
-  // Block player immediate win
   let blockMove = null;
   for (const { r, c } of candidates) {
     board[r][c] = PLAYER;
@@ -617,25 +673,11 @@ function getBestMove(board, diff) {
     if (win) { blockMove = { r, c }; break; }
   }
 
-  if (diff === 'easy') {
-    // 40% chance to miss the block and play randomly
-    if (Math.random() < 0.6 && blockMove) return blockMove;
-    if (Math.random() < 0.5) return candidates[Math.floor(Math.random() * Math.min(candidates.length, 8))];
-  }
-
   let bestScore = -1;
   let bestMove = blockMove;
-
   for (const { r, c } of candidates) {
-    const cpuScore = scoreAt(board, r, c, CPU);
-    const playerThreat = scoreAt(board, r, c, PLAYER);
-    const weight = diff === 'hard' ? 1.15 : 1.0;
-    const total = cpuScore * weight + playerThreat;
-
-    if (total > bestScore) {
-      bestScore = total;
-      bestMove = { r, c };
-    }
+    const total = scoreAt(board, r, c, CPU) * 1.15 + scoreAt(board, r, c, PLAYER);
+    if (total > bestScore) { bestScore = total; bestMove = { r, c }; }
   }
 
   return bestMove || candidates[0];
