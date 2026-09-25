@@ -649,6 +649,100 @@ body {
   background: rgba(255,255,255,0.1);
   border-radius: 2px;
 }
+
+/* ─────────────────────────────────────────
+   SEARCH BAR
+───────────────────────────────────────── */
+.search-wrap {
+  padding: 0 4px 8px;
+}
+#searchBar {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#searchBar:focus {
+  border-color: rgba(76,201,240,0.5);
+  background: rgba(255,255,255,0.10);
+}
+#searchBar::placeholder { color: var(--text-sub); opacity: 0.7; }
+
+/* ─────────────────────────────────────────
+   CARD NEW BADGE
+───────────────────────────────────────── */
+.card-new-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  background: linear-gradient(135deg, #e63946, #ff6b6b);
+  color: #fff;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 2px 5px;
+  border-radius: 6px;
+  font-family: 'Orbitron', monospace;
+  box-shadow: 0 0 8px rgba(230,57,70,0.55);
+  animation: newBlink 2.5s ease-in-out infinite;
+}
+@keyframes newBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ─────────────────────────────────────────
+   CARD PLAY COUNT
+───────────────────────────────────────── */
+.card-play-count {
+  position: relative;
+  z-index: 1;
+  font-size: 8.5px;
+  color: rgba(255,255,255,0.45);
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+/* ─────────────────────────────────────────
+   CARD DESCRIPTION (hover preview)
+───────────────────────────────────────── */
+.card-desc {
+  position: relative;
+  z-index: 1;
+  font-size: 9px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  line-height: 1.35;
+  padding: 0 6px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.game-card:hover .card-desc {
+  max-height: 40px;
+  opacity: 1;
+}
+
+/* No results */
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-sub);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
 </style>
 </head>
 <body>
@@ -668,8 +762,11 @@ body {
     </div>
   </header>
 
-  <!-- ── Tab filter ── -->
+  <!-- ── Search + Tab filter ── -->
   <div class="tab-bar-wrap">
+    <div class="search-wrap">
+      <input type="search" id="searchBar" placeholder="🔍 ゲームを検索…" autocomplete="off" spellcheck="false">
+    </div>
     <div class="tab-bar" id="tabBar">
       <button class="tab-btn active" data-filter="all">🎮 ALL</button>
       <button class="tab-btn" data-filter="RPG">⚔️ RPG</button>
@@ -788,114 +885,140 @@ const GAMES = [
   // ── RPG ──
   {
     file: 'rpg.html', name: 'ドラゴンクエスト風RPG', icon: '⚔️', cat: 'RPG', special: true,
-    g1: '#2d0a4e', g2: '#080818', accent: '#a855f7', saveKey: 'rpg_save'
+    g1: '#2d0a4e', g2: '#080818', accent: '#a855f7', saveKey: 'rpg_save',
+    desc: 'ドラゴン討伐・レベルアップRPG'
   },
 
   // ── アクション ──
   {
     file: 'fps.html', name: 'FPS ARENA', icon: '🔫', cat: 'アクション',
-    g1: '#3a0808', g2: '#180404', accent: '#e63946', saveKey: null
+    g1: '#3a0808', g2: '#180404', accent: '#e63946', saveKey: null,
+    desc: 'FPS射撃・ウェーブ制サバイバル'
   },
   {
     file: 'flappybird.html', name: 'フラッピーバード', icon: '🐦', cat: 'アクション',
-    g1: '#3e1800', g2: '#1e0c00', accent: '#ff7040', saveKey: null
+    g1: '#3e1800', g2: '#1e0c00', accent: '#ff7040', saveKey: null,
+    desc: '障害物をかわして空を飛べ！'
   },
   {
     file: 'snake.html', name: 'スネーク', icon: '🐍', cat: 'アクション',
-    g1: '#3a0c14', g2: '#1a060a', accent: '#e63946', saveKey: 'snake_save'
+    g1: '#3a0c14', g2: '#1a060a', accent: '#e63946', saveKey: 'snake_save',
+    desc: '食べ物を集めて長くなれ'
   },
   {
     file: 'breakout.html', name: 'ブロック崩し', icon: '🧱', cat: 'アクション',
-    g1: '#3a0018', g2: '#1a000c', accent: '#ff4060', saveKey: null
+    g1: '#3a0018', g2: '#1a000c', accent: '#ff4060', saveKey: null,
+    desc: 'ボールでブロックを全部壊せ'
   },
   {
     file: 'whackamole.html', name: 'もぐら叩き', icon: '🐹', cat: 'アクション',
-    g1: '#3a1e00', g2: '#1a0e00', accent: '#ff8c42', saveKey: null
+    g1: '#3a1e00', g2: '#1a0e00', accent: '#ff8c42', saveKey: null,
+    desc: 'モグラを素早く叩け！'
   },
   {
     file: 'rhythm.html', name: 'リズム天国', icon: '🎵', cat: 'アクション',
-    g1: '#38002e', g2: '#1a0016', accent: '#e040fb', saveKey: null
+    g1: '#38002e', g2: '#1a0016', accent: '#e040fb', saveKey: null,
+    desc: 'リズムに合わせてタップ！'
   },
 
   // ── パズル ──
   {
     file: 'tetris.html', name: 'テトリス', icon: '🟦', cat: 'パズル',
-    g1: '#001e3e', g2: '#000e1e', accent: '#4cc9f0', saveKey: 'tetris_save'
+    g1: '#001e3e', g2: '#000e1e', accent: '#4cc9f0', saveKey: 'tetris_save',
+    desc: 'ブロックを積んでライン消去'
   },
   {
     file: '2048.html', name: '2048', icon: '🔢', cat: 'パズル',
-    g1: '#003c2a', g2: '#001c14', accent: '#00d4aa', saveKey: '2048_save'
+    g1: '#003c2a', g2: '#001c14', accent: '#00d4aa', saveKey: '2048_save',
+    desc: 'スライドして2048を作れ'
   },
   {
     file: 'sudoku.html', name: '数独', icon: '🔲', cat: 'パズル',
-    g1: '#12003e', g2: '#090020', accent: '#818cf8', saveKey: 'sudoku_save'
+    g1: '#12003e', g2: '#090020', accent: '#818cf8', saveKey: 'sudoku_save',
+    desc: '9×9マスに数字を埋めよう'
   },
   {
     file: 'minesweeper.html', name: 'マインスイーパー', icon: '💣', cat: 'パズル',
-    g1: '#003c3c', g2: '#001c1c', accent: '#22d3ee', saveKey: 'ms_save_v1'
+    g1: '#003c3c', g2: '#001c1c', accent: '#22d3ee', saveKey: 'ms_save_v1',
+    desc: '地雷を避けてマスを開けろ'
   },
   {
     file: 'sokoban.html', name: '倉庫番', icon: '📦', cat: 'パズル',
-    g1: '#001c3e', g2: '#000e20', accent: '#60a5fa', saveKey: 'sokoban_save'
+    g1: '#001c3e', g2: '#000e20', accent: '#60a5fa', saveKey: 'sokoban_save',
+    desc: '箱を押してゴールに運べ'
   },
   {
     file: 'memory.html', name: '神経衰弱', icon: '🃏', cat: 'パズル',
-    g1: '#1e003c', g2: '#0e001e', accent: '#c084fc', saveKey: 'memory_save'
+    g1: '#1e003c', g2: '#0e001e', accent: '#c084fc', saveKey: 'memory_save',
+    desc: 'カードの位置を記憶せよ'
   },
   {
     file: 'simon.html', name: 'サイモンゲーム', icon: '🔴', cat: 'パズル',
-    g1: '#003618', g2: '#001a0c', accent: '#4ade80', saveKey: null
+    g1: '#003618', g2: '#001a0c', accent: '#4ade80', saveKey: null,
+    desc: '光るパターンを真似しよう'
   },
   {
     file: 'lightsout.html', name: 'ライツアウト', icon: '💡', cat: 'パズル',
-    g1: '#1a2c00', g2: '#0c1600', accent: '#a3e635', saveKey: 'lightsout_save'
+    g1: '#1a2c00', g2: '#0c1600', accent: '#a3e635', saveKey: 'lightsout_save',
+    desc: '全ての電球を消してクリア'
   },
   {
     file: 'puzzle15.html', name: '15パズル', icon: '🔀', cat: 'パズル',
-    g1: '#003820', g2: '#001c10', accent: '#34d399', saveKey: 'puzzle15_save'
+    g1: '#003820', g2: '#001c10', accent: '#34d399', saveKey: 'puzzle15_save',
+    desc: '15枚のパネルを並べ替えよ'
   },
   {
     file: 'mastermind.html', name: 'マスターマインド', icon: '🎯', cat: 'パズル',
-    g1: '#160038', g2: '#0a001c', accent: '#818cf8', saveKey: 'mastermind_save'
+    g1: '#160038', g2: '#0a001c', accent: '#818cf8', saveKey: 'mastermind_save',
+    desc: '4桁の秘密コードを解読せよ'
   },
   // ── カード ──
   {
     file: 'blackjack.html', name: 'ブラックジャック', icon: '🂡', cat: 'カード',
-    g1: '#00260a', g2: '#001205', accent: '#4ade80', saveKey: 'bj_save'
+    g1: '#00260a', g2: '#001205', accent: '#4ade80', saveKey: 'bj_save',
+    desc: '21を超えずにディーラーに勝て'
   },
   {
     file: 'poker.html', name: 'ポーカー', icon: '♠️', cat: 'カード',
-    g1: '#3c2800', g2: '#1e1400', accent: '#f4d03f', saveKey: 'poker_save'
+    g1: '#3c2800', g2: '#1e1400', accent: '#f4d03f', saveKey: 'poker_save',
+    desc: '5枚の手札で最強の役を作れ'
   },
   {
     file: 'daifugou.html', name: '大富豪', icon: '👑', cat: 'カード',
-    g1: '#3c1e00', g2: '#1e0e00', accent: '#fbbf24', saveKey: 'daifugou_save'
+    g1: '#3c1e00', g2: '#1e0e00', accent: '#fbbf24', saveKey: 'daifugou_save',
+    desc: '革命・8切り対応の大富豪'
   },
 
   // ── ボード ──
   {
     file: 'gomoku.html', name: '五目並べ', icon: '⚫', cat: 'ボード',
-    g1: '#003018', g2: '#00180c', accent: '#7bed9f', saveKey: 'gomoku_save'
+    g1: '#003018', g2: '#00180c', accent: '#7bed9f', saveKey: 'gomoku_save',
+    desc: '15×15の碁盤に5つ並べよ'
   },
   {
     file: 'reversi.html', name: 'リバーシ', icon: '🔵', cat: 'ボード',
-    g1: '#003c1e', g2: '#001c0e', accent: '#4ade80', saveKey: 'reversi_save'
+    g1: '#003c1e', g2: '#001c0e', accent: '#4ade80', saveKey: 'reversi_save',
+    desc: 'ディスクをひっくり返して勝つ'
   },
   {
     file: 'connect4.html', name: '四目並べ', icon: '🟡', cat: 'ボード',
-    g1: '#302a00', g2: '#181500', accent: '#fbbf24', saveKey: 'connect4_save'
+    g1: '#302a00', g2: '#181500', accent: '#fbbf24', saveKey: 'connect4_save',
+    desc: '縦横斜めに4つ並べよう'
   },
   {
     file: 'dotsboxes.html', name: '点と線', icon: '🔲', cat: 'ボード',
-    g1: '#002a3c', g2: '#00141e', accent: '#67e8f9', saveKey: 'dotsboxes_save'
+    g1: '#002a3c', g2: '#00141e', accent: '#67e8f9', saveKey: 'dotsboxes_save',
+    desc: '点をつなぎ箱を多く作れ'
   },
   {
     file: 'darts.html', name: 'ダーツ', icon: '🎯', cat: 'ボード',
-    g1: '#360800', g2: '#1a0400', accent: '#f87171', saveKey: 'darts_save'
+    g1: '#360800', g2: '#1a0400', accent: '#f87171', saveKey: 'darts_save',
+    desc: '狙い澄ましてダーツを投げよう'
   },
   {
     file: 'bowling.html', name: 'ボウリング', icon: '🎳', cat: 'ボード',
-    g1: '#003038', g2: '#00181c', accent: '#7bed9f', saveKey: 'bowling_save'
+    g1: '#003038', g2: '#00181c', accent: '#7bed9f', saveKey: 'bowling_save',
+    desc: '全ピン倒してストライク！'
   },
 
   // ── 教育 ──
@@ -987,6 +1110,8 @@ function buildCards() {
       const bbg   = hexToRgba(game.accent, 0.14);
       const bbd   = hexToRgba(game.accent, 0.32);
       const shimmerDelay = (idx * 0.7 + Math.random() * 0.5).toFixed(2);
+      const isNew = GAMES.indexOf(game) >= GAMES.length - 10;
+      const playCount = getPlayCount(game.file);
 
       const card = document.createElement('a');
       card.className = 'game-card' + (game.special ? ' special' : '');
@@ -1004,16 +1129,85 @@ function buildCards() {
 
       card.innerHTML = `
         <div class="card-topline"></div>
+        ${isNew ? '<div class="card-new-badge">NEW</div>' : ''}
         <div class="card-icon">${game.icon}</div>
         <div class="card-name">${game.name}</div>
         <div class="card-cat-badge">${game.cat}</div>
+        ${game.desc ? `<div class="card-desc">${game.desc}</div>` : ''}
+        ${playCount > 0 ? `<div class="card-play-count">▶ ${playCount}回</div>` : ''}
         <div class="card-play-btn">PLAY ▶</div>
         ${saved ? '<div class="card-save-badge">💾</div>' : ''}
       `;
 
+      card.addEventListener('click', () => trackPlay(game.file));
       grid.appendChild(card);
     });
   });
+}
+
+/* ══════════════════════════════════════════
+   PLAY COUNT TRACKING
+══════════════════════════════════════════ */
+function getPlayCount(file) {
+  try { return parseInt(localStorage.getItem('mgpc_' + file) || '0', 10); } catch(e) { return 0; }
+}
+function trackPlay(file) {
+  try { localStorage.setItem('mgpc_' + file, String(getPlayCount(file) + 1)); } catch(e) {}
+}
+
+/* ══════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════ */
+function initSearch() {
+  const input = document.getElementById('searchBar');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if (q) {
+      applySearch(q.toLowerCase());
+    } else {
+      const nr = document.getElementById('no-results-msg');
+      if (nr) nr.remove();
+      const activeTab = document.querySelector('.tab-btn.active');
+      filterCards(activeTab ? activeTab.dataset.filter : 'all');
+    }
+  });
+}
+
+function applySearch(q) {
+  const cards  = [...document.querySelectorAll('.game-card')];
+  const labels = [...document.querySelectorAll('.section-label')];
+  let matchCount = 0;
+
+  cards.forEach(card => {
+    const nameEl = card.querySelector('.card-name');
+    const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+    const cat  = card.dataset.cat.toLowerCase();
+    const matches = name.includes(q) || cat.includes(q);
+    card.classList.toggle('card-hidden', !matches);
+    card.style.opacity = '';
+    card.style.transform = '';
+    if (matches) matchCount++;
+  });
+
+  labels.forEach(label => {
+    const cat = label.dataset.sectionCat;
+    const anyVisible = cards.some(c => c.dataset.cat === cat && !c.classList.contains('card-hidden'));
+    label.classList.toggle('card-hidden', !anyVisible);
+  });
+
+  let nr = document.getElementById('no-results-msg');
+  if (matchCount === 0) {
+    if (!nr) {
+      nr = document.createElement('div');
+      nr.id = 'no-results-msg';
+      nr.className = 'no-results';
+      document.getElementById('gameGrid').appendChild(nr);
+    }
+    nr.textContent = '「' + q + '」に一致するゲームはありません';
+  } else if (nr) {
+    nr.remove();
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1025,6 +1219,11 @@ function initTabs() {
     btn.addEventListener('click', () => {
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      // Clear search when switching tabs
+      const searchBar = document.getElementById('searchBar');
+      if (searchBar) searchBar.value = '';
+      const nr = document.getElementById('no-results-msg');
+      if (nr) nr.remove();
       filterCards(btn.dataset.filter);
     });
   });
@@ -1123,6 +1322,7 @@ function initModal() {
 buildCards();
 initTabs();
 initModal();
+initSearch();
 entryAnimation();
 </script>
 </body>

@@ -125,6 +125,11 @@ body{padding-top:44px!important;}
 .led-label { color: #2a7a8a !important; }
 .act-btn { background: linear-gradient(160deg, #0a3a4a 0%, #061c28 100%) !important; color: #80e8ff !important; border-color: #2a6a80 !important; }
 #turnDisplay { font-size: 16px !important; font-weight: 900 !important; color: #ffffff !important; text-shadow: 0 0 10px rgba(76,201,240,0.8); }
+#history-panel { background: linear-gradient(160deg,#041512 0%,#020a0a 100%); border: 1px solid #1e5a70; border-radius: 8px; margin: 4px 8px 4px; padding: 5px 10px; }
+.hist-title { color: #4cc9f0; font-weight: bold; font-size: 9px; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+.hist-moves { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; align-items: center; }
+.hist-chip { background: rgba(76,201,240,0.1); border: 1px solid rgba(76,201,240,0.2); color: #70c8e8; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-family: monospace; }
+.hist-chip:last-child { background: rgba(76,201,240,0.22); border-color: rgba(76,201,240,0.4); color: #b8f0ff; }
 </style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -162,6 +167,10 @@ body{padding-top:44px!important;}
   <div class="content">
     <canvas id="board"></canvas>
     <div class="pass-banner" id="passBanner"></div>
+  </div>
+  <div id="history-panel">
+    <div class="hist-title">📋 最近の手</div>
+    <div class="hist-moves" id="histMoves"><span style="color:#2a5a70;font-size:10px">-</span></div>
   </div>
 </div>
 
@@ -236,6 +245,80 @@ function startConfetti(){const cv=document.getElementById('confetti');cv.style.d
 const actionBar=document.querySelector('.action-bar');
 function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
 if(window.visualViewport){window.visualViewport.addEventListener('resize',fixAB);window.visualViewport.addEventListener('scroll',fixAB);fixAB();}
+
+// ===== SOUNDS (Web Audio API) =====
+let _audioCtx = null;
+function _getAC() {
+  if (!_audioCtx) try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  return _audioCtx;
+}
+function playSound(type) {
+  try {
+    const ac = _getAC(); if (!ac) return;
+    if (type === 'place') {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type = 'triangle'; o.frequency.value = 520;
+      g.gain.setValueAtTime(0.16, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
+      o.start(); o.stop(ac.currentTime + 0.12);
+    } else if (type === 'flip') {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.1), ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ac.sampleRate*0.025));
+      const src = ac.createBufferSource(), flt = ac.createBiquadFilter(), g = ac.createGain();
+      flt.type = 'bandpass'; flt.frequency.value = 1100; flt.Q.value = 0.7;
+      src.buffer = buf; src.connect(flt); flt.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(0.22, ac.currentTime); src.start();
+    } else if (type === 'win') {
+      [523,659,784,1047].forEach((freq,i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.connect(g); g.connect(ac.destination); o.type = 'sine'; o.frequency.value = freq;
+        const t = ac.currentTime + i * 0.13;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.2, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        o.start(t); o.stop(t + 0.28);
+      });
+    } else if (type === 'pass') {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination); o.type = 'sine'; o.frequency.value = 260;
+      g.gain.setValueAtTime(0.1, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.22);
+      o.start(); o.stop(ac.currentTime + 0.22);
+    }
+  } catch(e) {}
+}
+
+// ===== MOVE LOG =====
+let moveLog = [];
+const BOARD_COLS_LBL = 'ABCDEFGH';
+function addMoveLog(color, r, c) {
+  moveLog.push({ color, label: BOARD_COLS_LBL[c] + (r + 1) });
+  if (moveLog.length > 8) moveLog.shift();
+  renderMoveLog();
+}
+function renderMoveLog() {
+  const el = document.getElementById('histMoves');
+  if (!el) return;
+  if (moveLog.length === 0) { el.innerHTML = '<span style="color:#2a5a70;font-size:10px">-</span>'; return; }
+  el.innerHTML = moveLog.map(m => `<span class="hist-chip">${m.color === 1 ? '⚫' : '⚪'}${m.label}</span>`).join('');
+  el.scrollLeft = el.scrollWidth;
+}
+
+// ===== DYNAMIC DIFFICULTY =====
+let recentResults = []; // 'player' or 'cpu'
+function pushResult(winner) {
+  recentResults.push(winner);
+  if (recentResults.length > 6) recentResults.shift();
+}
+function getEffectiveDepth() {
+  if (difficulty === 'easy') return 0;
+  const base = difficulty === 'normal' ? 3 : 5;
+  const cpuWinCount = recentResults.filter(r => r === 'cpu').length;
+  // If CPU won 2+ of last 3 games, soften by 1 depth
+  if (recentResults.length >= 3 && cpuWinCount >= 2) return Math.max(1, base - 1);
+  return base;
+}
 
 // ===== CONSTANTS =====
 const N = 8;
@@ -539,8 +622,8 @@ function cpuBestMove(board) {
     return bestMove;
   }
 
-  // Normal: depth 3; Hard: depth 5
-  const depth = difficulty === 'normal' ? 3 : 5;
+  // Normal: depth 3; Hard: depth 5 (adjusted dynamically if CPU wins too often)
+  const depth = getEffectiveDepth();
   let bestScore = -Infinity, bestMove = null;
   for (const mv of moves) {
     const nb = applyMove(board, mv.r, mv.c, CPU);
@@ -561,6 +644,8 @@ function initBoard() {
   animating = false;
   flashCells = [];
   moveHistory = [];
+  moveLog = [];
+  renderMoveLog();
   updateStatus();
   const validMoves = getValidMoves(board, currentTurn);
   drawBoard(validMoves);
@@ -580,6 +665,7 @@ function updateStatus() {
 
 function showPass(msg) {
   return new Promise(resolve => {
+    playSound('pass');
     const b = document.getElementById('passBanner');
     b.textContent = msg;
     b.classList.add('show');
@@ -598,8 +684,11 @@ async function doPlayerMove(r, c) {
   if (moveHistory.length > 10) moveHistory.shift();
   const flipped = getFlipped(board, r, c, PLAYER);
   board[r][c] = PLAYER;
+  playSound('place');
+  addMoveLog(PLAYER, r, c);
 
   // Animate flip
+  if (flipped.length > 0) playSound('flip');
   await animateFlip(flipped, WHITE, BLACK);
   flipped.forEach(([fr, fc]) => board[fr][fc] = BLACK);
 
@@ -649,7 +738,10 @@ async function doCpuMove() {
 
   const flipped = getFlipped(board, move.r, move.c, CPU);
   board[move.r][move.c] = CPU;
+  playSound('place');
+  addMoveLog(CPU, move.r, move.c);
 
+  if (flipped.length > 0) playSound('flip');
   await animateFlip(flipped, BLACK, WHITE);
   flipped.forEach(([fr, fc]) => board[fr][fc] = WHITE);
 
@@ -718,11 +810,14 @@ function endGame() {
     title = '🎉 あなたの勝ち！';
     msg = '🎉 あなたの勝ち！';
     sub = `⚫ ${black} vs ⚪ ${white}`;
+    pushResult('player');
     startConfetti();
+    setTimeout(() => playSound('win'), 150);
   } else if (white > black) {
     title = '💀 CPUの勝ち';
     msg = '💀 CPUの勝ち';
     sub = `⚫ ${black} vs ⚪ ${white}`;
+    pushResult('cpu');
   } else {
     title = '🤝 引き分け';
     msg = '🤝 引き分け！';

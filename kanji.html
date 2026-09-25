@@ -120,6 +120,18 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
 
 /* Back btn */
 .back-btn { position:fixed; top:12px; left:12px; z-index:100; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; }
+/* History modal */
+#hist-modal { position:fixed; inset:0; z-index:300; background:rgba(0,0,20,0.96); display:none; flex-direction:column; padding:16px; overflow-y:auto; }
+#hist-modal.open { display:flex; }
+.hist-title { font-size:18px; font-weight:bold; margin-bottom:12px; color:#ffcc00; }
+.hist-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+.hist-result { font-size:18px; min-width:28px; }
+.hist-word { font-size:18px; font-weight:bold; min-width:60px; }
+.hist-reading { font-size:13px; color:rgba(255,255,255,0.6); }
+/* Stats bar */
+#stats-bar { background:rgba(255,255,255,0.06); border-radius:10px; padding:8px 12px; margin:8px 0; font-size:12px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.stat-chip { color:rgba(255,255,255,0.7); }
+.stat-chip span { color:#ffcc00; font-weight:bold; }
 
 /* Scrollable question area on small screens */
 #q-area { overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:calc(100vh - 280px); }
@@ -270,6 +282,15 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
 <div id="feedback"><div id="feedback-text"></div></div>
 <div id="answer-reveal"></div>
 
+<!-- HISTORY MODAL -->
+<div id="hist-modal">
+  <div class="hist-title">📋 出題履歴（直前10問）
+    <button onclick="closeHistModal()" style="float:right;background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 14px;border-radius:16px;font-size:13px;cursor:pointer;">閉じる</button>
+  </div>
+  <div id="hist-list"></div>
+  <button id="review-btn" onclick="startReview()" style="margin-top:16px;background:linear-gradient(135deg,#ff6600,#ffcc00);color:#fff;border:none;padding:14px 32px;font-size:16px;font-weight:900;border-radius:40px;cursor:pointer;display:none">🔄 間違いを復習する</button>
+</div>
+
 <!-- RESULT -->
 <div id="result-screen" class="screen">
   <div id="result-title"></div>
@@ -281,9 +302,15 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
     <div class="stat-row"><span>ランク</span><span class="stat-val" id="res-rank">-</span></div>
     <div class="stat-row"><span>ベストスコア</span><span class="stat-val" id="res-best">-</span></div>
   </div>
+  <!-- Stats bar -->
+  <div id="stats-bar">
+    <div class="stat-chip">通算正解率: <span id="stat-rate">-</span></div>
+    <div class="stat-chip">総挑戦数: <span id="stat-total">-</span></div>
+    <div class="stat-chip">最多連続: <span id="stat-combo">-</span></div>
+  </div>
   <div class="result-btns">
     <button class="result-btn btn-retry" onclick="retryGame()">もう一度</button>
-    <button class="result-btn btn-menu" onclick="showScreen('title-screen')">メニュー</button>
+    <button class="result-btn btn-menu" onclick="openHistModal()">📋 履歴</button>
     <button class="result-btn btn-menu" onclick="showScreen('title-screen')">🏠 ホーム</button>
   </div>
   <a href="#" onclick="showScreen('title-screen');return false;" style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:4px;text-decoration:none;">← 戻る</a>
@@ -658,6 +685,77 @@ const DB = [
   {w:'呉牛喘月',r:'ごぎゅうぜんげつ',g:'yoji',d:'geki'},{w:'杞憂',r:'きゆう',g:'general',d:'geki',hint:'取り越し苦労'},
 ];
 
+// ===== HISTORY & STATS =====
+const HIST_KEY = 'kanji_history_v1';
+const STATS_KEY = 'kanji_stats_v1';
+let sessionHistory = []; // {w, r, correct, diff, genre}
+let reviewQueue = [];    // wrong questions from session
+let isReviewMode = false;
+
+function addHistory(q, correct) {
+  sessionHistory.push({w:q.w, r:q.r, correct, diff:q.d, genre:q.g});
+  if(sessionHistory.length > 10) sessionHistory.shift();
+  if(!correct) reviewQueue.push(q);
+}
+
+function openHistModal() {
+  const list = document.getElementById('hist-list');
+  list.innerHTML = '';
+  const rev = document.getElementById('review-btn');
+  const wrongs = sessionHistory.filter(h=>!h.correct);
+  rev.style.display = wrongs.length > 0 ? 'block' : 'none';
+  if(sessionHistory.length === 0) {
+    list.innerHTML='<div style="opacity:0.5;padding:20px;text-align:center">まだ出題履歴がありません</div>';
+  } else {
+    sessionHistory.slice().reverse().forEach(h=>{
+      list.innerHTML += `<div class="hist-item">
+        <div class="hist-result">${h.correct?'✅':'❌'}</div>
+        <div class="hist-word">${h.w}</div>
+        <div class="hist-reading" style="color:${h.correct?'rgba(68,255,100,0.8)':'rgba(255,100,100,0.8)'}">読み: ${h.r}</div>
+        <div style="font-size:10px;opacity:0.4;margin-left:auto">${h.diff}</div>
+      </div>`;
+    });
+  }
+  document.getElementById('hist-modal').classList.add('open');
+}
+
+function closeHistModal() {
+  document.getElementById('hist-modal').classList.remove('open');
+}
+
+function startReview() {
+  closeHistModal();
+  if(reviewQueue.length === 0) return;
+  isReviewMode = true;
+  const pool = [...reviewQueue];
+  reviewQueue = [];
+  G.questions = pool;
+  G.qi = 0; G.score = 0; G.wrongs = 0; G.skips = 2;
+  G.combo = 0; G.maxCombo = 0; G.skipUsed = 0;
+  updateLives();
+  document.getElementById('skip-count').textContent = '×'+G.skips;
+  document.getElementById('skip-btn').disabled = false;
+  document.getElementById('mode-badge').textContent = '🔄 復習モード';
+  showScreen('game-screen');
+  showQuestion();
+}
+
+function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY))||{total:0,correct:0,maxCombo:0}; } catch(e){ return {total:0,correct:0,maxCombo:0}; } }
+function saveStats(correct, wrong, combo) {
+  const s = loadStats();
+  s.total += (correct+wrong);
+  s.correct += correct;
+  if(combo > (s.maxCombo||0)) s.maxCombo = combo;
+  localStorage.setItem(STATS_KEY, JSON.stringify(s));
+}
+function updateStatsDisplay() {
+  const s = loadStats();
+  const rate = s.total > 0 ? Math.round(s.correct/s.total*100) : 0;
+  document.getElementById('stat-rate').textContent = rate+'%';
+  document.getElementById('stat-total').textContent = s.total+'問';
+  document.getElementById('stat-combo').textContent = (s.maxCombo||0)+'連続';
+}
+
 // ===== GAME STATE =====
 const G = {
   diff:'beginner', genre:'all', questions:[], qi:0,
@@ -680,6 +778,9 @@ function selectGenre(g) { G.genre=g; startGame(); }
 
 // ===== GAME LOGIC =====
 function startGame() {
+  // Reset session tracking
+  if(!isReviewMode) { sessionHistory = []; reviewQueue = []; }
+  isReviewMode = false;
   // Filter questions
   let pool = DB.filter(q => q.d === G.diff && (G.genre==='all' || q.g===G.genre));
   if (pool.length < 5) pool = DB.filter(q => q.d === G.diff); // fallback
@@ -773,6 +874,8 @@ function submitAnswer() {
 
 function handleCorrect() {
   clearInterval(G.timer);
+  const q = G.questions[G.qi];
+  addHistory(q, true);
   G.score++; G.combo++;
   if (G.combo > G.maxCombo) G.maxCombo = G.combo;
   document.getElementById('kanji-word').classList.add('correct-anim');
@@ -790,6 +893,7 @@ function handleWrong(timeout=false, given='') {
     G.combo = 0;
     document.getElementById('combo-display').style.opacity = '0';
     const q = G.questions[G.qi];
+    addHistory(q, false);
     document.getElementById('kanji-word').classList.add('wrong-anim');
     showFeedback('⏰ タイムオーバー！', '#ff8800', 2500, {fontSize:'clamp(28px,8vw,40px)', textAlign:'center', width:'100%'});
     const revEl = document.getElementById('answer-reveal');
@@ -869,7 +973,9 @@ function endGame(outOfLives) {
   document.getElementById('res-skip').textContent=`${G.skipUsed}回`;
   document.getElementById('res-rank').textContent=rank;
   saveScore(G.diff, G.score, G.qi);
+  saveStats(G.score, G.wrongs, G.maxCombo);
   document.getElementById('res-best').textContent = getBestScore(G.diff) + '問';
+  updateStatsDisplay();
   showScreen('result-screen');
 }
 

@@ -286,7 +286,11 @@ body{padding-top:44px!important;}
     </div>
 
     <!-- Main game canvas -->
-    <canvas id="game-canvas" width="200" height="400"></canvas>
+    <div style="position:relative;display:flex;">
+      <canvas id="game-canvas" width="200" height="400"></canvas>
+      <div id="hard-drop-flash" style="position:absolute;inset:0;background:white;opacity:0;pointer-events:none;z-index:40;border-radius:6px;"></div>
+      <div id="level-up-flash" style="position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#ffd700,#00f0f0);opacity:0;pointer-events:none;z-index:41;border-radius:6px;"></div>
+    </div>
 
     <!-- Right panel: NEXT -->
     <div class="side-panel">
@@ -437,13 +441,13 @@ const nextCtx = nextCanvas.getContext('2d');
 
 // Tetrominoes: shape arrays (each rotation)
 const PIECES = {
-  I: { color: '#00e8f0', shapes: [[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],[[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],[[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],[[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]] },
-  O: { color: '#f0e000', shapes: [[[1,1],[1,1]]] },
-  T: { color: '#c000f0', shapes: [[[0,1,0],[1,1,1],[0,0,0]],[[0,1,0],[0,1,1],[0,1,0]],[[0,0,0],[1,1,1],[0,1,0]],[[0,1,0],[1,1,0],[0,1,0]]] },
-  S: { color: '#00f060', shapes: [[[0,1,1],[1,1,0],[0,0,0]],[[0,1,0],[0,1,1],[0,0,1]],[[0,0,0],[0,1,1],[1,1,0]],[[1,0,0],[1,1,0],[0,1,0]]] },
-  Z: { color: '#f02020', shapes: [[[1,1,0],[0,1,1],[0,0,0]],[[0,0,1],[0,1,1],[0,1,0]],[[0,0,0],[1,1,0],[0,1,1]],[[0,1,0],[1,1,0],[1,0,0]]] },
-  J: { color: '#0050f0', shapes: [[[1,0,0],[1,1,1],[0,0,0]],[[0,1,1],[0,1,0],[0,1,0]],[[0,0,0],[1,1,1],[0,0,1]],[[0,1,0],[0,1,0],[1,1,0]]] },
-  L: { color: '#f08000', shapes: [[[0,0,1],[1,1,1],[0,0,0]],[[0,1,0],[0,1,0],[0,1,1]],[[0,0,0],[1,1,1],[1,0,0]],[[1,1,0],[0,1,0],[0,1,0]]] },
+  I: { color: '#00F0F0', shapes: [[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],[[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],[[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],[[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]] },
+  O: { color: '#F0F000', shapes: [[[1,1],[1,1]]] },
+  T: { color: '#A000F0', shapes: [[[0,1,0],[1,1,1],[0,0,0]],[[0,1,0],[0,1,1],[0,1,0]],[[0,0,0],[1,1,1],[0,1,0]],[[0,1,0],[1,1,0],[0,1,0]]] },
+  S: { color: '#00F000', shapes: [[[0,1,1],[1,1,0],[0,0,0]],[[0,1,0],[0,1,1],[0,0,1]],[[0,0,0],[0,1,1],[1,1,0]],[[1,0,0],[1,1,0],[0,1,0]]] },
+  Z: { color: '#F00000', shapes: [[[1,1,0],[0,1,1],[0,0,0]],[[0,0,1],[0,1,1],[0,1,0]],[[0,0,0],[1,1,0],[0,1,1]],[[0,1,0],[1,1,0],[1,0,0]]] },
+  J: { color: '#0000F0', shapes: [[[1,0,0],[1,1,1],[0,0,0]],[[0,1,1],[0,1,0],[0,1,0]],[[0,0,0],[1,1,1],[0,0,1]],[[0,1,0],[0,1,0],[1,1,0]]] },
+  L: { color: '#F0A000', shapes: [[[0,0,1],[1,1,1],[0,0,0]],[[0,1,0],[0,1,0],[0,1,1]],[[0,0,0],[1,1,1],[1,0,0]],[[1,1,0],[0,1,0],[0,1,0]]] },
 };
 const PIECE_KEYS = ['I','O','T','S','Z','J','L'];
 
@@ -475,6 +479,8 @@ let dropTimer, lockTimer;
 let lockDelay = 500;
 let lastTime = 0;
 let dropInterval = 1000;
+let combo = 0, lastClearB2B = false, lastWasRotation = false, pendingTSpin = false;
+let floatTexts = [];
 
 function getDropInterval(lvl){ return Math.max(80, 1000 - (lvl-1)*90); }
 
@@ -596,12 +602,24 @@ function ghostY(){
   return current.y+dy;
 }
 
+function checkTSpin(){
+  if(current.key!=='T'||!lastWasRotation) return false;
+  const cx=current.x+1, cy=current.y+1;
+  let occ=0;
+  for(const [bx,by] of [[cx-1,cy-1],[cx+1,cy-1],[cx-1,cy+1],[cx+1,cy+1]]){
+    if(bx<0||bx>=COLS||by<0||by>=ROWS||(by>=0&&board[by][bx])) occ++;
+  }
+  return occ>=3;
+}
+
 function lock(){
+  pendingTSpin=checkTSpin();
   const shape=getShape(current.key,current.rot);
   for(let row=0;row<shape.length;row++)
     for(let col=0;col<shape[row].length;col++)
       if(shape[row][col] && current.y+row>=0)
         board[current.y+row][current.x+col]=PIECES[current.key].color;
+  lastWasRotation=false;
   clearLines();
   spawnPiece();
   canHold=true;
@@ -617,16 +635,32 @@ function clearLines(){
     }
   }
   if(cleared>0){
-    const pts=[0,100,300,500,800][cleared]*level;
+    const isTSpin=pendingTSpin; pendingTSpin=false;
+    let pts;
+    if(isTSpin){ pts=[0,800,1200,1600,2000][Math.min(cleared,4)]*level; }
+    else { pts=[0,100,300,500,800][Math.min(cleared,4)]*level; }
+    const isB2B=(cleared===4||isTSpin);
+    if(isB2B&&lastClearB2B){ pts=Math.floor(pts*1.5); showFloatText('BACK TO BACK!','#ffd700'); }
+    lastClearB2B=isB2B;
+    combo++;
+    if(combo>1){ const bonusPts=50*(combo-1)*level; pts+=bonusPts; showFloatText('COMBO ×'+combo,'#ff88ff'); }
+    if(isTSpin) showFloatText('T-SPIN!','#c000f0');
+    else if(cleared===4) showFloatText('TETRIS!','#00e8f0');
     score+=pts; lines+=cleared;
     const newLevel=Math.floor(lines/10)+1;
-    if(newLevel>level){ level=newLevel; dropInterval=getDropInterval(level); playBeep(880,0.15,'sine'); }
+    if(newLevel>level){
+      level=newLevel; dropInterval=getDropInterval(level); playBeep(880,0.15,'sine');
+      showFloatText('LEVEL ' + level + '!', '#ffd700');
+      const _luf=document.getElementById('level-up-flash');
+      if(_luf){_luf.style.transition='none';_luf.style.opacity='0.72';requestAnimationFrame(()=>requestAnimationFrame(()=>{_luf.style.transition='opacity 0.85s ease-out';_luf.style.opacity='0';}));}
+    }
     if(score>hiScore){ hiScore=score; setHiScore(hiScore); saveHiRec('tetris',hiScore); launchConfetti(); }
     updateLEDs();
-    // Satisfying sound: pitch varies by lines cleared
     const freqs=[0,440,550,660,880];
     if(cleared===4) { playBeep(1046,0.18,'sine'); setTimeout(()=>playBeep(1318,0.15,'sine'),80); }
     else playBeep(freqs[cleared]||440, 0.1, 'sine');
+  } else {
+    combo=0; pendingTSpin=false;
   }
 }
 
@@ -637,21 +671,40 @@ function rotate(dir){
   const newRot=((current.rot+dir)%numRots+numRots)%numRots;
   const key=`${oldRot}>${newRot}`;
   const kicks=current.key==='I'?(KICKS_I[key]||[]):(KICKS[key]||[]);
-  if(valid(current,0,0,newRot)){ current.rot=newRot; return; }
-  for(const [kx,ky] of kicks){
-    if(valid(current,kx,-ky,newRot)){ current.x+=kx; current.y-=ky; current.rot=newRot; return; }
+  let rotated=false;
+  if(valid(current,0,0,newRot)){ current.rot=newRot; rotated=true; }
+  else {
+    for(const [kx,ky] of kicks){
+      if(valid(current,kx,-ky,newRot)){ current.x+=kx; current.y-=ky; current.rot=newRot; rotated=true; break; }
+    }
+  }
+  if(rotated){
+    lastWasRotation=true;
+    if(!valid(current,0,1)){
+      clearTimeout(lockTimer);
+      lockTimer=setTimeout(()=>{ lockTimer=null; lock(); },500);
+    } else {
+      clearTimeout(lockTimer); lockTimer=null;
+    }
   }
 }
 
 function move(dx){
   if(!gameRunning||paused||gameOver) return;
-  if(valid(current,dx,0)) current.x+=dx;
+  if(valid(current,dx,0)){
+    current.x+=dx;
+    lastWasRotation=false;
+    if(!valid(current,0,1)&&lockTimer!==null){
+      clearTimeout(lockTimer);
+      lockTimer=setTimeout(()=>{ lockTimer=null; lock(); },500);
+    }
+  }
 }
 
 function softDrop(){
   if(!gameRunning||paused||gameOver) return;
-  if(valid(current,0,1)){ current.y++; score+=1; updateLEDs(); }
-  else lock();
+  if(valid(current,0,1)){ current.y++; score+=1; updateLEDs(); clearTimeout(lockTimer); lockTimer=null; }
+  else if(!lockTimer){ lockTimer=setTimeout(()=>{ lockTimer=null; lock(); },500); }
 }
 
 function hardDrop(){
@@ -659,7 +712,11 @@ function hardDrop(){
   let dy=0;
   while(valid(current,0,dy+1)) dy++;
   score+=dy*2; current.y+=dy;
-  updateLEDs(); lock();
+  clearTimeout(lockTimer); lockTimer=null;
+  updateLEDs();
+  const fl=document.getElementById('hard-drop-flash');
+  if(fl){fl.style.transition='none';fl.style.opacity='0.85';requestAnimationFrame(()=>{fl.style.transition='opacity 0.22s ease-out';fl.style.opacity='0';});}
+  lock();
 }
 
 function holdPiece(){
@@ -681,6 +738,8 @@ function holdPiece(){
 
 function endGame(){
   localStorage.removeItem('tetris_save');
+  clearTimeout(lockTimer); lockTimer=null;
+  kdasDir=0; clearTimeout(kdasTimer); clearInterval(kdasInterval);
   gameRunning=false; gameOver=true;
   document.getElementById('home-btn').style.display = 'none';
   document.getElementById('overlay-title').textContent='ゲームオーバー';
@@ -699,15 +758,23 @@ function startGame(){
   spawnPiece();
   gameRunning=true; paused=false; gameOver=false;
   dropInterval=getDropInterval(1);
+  combo=0; lastClearB2B=false; lastWasRotation=false; pendingTSpin=false; floatTexts=[];
+  clearTimeout(lockTimer); lockTimer=null;
   document.getElementById('overlay').style.display='none';
   document.getElementById('home-btn').style.display = 'block';
   updateLEDs(); lastTime=0;
   requestAnimationFrame(gameLoop);
 }
 
+function fmtScore(n){
+  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
+  if(n>=100000)return Math.floor(n/1000)+'K';
+  if(n>=10000)return(n/1000).toFixed(1)+'K';
+  return n;
+}
 function updateLEDs(){
-  document.getElementById('led-score').textContent=score;
-  document.getElementById('led-hi').textContent=hiScore;
+  document.getElementById('led-score').textContent=fmtScore(score);
+  document.getElementById('led-hi').textContent=fmtScore(hiScore);
   document.getElementById('led-level').textContent=level;
   document.getElementById('led-lines').textContent=lines;
 }
@@ -813,6 +880,7 @@ function draw(){
   drawBoard();
   drawGhost();
   drawCurrent();
+  drawFloatTexts();
   drawHold();
   drawNext();
 }
@@ -828,8 +896,12 @@ function gameLoop(timestamp){
     accumulator+=dt;
     if(accumulator>=dropInterval){
       accumulator=0;
-      if(valid(current,0,1)) current.y++;
-      else lock();
+      if(valid(current,0,1)){
+        current.y++;
+        clearTimeout(lockTimer); lockTimer=null;
+      } else if(!lockTimer){
+        lockTimer=setTimeout(()=>{ lockTimer=null; lock(); },500);
+      }
     }
     draw();
     requestAnimationFrame(gameLoop);
@@ -837,16 +909,37 @@ function gameLoop(timestamp){
 }
 
 // ===================== CONTROLS =====================
+let kdasDir=0, kdasTimer=null, kdasInterval=null;
 document.addEventListener('keydown',e=>{
   if(!gameRunning||gameOver) return;
   switch(e.code){
-    case 'ArrowLeft': e.preventDefault(); move(-1); break;
-    case 'ArrowRight': e.preventDefault(); move(1); break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      if(kdasDir!==-1){
+        kdasDir=-1; move(-1);
+        clearTimeout(kdasTimer); clearInterval(kdasInterval);
+        kdasTimer=setTimeout(()=>{ kdasInterval=setInterval(()=>move(-1),50); },150);
+      }
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      if(kdasDir!==1){
+        kdasDir=1; move(1);
+        clearTimeout(kdasTimer); clearInterval(kdasInterval);
+        kdasTimer=setTimeout(()=>{ kdasInterval=setInterval(()=>move(1),50); },150);
+      }
+      break;
     case 'ArrowDown': e.preventDefault(); softDrop(); break;
     case 'ArrowUp': e.preventDefault(); rotate(1); break;
     case 'Space': e.preventDefault(); hardDrop(); break;
     case 'KeyC': case 'ShiftLeft': e.preventDefault(); holdPiece(); break;
     case 'Escape': case 'KeyP': togglePause(); break;
+  }
+});
+document.addEventListener('keyup',e=>{
+  if(e.code==='ArrowLeft'||e.code==='ArrowRight'){
+    kdasDir=0; clearTimeout(kdasTimer); clearInterval(kdasInterval);
+    kdasTimer=null; kdasInterval=null;
   }
 });
 
@@ -972,6 +1065,26 @@ function playBeep(freq=440, dur=0.08, type='sine') {
     g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
     o.start(); o.stop(ac.currentTime + dur);
   } catch(e) {}
+}
+
+function showFloatText(text, color){
+  floatTexts.push({text, color, opacity:1.0, y:canvas.height*0.45, vy:-0.8});
+}
+function drawFloatTexts(){
+  floatTexts=floatTexts.filter(ft=>ft.opacity>0);
+  for(const ft of floatTexts){
+    ctx.save();
+    ctx.globalAlpha=Math.min(ft.opacity,1);
+    ctx.font='bold 15px Arial';
+    ctx.fillStyle=ft.color;
+    ctx.textAlign='center';
+    ctx.shadowColor=ft.color;
+    ctx.shadowBlur=12;
+    ctx.fillText(ft.text, canvas.width/2, ft.y);
+    ctx.restore();
+    ft.y+=ft.vy;
+    ft.opacity-=0.013;
+  }
 }
 
 function goHome() {

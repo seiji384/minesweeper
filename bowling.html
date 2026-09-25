@@ -198,6 +198,14 @@ body{padding-top:44px!important;}
   </div>
 </div>
 
+<!-- Game Over Summary Modal -->
+<div class="modal-overlay" id="modal-summary">
+  <div class="modal-box">
+    <div class="modal-title"><span>📊 スコアサマリー</span><button class="modal-close" onclick="hideModal('modal-summary')">✕</button></div>
+    <div class="modal-body" id="summary-body" style="padding:10px"></div>
+  </div>
+</div>
+
 <!-- Resume overlay -->
 <div class="modal-overlay" id="resume-overlay">
   <div class="modal-box">
@@ -246,15 +254,66 @@ let rolls=[], frames=[], pinsUp=[], standing=[];
 let currentFrame=1, rollInFrame=1;
 let aimPct=0.5; // 0=far left, 1=far right
 let animating=false;
+let consecutiveStrikes=0;
+let pinAnims=Array(10).fill(null).map(()=>({rot:0,alpha:1,knocked:false,animating:false}));
+let audioCtx=null;
+
+// ── Web Audio ──
+function getAudioCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playRumble(){
+  try{
+    const ctx=getAudioCtx();
+    const dur=0.5; const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.max(0,1-i/d.length)*0.25;
+    const src=ctx.createBufferSource(); src.buffer=buf;
+    const flt=ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=200;
+    src.connect(flt); flt.connect(ctx.destination); src.start();
+  }catch(e){}
+}
+function playCrash(intensity=1){
+  try{
+    const ctx=getAudioCtx();
+    const dur=0.35+intensity*0.2;
+    const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(Math.max(0,1-i/d.length),0.4)*intensity;
+    const src=ctx.createBufferSource(); src.buffer=buf;
+    const g=ctx.createGain(); g.gain.value=0.4;
+    src.connect(g); g.connect(ctx.destination); src.start();
+    if(intensity>0.7) setTimeout(()=>playCrash(intensity*0.25),90);
+  }catch(e){}
+}
+function playCheer(){
+  try{
+    const ctx=getAudioCtx();
+    [523,659,784,1047].forEach((freq,i)=>{
+      const osc=ctx.createOscillator(),g=ctx.createGain();
+      osc.frequency.value=freq; osc.type='sine';
+      g.gain.setValueAtTime(0.18,ctx.currentTime+i*0.11);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.11+0.35);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(ctx.currentTime+i*0.11); osc.stop(ctx.currentTime+i*0.11+0.35);
+    });
+  }catch(e){}
+}
 
 function makePins(){ return Array(10).fill(true); }
 
+function resetPinAnims(){
+  pinAnims=Array(10).fill(null).map(()=>({rot:0,alpha:1,knocked:false,animating:false}));
+}
 function newGame(){
   localStorage.removeItem('bowling_save');
   rolls=[]; frames=[];
   pinsUp=makePins(); standing=makePins();
   currentFrame=1; rollInFrame=1; aimPct=0.5;
-  animating=false;
+  animating=false; consecutiveStrikes=0;
+  resetPinAnims();
   document.getElementById('throw-btn').disabled=false;
   document.getElementById('msg-flash').textContent='';
   updateScorecard();
@@ -407,7 +466,14 @@ function updateScorecard(){
       const r1=rollLabel(fr[1],fr[0],false,1);
       rolls_html=`<span class="frame-roll">${[r0,r1].filter(x=>x!=='').join(' ')}</span>`;
     }
-    const sc=frameScores[f]!==null&&frameScores[f]!==undefined?`<span class="frame-score">${frameScores[f]}</span>`:'<span class="frame-score"> </span>';
+    // Compute cumulative total up to this frame
+    let cumTotal=0;
+    let canShowCum=true;
+    for(let fi=0;fi<=f;fi++){
+      if(frameScores[fi]===null||frameScores[fi]===undefined){ canShowCum=false; break; }
+      cumTotal+=frameScores[fi];
+    }
+    const sc=canShowCum?`<span class="frame-score">${cumTotal}</span>`:'<span class="frame-score"> </span>';
     const special=fr[0]===10||(fr[0]+fr[1]===10)?'special':'';
     html+=`<td class="${isActive?'active':''} ${special}">${rolls_html}${sc}</td>`;
   }
@@ -445,10 +511,16 @@ function drawLane(pins, ballX, ballY, knocked){
     lctx.beginPath(); lctx.moveTo(x,0); lctx.lineTo(x,LH); lctx.stroke();
   }
 
-  // Gutters
+  // Gutters with guide lines
   lctx.fillStyle='#2a1a0a';
   lctx.fillRect(0,0,LANE_LEFT,LH);
   lctx.fillRect(LANE_RIGHT,0,LW-LANE_RIGHT,LH);
+  // Gutter guide arrows
+  lctx.strokeStyle='rgba(100,60,20,0.6)'; lctx.lineWidth=1.5;
+  for(let y=20;y<LH;y+=40){
+    lctx.beginPath(); lctx.moveTo(LANE_LEFT-12,y); lctx.lineTo(LANE_LEFT-4,y); lctx.stroke();
+    lctx.beginPath(); lctx.moveTo(LANE_RIGHT+4,y); lctx.lineTo(LANE_RIGHT+12,y); lctx.stroke();
+  }
   lctx.strokeStyle='#6a3a10'; lctx.lineWidth=2;
   lctx.strokeRect(LANE_LEFT,0,LANE_W,LH);
 
@@ -459,24 +531,54 @@ function drawLane(pins, ballX, ballY, knocked){
     lctx.beginPath(); lctx.arc(ax,LH*0.65,3,0,Math.PI*2); lctx.fill();
   }
 
-  // Pins
+  // Trajectory preview (dotted line before ball is thrown)
+  if(ballX===null && ballY===null && !animating){
+    const tStartX=LW/2+(aimPct-0.5)*LANE_W*0.8;
+    const tEndX=tStartX;
+    lctx.save();
+    lctx.strokeStyle='rgba(76,201,240,0.35)';
+    lctx.lineWidth=2;
+    lctx.setLineDash([6,5]);
+    lctx.beginPath();
+    lctx.moveTo(tStartX,BALL_START_Y);
+    lctx.lineTo(tEndX,PIN_AREA_Y+20);
+    lctx.stroke();
+    lctx.setLineDash([]);
+    lctx.restore();
+  }
+
+  // Pins (with animation support)
   for(let i=0;i<10;i++){
     const p=pinScreenPos(i);
     const isKnocked=knocked&&knocked.includes(i);
     const isDown=!pins[i];
-    if(isDown||isKnocked){
-      lctx.globalAlpha=0.25;
+    const anim=pinAnims[i];
+
+    if(isDown && !anim.animating){
+      // Already down, show faded
+      lctx.globalAlpha=0.2;
       lctx.fillStyle='#666';
-    } else {
+      lctx.beginPath(); lctx.arc(p.x,p.y,7,0,Math.PI*2); lctx.fill();
+      lctx.globalAlpha=1;
+    } else if(isKnocked && anim.animating){
+      // Animate knocked pin: rotate and fade
+      lctx.save();
+      lctx.globalAlpha=anim.alpha;
+      lctx.translate(p.x,p.y);
+      lctx.rotate(anim.rot*Math.PI/180);
+      lctx.fillStyle='#f8f4e8';
+      lctx.beginPath(); lctx.arc(0,0,8,0,Math.PI*2); lctx.fill();
+      lctx.strokeStyle='#888860'; lctx.lineWidth=1.5; lctx.stroke();
+      lctx.restore();
+      lctx.globalAlpha=1;
+    } else if(!isDown){
+      // Standing pin
       lctx.globalAlpha=1;
       lctx.fillStyle='#f8f4e8';
-    }
-    lctx.beginPath(); lctx.arc(p.x,p.y,8,0,Math.PI*2);
-    lctx.fill();
-    if(!isDown&&!isKnocked){
+      lctx.beginPath(); lctx.arc(p.x,p.y,8,0,Math.PI*2); lctx.fill();
       lctx.strokeStyle='#888860'; lctx.lineWidth=1.5; lctx.stroke();
+      lctx.globalAlpha=1;
     }
-    lctx.globalAlpha=1;
   }
 
   // Ball
@@ -488,7 +590,6 @@ function drawLane(pins, ballX, ballY, knocked){
     lctx.beginPath(); lctx.arc(ballX,ballY,14,0,Math.PI*2);
     lctx.fillStyle=grad; lctx.fill();
     lctx.strokeStyle='#4cc9f0'; lctx.lineWidth=2; lctx.stroke();
-    // glow
     lctx.shadowColor='#4cc9f0'; lctx.shadowBlur=24;
     lctx.beginPath(); lctx.arc(ballX,ballY,14,0,Math.PI*2);
     lctx.stroke(); lctx.shadowBlur=0;
@@ -505,21 +606,44 @@ function animateThrow(startX, targetX, pins, onDone){
   let f=0;
   let hitFrame=Math.floor(totalFrames*0.85);
   let knocked=[];
+  let pinAnimFrames=0;
+  let pinAnimDone=false;
+
+  // Reset pin animations
+  pinAnims.forEach(a=>{ a.rot=0; a.alpha=1; a.knocked=false; a.animating=false; });
+  playRumble();
 
   function step(){
     f++;
     const t=f/totalFrames;
-    // slight curve toward target
     const cx=ballX+(targetX-ballX)*t;
     const cy=BALL_START_Y-(BALL_START_Y-PIN_AREA_Y)*t;
     const curve=(targetX-ballX)*Math.sin(t*Math.PI)*0.15;
 
-    drawLane(pins, cx+curve, cy, f>=hitFrame?knocked:[]);
-
     if(f===hitFrame){
-      // calculate knocked pins at this point
       knocked=calcKnocked(aimPct, pins, rollInFrame===1);
+      // Start pin animations for knocked pins
+      knocked.forEach(i=>{
+        pinAnims[i].knocked=true;
+        pinAnims[i].animating=true;
+      });
+      if(knocked.length>0){
+        playCrash(Math.min(1, 0.4 + knocked.length * 0.06));
+      }
     }
+
+    // Advance pin animations after hit
+    if(f>hitFrame){
+      pinAnims.forEach((a,i)=>{
+        if(a.animating){
+          a.rot=Math.min(90, a.rot+9);
+          a.alpha=Math.max(0, a.alpha-0.06);
+          if(a.rot>=90 && a.alpha<=0) a.animating=false;
+        }
+      });
+    }
+
+    drawLane(pins, cx+curve, cy, f>=hitFrame?knocked:[]);
 
     if(f<totalFrames){
       requestAnimationFrame(step);
@@ -544,46 +668,61 @@ function throwBall(){
     rolls.push(kCount);
 
     // Check frame progression
-    let msg='';
+    let msg='', msgColor='#4cc9f0', msgSize='22px';
     if(currentFrame<10){
       if(rollInFrame===1){
         if(kCount===10){
-          msg='ストライク！'; rollInFrame=1; standing=makePins();
-          currentFrame++;
+          consecutiveStrikes++;
+          if(consecutiveStrikes>=3){
+            msg='🦃 ターキー！'; msgColor='#ff8800'; msgSize='28px';
+            playCrash(1.5); setTimeout(playCheer, 200);
+          } else {
+            msg='🎳 ストライク！'; msgColor='#ff44aa'; msgSize='30px';
+            setTimeout(playCheer, 150);
+          }
+          rollInFrame=1; standing=makePins(); currentFrame++;
         } else {
-          rollInFrame=2;
+          consecutiveStrikes=0; rollInFrame=2;
         }
       } else {
-        if(kCount+rolls[rolls.length-2]===10) msg='スペア！';
-        rollInFrame=1; standing=makePins();
-        currentFrame++;
+        if(kCount+rolls[rolls.length-2]===10){
+          msg='👍 スペア！'; msgColor='#60ff90'; msgSize='24px';
+        }
+        consecutiveStrikes=0; rollInFrame=1; standing=makePins(); currentFrame++;
       }
     } else {
       // 10th frame logic
       const fr10start=getRollsForFrame(9);
       const cnt=fr10start.length;
       if(cnt===1){
-        if(kCount===10){ msg='ストライク！'; standing=makePins(); rollInFrame=2; }
-        else rollInFrame=2;
+        if(kCount===10){
+          consecutiveStrikes++;
+          msg='🎳 ストライク！'; msgColor='#ff44aa'; msgSize='30px';
+          setTimeout(playCheer, 150);
+          standing=makePins(); rollInFrame=2;
+        } else { consecutiveStrikes=0; rollInFrame=2; }
       } else if(cnt===2){
         const prev=fr10start[0];
         if(prev===10){
-          if(kCount===10){ msg='ストライク！'; standing=makePins(); }
-          else standing=makePins(); // or just continue
+          if(kCount===10){
+            consecutiveStrikes++;
+            msg='🎳 ストライク！'; msgColor='#ff44aa'; msgSize='30px';
+            setTimeout(playCheer, 150);
+            standing=makePins();
+          } else { consecutiveStrikes=0; standing=makePins(); }
           rollInFrame=3;
         } else if(prev+kCount===10){
-          msg='スペア！'; standing=makePins(); rollInFrame=3;
+          msg='👍 スペア！'; msgColor='#60ff90'; msgSize='24px';
+          standing=makePins(); rollInFrame=3;
         } else {
-          // done
           currentFrame=11;
         }
       } else {
-        // 3rd ball done
         currentFrame=11;
       }
     }
 
-    flash(msg);
+    flash(msg, msgColor, msgSize);
     updateScorecard();
     drawLane(standing, null, null);
     animating=false;
@@ -598,25 +737,67 @@ function throwBall(){
   });
 }
 
-function flash(msg){
+function flash(msg, color='#4cc9f0', size='22px'){
   const el=document.getElementById('msg-flash');
   el.textContent=msg;
-  if(msg) setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; },2000);
+  el.style.color=color;
+  el.style.fontSize=size;
+  el.style.textShadow=`0 0 20px ${color}, 0 0 40px ${color}`;
+  if(msg) setTimeout(()=>{ if(el.textContent===msg){ el.textContent=''; el.style.fontSize='22px'; } },2500);
 }
 
 function gameOver(){
-  const {total}=calcScore();
+  const {frameScores,total}=calcScore();
   document.getElementById('throw-btn').disabled=true;
   const isPerfect=total===300;
   if(isPerfect){
-    flash('🏆 パーフェクト！300点！');
+    flash('🏆 パーフェクト！300点！','#ffe870','34px');
+    playCrash(2); setTimeout(playCheer,300);
     startConfetti();
   } else {
-    flash(`🎳 ゲーム終了！ ${total}点`);
-    if(total>=200) startConfetti();
+    flash(`🎳 ゲーム終了！ ${total}点`,'#4cc9f0','22px');
+    if(total>=200){ startConfetti(); setTimeout(playCheer,200); }
   }
   saveBest(total);
   saveHiRec('bowling', total);
+  setTimeout(()=>showSummaryModal(total,frameScores), 2200);
+}
+
+function showSummaryModal(total, frameScores){
+  let cumTotal=0;
+  let html=`<div style="text-align:center;margin-bottom:10px"><span style="font-size:26px;font-weight:900;color:#ff44aa;text-shadow:0 0 10px #ff44aa">${total}点</span>`;
+  if(total===300) html+=`<br><span style="color:#ffe870">🏆 パーフェクトゲーム！</span>`;
+  else if(total>=200) html+=`<br><span style="color:#4cc9f0">⭐ グレート！</span>`;
+  else if(total>=150) html+=`<br><span style="color:#60ff90">👍 グッド！</span>`;
+  html+=`</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:300px"><tr>`;
+  for(let f=1;f<=10;f++) html+=`<th style="font-size:9px;color:#6050a0;padding:2px;text-align:center;border-bottom:1px solid #3020a0">${f}</th>`;
+  html+=`</tr><tr>`;
+  for(let f=0;f<10;f++){
+    const fr=getRollsForFrame(f);
+    const is10=f===9;
+    let rollsStr='';
+    if(is10){
+      const r0=rollLabel(fr[0],undefined,true,0);
+      const r1=rollLabel(fr[1],fr[0],true,1);
+      const r2=rollLabel(fr[2],fr[1],true,2);
+      rollsStr=[r0,r1,r2].filter(x=>x!=='').join(' ');
+    } else {
+      const r0=rollLabel(fr[0],undefined,false,0);
+      const r1=rollLabel(fr[1],fr[0],false,1);
+      rollsStr=[r0,r1].filter(x=>x!=='').join(' ');
+    }
+    if(frameScores[f]!==null&&frameScores[f]!==undefined) cumTotal+=frameScores[f];
+    const isStrike=fr[0]===10;
+    const isSpare=!isStrike&&fr.length>=2&&(fr[0]||0)+(fr[1]||0)===10;
+    const clr=isStrike?'#ff44aa':isSpare?'#60ff90':'#a898d8';
+    html+=`<td style="text-align:center;border:1px solid #2010a0;padding:2px;min-width:26px">`;
+    html+=`<span style="font-size:9px;color:${clr};display:block">${rollsStr}</span>`;
+    html+=`<span style="font-size:10px;color:#c0b0e8;font-weight:bold;display:block;border-top:1px solid #3020a0;margin-top:2px;padding-top:1px">${cumTotal}</span>`;
+    html+=`</td>`;
+  }
+  html+=`</tr></table></div>`;
+  document.getElementById('summary-body').innerHTML=html;
+  showModal('modal-summary');
 }
 
 function saveBest(score){
@@ -637,7 +818,7 @@ function updateLEDs(){
 
 function saveGame(){
   if(currentFrame>10){localStorage.removeItem('bowling_save');return;}
-  localStorage.setItem('bowling_save',JSON.stringify({rolls,currentFrame,rollInFrame,standing,aimPct,savedAt:Date.now()}));
+  localStorage.setItem('bowling_save',JSON.stringify({rolls,currentFrame,rollInFrame,standing,aimPct,consecutiveStrikes,savedAt:Date.now()}));
 }
 
 function showSaveToast(){
@@ -666,7 +847,9 @@ function tryLoadSave(){
       rollInFrame=s.rollInFrame||1;
       standing=s.standing||makePins();
       aimPct=s.aimPct!==undefined?s.aimPct:0.5;
+      consecutiveStrikes=s.consecutiveStrikes||0;
       animating=false;
+      resetPinAnims();
       document.getElementById('throw-btn').disabled=false;
       document.getElementById('msg-flash').textContent='';
       updateScorecard();updateLEDs();drawLane(standing,null,null);updateAimUI();

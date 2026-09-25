@@ -342,6 +342,24 @@ body{padding-top:44px!important;}
   </div>
 </div>
 
+<!-- 遊び方クイックヘルプモーダル -->
+<div class="modal-overlay" id="howto-modal">
+  <div class="modal-box" style="max-width:300px">
+    <div class="modal-title">
+      <span>❓ 遊び方</span>
+      <button class="modal-close" id="howto-close">✕</button>
+    </div>
+    <div class="modal-body" style="font-size:14px;line-height:2">
+      <p>👆 <strong style="color:#60b8ff">左クリック/タップ</strong>: マスを開く</p>
+      <p>🖱 <strong style="color:#ffa040">右クリック/長押し</strong>: 旗を立てる</p>
+      <p>🔢 <strong style="color:#f5c842">数字</strong> = 周囲の地雷数</p>
+      <p>🎯 全ての地雷に旗を立てるか<br>　 安全マスをクリアでゴール！</p>
+      <br>
+      <p style="color:#7060a0;font-size:12px">💡 数字をタップして隣接旗の数が揃うと自動開放（コードクリック）</p>
+    </div>
+  </div>
+</div>
+
 <!-- ルール説明モーダル -->
 <div class="modal-overlay" id="rules-modal">
   <div class="modal-box">
@@ -412,16 +430,17 @@ body{padding-top:44px!important;}
   </div>
 
   <div class="custom-row" id="custom-row">
-    <label>縦 <input type="number" id="c-rows" value="9" min="5" max="64"></label>
-    <label>横 <input type="number" id="c-cols" value="9" min="5" max="64"></label>
+    <label>縦 <input type="number" id="c-rows" value="9" min="5" max="20"></label>
+    <label>横 <input type="number" id="c-cols" value="9" min="5" max="20"></label>
     <label>地雷 <input type="number" id="c-mines" value="10" min="1"></label>
     <button id="c-apply">適用</button>
+    <span style="font-size:9px;color:#7060a0;">最大20×20 / 地雷80%まで</span>
   </div>
 
   <div class="content">
     <div class="status-panel">
       <div class="led-group">
-        <div class="led-label">爆弾の残り数</div>
+        <div class="led-label">🚩 残り地雷</div>
         <div class="led" id="led-mines">010</div>
       </div>
       <div class="smiley-btn" id="smiley" title="タップでリセット">🙂</div>
@@ -439,6 +458,7 @@ body{padding-top:44px!important;}
 
     <!-- タブの順: ルール, 旗モード, ヒント, ハイスコア -->
     <div class="action-bar">
+      <button class="act-btn" id="howto-btn">❓ 遊び方</button>
       <button class="act-btn" id="rules-btn">📖 ルール</button>
       <button class="act-btn" id="flag-btn">🚩 旗モード</button>
       <button class="act-btn" id="hint-btn">💡 ヒント</button>
@@ -537,8 +557,16 @@ body{padding-top:44px!important;}
   const winMsgEl  = document.getElementById('win-msg');
   const confCvs   = document.getElementById('confetti');
 
-  function p3(n) { return Math.max(0,n).toString().padStart(3,'0'); }
-  function fmtTime(s) { const v=Math.max(0,s); return v<1000?v.toString().padStart(3,'0'):String(v); }
+  function p3(n) {
+    if (n < 0) return '-' + Math.abs(n).toString().padStart(2, '0');
+    return Math.min(999, n).toString().padStart(3, '0');
+  }
+  function fmtTime(s) {
+    const v = Math.max(0, s);
+    const mm = Math.floor(v / 60);
+    const ss = v % 60;
+    return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  }
   function cellSize() {
     const maxW = Math.min(innerWidth-40, 640);
     return Math.min(34, Math.max(18, Math.floor((maxW - COLS*2) / COLS)));
@@ -555,7 +583,7 @@ body{padding-top:44px!important;}
     replayMode=false;
     clearInterval(timerID); timerID=null;
     updateSmiley('normal');
-    ledT.textContent='000'; ledM.textContent=p3(MINES);
+    ledT.textContent='00:00'; ledM.textContent=p3(MINES);
     replayBtn.style.display='none'; replayBtn.textContent='🔍 地雷配置';
     confCvs.style.display='none';
     winMsgEl.classList.remove('visible');
@@ -623,14 +651,24 @@ body{padding-top:44px!important;}
   function handleWin() {
     state='won'; clearInterval(timerID); updateSmiley('win');
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]===-1) flagged[r][c]=true;
-    flagCount=MINES; ledM.textContent=p3(0);
-    saveHS();
+    flagCount=MINES; ledM.textContent=p3(0); ledM.style.color=''; ledM.style.textShadow='';
+    const isNewRecord = saveHS();
     replayBtn.style.display='inline-flex';
     resetZoomThen(() => {
       startConfetti();
-      winMsgEl.textContent=`✨ クリア！ タイム: ${secs}秒 ✨`;
+      const timeStr = fmtTime(secs);
+      const bestStr = getBestTime();
+      let msg = `✨ クリア！ タイム: ${timeStr} ✨`;
+      if (isNewRecord && bestStr) msg += ` 🏆 新記録！`;
+      winMsgEl.textContent = msg;
       winMsgEl.classList.add('visible');
     });
+  }
+
+  function getBestTime() {
+    if (!HS_DIFFS.find(d => d.key === currentDiff)) return null;
+    const data = JSON.parse(localStorage.getItem('ms_hs3_' + currentDiff) || '{}');
+    return data.alltime ? fmtTime(data.alltime.secs) : null;
   }
 
   function doReveal(r,c) {
@@ -665,11 +703,35 @@ body{padding-top:44px!important;}
     if(state==='lost'||state==='won'||revealed[r][c]) return;
     flagged[r][c]=!flagged[r][c];
     flagCount+=flagged[r][c]?1:-1;
-    ledM.textContent=p3(MINES-flagCount);
+    const remaining = MINES - flagCount;
+    ledM.textContent = p3(remaining);
+    ledM.style.color = remaining < 0 ? '#ff4444' : '#fb8500';
+    ledM.style.textShadow = remaining < 0 ? '0 0 10px #ff2222, 0 0 20px #cc0000' : '0 0 10px #fb8500, 0 0 20px #c05000';
     render();
   }
 
-  function onClick(r,c) { if(flagMode) doFlag(r,c); else doReveal(r,c); }
+  function chordReveal(r, c) {
+    if (!revealed[r][c] || board[r][c] <= 0) return;
+    let adjFlags = 0;
+    const unrevealed = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = r+dr, nc = c+dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+        if (flagged[nr][nc]) adjFlags++;
+        else if (!revealed[nr][nc]) unrevealed.push([nr, nc]);
+      }
+    }
+    if (adjFlags === board[r][c]) {
+      unrevealed.forEach(([nr, nc]) => doReveal(nr, nc));
+    }
+  }
+
+  function onClick(r,c) {
+    if (flagMode) doFlag(r,c);
+    else if (revealed[r][c] && board[r][c] > 0) chordReveal(r, c);
+    else doReveal(r,c);
+  }
   function onRight(e,r,c) { e.preventDefault(); if(flagMode) doReveal(r,c); else doFlag(r,c); }
 
   // 爆弾チャンス
@@ -785,22 +847,24 @@ body{padding-top:44px!important;}
   ];
 
   function saveHS() {
-    if(!HS_DIFFS.find(d=>d.key===currentDiff)) return;
+    if(!HS_DIFFS.find(d=>d.key===currentDiff)) return false;
     const today=getDateKey(), weekKey=getWeekKey(), monthKey=getMonthKey();
     const storKey='ms_hs3_'+currentDiff;
     let data=JSON.parse(localStorage.getItem(storKey)||'{}');
-    if(!data.alltime||secs<data.alltime.secs) data.alltime={secs,date:today};
+    const isNewRecord = !data.alltime || secs < data.alltime.secs;
+    if(isNewRecord) data.alltime={secs,date:today};
     if(!data.today||data.today.date!==today||secs<data.today.secs) data.today={secs,date:today};
     if(!data.week||data.week.key!==weekKey||secs<data.week.secs) data.week={secs,key:weekKey,date:today};
     if(!data.month||data.month.key!==monthKey||secs<data.month.secs) data.month={secs,key:monthKey,date:today};
     localStorage.setItem(storKey,JSON.stringify(data));
     refreshHSPanel();
+    return isNewRecord;
   }
 
   function refreshHSPanel() {
     const today=getDateKey(), weekKey=getWeekKey(), monthKey=getMonthKey();
-    const fmt=e=>e?`${e.secs}秒`:'--';
-    const fmtWithDate=e=>e?`<span class="hs-record">${e.secs}秒</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';
+    const fmt=e=>e?fmtTime(e.secs):'--';
+    const fmtWithDate=e=>e?`<span class="hs-record">${fmtTime(e.secs)}</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';
     document.getElementById('hs-content').innerHTML = HS_DIFFS.map(d=>{
       const data=JSON.parse(localStorage.getItem('ms_hs3_'+d.key)||'{}');
       const todayVal=data.today?.date===today?fmt(data.today):'--';
@@ -889,14 +953,31 @@ body{padding-top:44px!important;}
       btn.classList.add('active');
       const d=btn.dataset.diff;
       document.getElementById('custom-row').classList.toggle('visible',d==='custom');
-      if(d!=='custom'){const cfg=DIFF[d];init(cfg.r,cfg.c,cfg.m,d);}
+      if(d==='custom'){
+        // localStorageから保存済みカスタム設定を読み込み
+        try{
+          const saved=JSON.parse(localStorage.getItem('ms_custom')||'{}');
+          if(saved.r){document.getElementById('c-rows').value=saved.r;}
+          if(saved.c){document.getElementById('c-cols').value=saved.c;}
+          if(saved.m){document.getElementById('c-mines').value=saved.m;}
+        }catch(e){}
+      } else {
+        const cfg=DIFF[d];init(cfg.r,cfg.c,cfg.m,d);
+      }
     });
   });
 
   document.getElementById('c-apply').addEventListener('click',()=>{
-    const r=Math.min(64,Math.max(5,parseInt(document.getElementById('c-rows').value)||9));
-    const c=Math.min(64,Math.max(5,parseInt(document.getElementById('c-cols').value)||9));
-    const m=Math.min(Math.max(1,r*c-9),Math.max(1,parseInt(document.getElementById('c-mines').value)||10));
+    const r=Math.min(20,Math.max(5,parseInt(document.getElementById('c-rows').value)||9));
+    const c=Math.min(20,Math.max(5,parseInt(document.getElementById('c-cols').value)||9));
+    const maxM=Math.floor(r*c*0.8);
+    const m=Math.min(maxM,Math.max(1,parseInt(document.getElementById('c-mines').value)||10));
+    // 入力値を正規化して表示
+    document.getElementById('c-rows').value=r;
+    document.getElementById('c-cols').value=c;
+    document.getElementById('c-mines').value=m;
+    // カスタム設定をlocalStorageに保存
+    try{localStorage.setItem('ms_custom',JSON.stringify({r,c,m}));}catch(e){}
     init(r,c,m,'custom');
   });
 
@@ -972,6 +1053,11 @@ body{padding-top:44px!important;}
     HS_DIFFS.forEach(d=>localStorage.removeItem('ms_hs3_'+d.key));
     refreshHSPanel();
   });
+
+  const howtoModal=document.getElementById('howto-modal');
+  document.getElementById('howto-btn').addEventListener('click',()=>openModal(howtoModal));
+  document.getElementById('howto-close').addEventListener('click',()=>closeModal(howtoModal));
+  howtoModal.addEventListener('click',e=>{if(e.target===howtoModal)closeModal(howtoModal);});
 
   const rulesModal=document.getElementById('rules-modal');
   document.getElementById('rules-btn').addEventListener('click',()=>openModal(rulesModal));
@@ -1078,6 +1164,7 @@ body{padding-top:44px!important;}
     clearInterval(timerID); timerID = null;
     ledT.textContent = fmtTime(secs);
     ledM.textContent = p3(Math.max(0, MINES - flagCount));
+    // Note: fmtTime now returns MM:SS format
     confCvs.style.display = 'none';
     winMsgEl.classList.remove('visible');
     replayBtn.style.display = 'none';
@@ -1110,7 +1197,7 @@ body{padding-top:44px!important;}
     // 終了状態の表示
     if (state === 'won') {
       replayBtn.style.display = 'inline-flex';
-      winMsgEl.textContent = `✨ クリア！ タイム: ${secs}秒 ✨`;
+      winMsgEl.textContent = `✨ クリア！ タイム: ${fmtTime(secs)} ✨`;
       winMsgEl.classList.add('visible');
     } else if (state === 'lost') {
       replayBtn.style.display = 'inline-flex';

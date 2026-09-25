@@ -201,10 +201,18 @@ body {
 .result-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.1); font-size:15px; }
 .result-row:last-child { border-bottom:none; }
 .result-val { font-weight:bold; color:#ffcc00; }
-.result-btns { display:flex; gap:12px; margin-top:8px; }
+.result-btns { display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; justify-content:center; }
 .rbtn { padding:14px 28px; border-radius:30px; font-size:16px; font-weight:bold; cursor:pointer; border:none; }
 .rbtn-retry { background:linear-gradient(135deg,#ff4400,#ffcc00); color:#fff; }
 .rbtn-menu { background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.2); }
+/* Ranking card */
+.rank-card { background:rgba(255,255,255,0.07); border-radius:14px; padding:14px 20px; width:90%; max-width:340px; }
+.rank-entry { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px; }
+.rank-medal { min-width:22px; font-size:15px; }
+/* Next category preview */
+#next-cat-preview { background:rgba(255,204,0,0.12); border:1px solid rgba(255,204,0,0.3); border-radius:10px; padding:8px 16px; font-size:13px; text-align:center; margin-top:4px; }
+/* Input category hint */
+#cat-hint-box { background:rgba(255,204,0,0.1); border:1px solid rgba(255,204,0,0.25); border-radius:8px; padding:6px 12px; font-size:12px; text-align:center; color:#ffdd88; margin-bottom:4px; }
 </style>
 </head>
 <body>
@@ -272,6 +280,7 @@ body {
       <div id="question-num">Q1</div>
       <div id="question-text">問題文</div>
     </div>
+    <div id="cat-hint-box" style="display:none">💡 カテゴリ: <span id="cat-hint-text"></span></div>
     <div id="char-hint" style="display:none;text-align:center;letter-spacing:8px;font-size:20px;color:rgba(255,255,255,0.5);margin:4px 0"></div>
     <div id="options"></div>
     <div id="input-wrap" style="display:none">
@@ -304,6 +313,7 @@ body {
     <div id="clear-cat" style="font-size:14px;opacity:0.7;margin-bottom:4px"></div>
     <div id="clear-correct" style="font-size:22px;font-weight:bold;color:#ffcc00"></div>
   </div>
+  <div id="next-cat-preview" style="display:none">次のカテゴリ: <span id="next-cat-text"></span></div>
   <button class="rbtn rbtn-retry" style="margin-top:8px" onclick="nextRound()">次のカテゴリへ →</button>
 </div>
 
@@ -317,6 +327,10 @@ body {
     <div class="result-row"><span>総ミス数</span><span class="result-val" id="res-wrong">-</span></div>
     <div class="result-row"><span>最高連続正解</span><span class="result-val" id="res-streak">-</span></div>
     <div class="result-row"><span>ランク</span><span class="result-val" id="res-rank">-</span></div>
+  </div>
+  <div class="rank-card">
+    <div style="font-size:13px;color:#ffcc00;font-weight:bold;margin-bottom:8px">🏆 ハイスコアランキング</div>
+    <div id="ranking-list"></div>
   </div>
   <div class="result-btns">
     <button class="rbtn rbtn-retry" onclick="showScreen('mode-screen')">もう一度</button>
@@ -721,6 +735,27 @@ const INPUT_DB = [
   {q:'1+2+3+…+100の合計は？', a:'5050', cat:'数学・計算'},
 ];
 
+// ===== RANKING =====
+const RANK_KEY = 'fb_ranking_v1';
+const RANK_MEDALS = ['🥇','🥈','🥉','4位','5位'];
+function loadRanking() { try { return JSON.parse(localStorage.getItem(RANK_KEY))||[]; } catch(e){ return []; } }
+function saveRanking(correct, wrong, mode) {
+  const r = loadRanking();
+  const score = correct * 100 - wrong * 30;
+  const today = new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+  r.push({score, correct, wrong, mode, date:today});
+  r.sort((a,b)=>b.score-a.score);
+  r.splice(5);
+  localStorage.setItem(RANK_KEY, JSON.stringify(r));
+}
+function buildRankingDisplay() {
+  const r = loadRanking();
+  const list = document.getElementById('ranking-list');
+  if(!list) return;
+  if(r.length===0) { list.innerHTML='<div style="opacity:0.5;font-size:13px">まだ記録なし</div>'; return; }
+  list.innerHTML = r.map((e,i)=>`<div class="rank-entry"><span class="rank-medal">${RANK_MEDALS[i]||''}</span><span style="color:#ff44aa;flex:1">${e.score}pts</span><span style="opacity:0.6">${e.correct}正解/${e.wrong}ミス</span><span style="opacity:0.35;margin-left:6px">${e.date}</span></div>`).join('');
+}
+
 // ===== GAME STATE =====
 const G = {
   round:0, qi:0, wrongs:0, consecutive:0, maxConsecutive:0,
@@ -792,6 +827,7 @@ function showQuestion() {
     optsEl.style.display = 'grid';
     inputWrap.style.display = 'none';
     charHintEl.style.display = 'none';
+    document.getElementById('cat-hint-box').style.display = 'none';
     optsEl.innerHTML = '';
     const shuffled = [...q.opts].sort(() => Math.random() - 0.5);
     shuffled.forEach(opt => {
@@ -808,6 +844,16 @@ function showQuestion() {
     const inputEl = document.getElementById('answer-input');
     inputEl.value = '';
     inputEl.style.borderColor = '';
+
+    // Show category hint FIRST (most prominent)
+    const catHintBox = document.getElementById('cat-hint-box');
+    const catHintText = document.getElementById('cat-hint-text');
+    if(q.cat) {
+      catHintText.textContent = q.cat;
+      catHintBox.style.display = 'block';
+    } else {
+      catHintBox.style.display = 'none';
+    }
 
     // Show character count hint as underscores
     const answerLen = q.a.replace(/[・（）()「」【】\s]/g, '').length;
@@ -974,6 +1020,25 @@ function roundClear() {
   document.getElementById('clear-cat').textContent=G.currentCat.name;
   document.getElementById('clear-correct').textContent=
     G.consecutive >= 5 ? '5連続正解！！' : `${G.totalCorrect}問正解`;
+  // Show next category preview
+  const nextRoundNum = G.round + 1;
+  const prevEl = document.getElementById('next-cat-preview');
+  const nextTxtEl = document.getElementById('next-cat-text');
+  if(nextRoundNum < 5 && G.mode === 'choice') {
+    const available = CATEGORIES.map((_,i)=>i).filter(i=>!G.usedCatIndices.includes(i));
+    if(available.length > 0) {
+      const peek = CATEGORIES[available[Math.floor(Math.random()*available.length)]];
+      nextTxtEl.textContent = peek.name;
+      prevEl.style.display = 'block';
+    } else {
+      prevEl.style.display = 'none';
+    }
+  } else if(nextRoundNum >= 5) {
+    nextTxtEl.textContent = '最終ラウンド！';
+    prevEl.style.display = 'block';
+  } else {
+    prevEl.style.display = 'none';
+  }
   showScreen('clear-screen');
 }
 
@@ -997,6 +1062,8 @@ function showResult() {
   document.getElementById('res-wrong').textContent=`${G.totalWrong}回`;
   document.getElementById('res-streak').textContent=`${G.maxConsecutive}連続`;
   document.getElementById('res-rank').textContent=rank;
+  saveRanking(G.totalCorrect, G.totalWrong, G.mode);
+  buildRankingDisplay();
   showScreen('result-screen');
 }
 

@@ -167,6 +167,18 @@ body{
 }
 .stage-dot.done{background:#ffe870;border-color:#a06008;box-shadow:0 0 6px rgba(255,232,112,0.6);}
 .stage-dot.active{background:#b898ff;border-color:#7060ff;box-shadow:0 0 6px rgba(184,152,255,0.6);}
+/* Difficulty selector */
+.diff-selector{display:flex;gap:6px;justify-content:center;margin:6px 0 12px;}
+.diff-btn{padding:5px 14px;border-radius:12px;font-size:11px;font-weight:bold;cursor:pointer;border:2px solid #5040c0;background:linear-gradient(160deg,#2a1868,#180f40);color:#9080c0;transition:all 0.15s;touch-action:manipulation;}
+.diff-btn:active{transform:scale(0.93);}
+.diff-btn.selected{border-color:#ffe870;color:#ffe870;background:linear-gradient(160deg,#5030a0,#301870);box-shadow:0 0 10px rgba(255,232,112,0.3);}
+/* Ranking entries */
+.hs-section{padding:6px 0;border-bottom:1px solid #302060;}
+.hs-section-title{color:#b898ff;font-size:12px;font-weight:bold;margin-bottom:4px;}
+.hs-entry{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11px;}
+.hs-medal{min-width:18px;text-align:center;}
+/* Judgment window visual */
+.jw-label{position:absolute;font-size:9px;font-weight:bold;white-space:nowrap;}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -208,6 +220,11 @@ body{padding-top:44px!important;}
   <div id="menu-screen">
     <div class="menu-title">リズム天国</div>
     <div class="menu-subtitle">リズムに合わせてタップしよう！</div>
+    <div class="diff-selector">
+      <button class="diff-btn" id="db-easy" onclick="selectDiff('easy')">🟢 かんたん</button>
+      <button class="diff-btn selected" id="db-normal" onclick="selectDiff('normal')">🟡 ふつう</button>
+      <button class="diff-btn" id="db-hard" onclick="selectDiff('hard')">🔴 むずかしい</button>
+    </div>
     <div class="game-cards">
       <div class="game-card" onclick="startGame(0)">
         <span class="game-card-icon">🥁</span>
@@ -349,8 +366,11 @@ body{padding-top:44px!important;}
 <!-- High Score Modal -->
 <div class="modal-overlay" id="hs-modal" onclick="if(event.target===this)closeModal('hs-modal')">
   <div class="modal-box">
-    <div class="modal-title"><span>🏆 ハイスコア</span><button class="modal-close" onclick="closeModal('hs-modal')">✕</button></div>
+    <div class="modal-title"><span>🏆 スコアランキング</span><button class="modal-close" onclick="closeModal('hs-modal')">✕</button></div>
     <div class="modal-body" id="hs-body"></div>
+    <div style="padding:8px 14px;text-align:center">
+      <button class="act-btn" style="font-size:10px;color:#ff6666" onclick="if(confirm('ランキングを全て消しますか？')){localStorage.removeItem('rhythm_scores_v2');buildHSBody();}">🗑 リセット</button>
+    </div>
   </div>
 </div>
 
@@ -475,22 +495,109 @@ function playCue(high=false,when=0){
 }
 
 // ─── Modal helpers ────────────────────────────────────────────────────────────
-function showModal(id){document.getElementById(id).classList.add('visible');}
+function showModal(id){
+  document.getElementById(id).classList.add('visible');
+  if(id==='hs-modal')buildHSBody();
+}
 function closeModal(id){document.getElementById(id).classList.remove('visible');}
 
-// ─── High Score ───────────────────────────────────────────────────────────────
-const HS_KEY='rhythm_hs_v1';
+// ─── Difficulty ───────────────────────────────────────────────────────────────
+let currentDiff='normal';
+const DIFF_WINDOWS={easy:[100,220],normal:[50,130],hard:[28,80]};
+const DIFF_LABELS={easy:'かんたん',normal:'ふつう',hard:'むずかしい'};
+function selectDiff(d){
+  currentDiff=d;
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('selected'));
+  const el=document.getElementById('db-'+d);
+  if(el)el.classList.add('selected');
+}
+
+// ─── Score Ranking ────────────────────────────────────────────────────────────
+const SCORE_KEY='rhythm_scores_v2';
 const GAME_NAMES=['🥁 タンバリン','🐸 カエル','⚔️ サムライ','🏀 ドリブル','🎹 ピアノ','🐤 ひよこ','🎤 歌手'];
-function loadHS(){try{return JSON.parse(localStorage.getItem(HS_KEY))||{};}catch(e){return {};}}
-function saveHS(idx,rank){const hs=loadHS();const order=['パーフェクト！','グレート！','OK！','もう一回！'];const cur=hs[idx];if(!cur||order.indexOf(rank)<order.indexOf(cur))hs[idx]=rank;localStorage.setItem(HS_KEY,JSON.stringify(hs));}
-function updateMenuHS(){const hs=loadHS();for(let i=0;i<7;i++){const el=document.getElementById('hs-'+i);if(el)el.textContent=hs[i]?('Best: '+hs[i]):'-';}}
-function buildHSBody(){const hs=loadHS();let s='';GAME_NAMES.forEach((n,i)=>{s+=`<div style="padding:6px 0;border-bottom:1px solid #302060"><b>${n}</b><br><span style="color:#ffe870">${hs[i]||'未プレイ'}</span></div>`;});document.getElementById('hs-body').innerHTML=s||'まだ記録なし';}
+function loadScores(){try{return JSON.parse(localStorage.getItem(SCORE_KEY))||{};}catch(e){return {};}}
+function saveScore(idx,pts,rank){
+  const s=loadScores();
+  const key=(allStages?'all':idx)+'_'+currentDiff;
+  if(!s[key])s[key]=[];
+  const today=new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+  s[key].push({pts,rank,d:today});
+  s[key].sort((a,b)=>b.pts-a.pts);
+  s[key]=s[key].slice(0,5);
+  localStorage.setItem(SCORE_KEY,JSON.stringify(s));
+}
+function updateMenuHS(){
+  const s=loadScores();
+  for(let i=0;i<7;i++){
+    const el=document.getElementById('hs-'+i);
+    if(!el)continue;
+    const best=['easy','normal','hard'].reduce((max,d)=>{
+      const k=i+'_'+d;
+      if(s[k]&&s[k][0]&&s[k][0].pts>max)return s[k][0].pts;
+      return max;
+    },0);
+    el.textContent=best>0?'Best: '+best+'pts':'-';
+  }
+}
+function buildHSBody(){
+  const s=loadScores();
+  const medals=['🥇','🥈','🥉','4位','5位'];
+  let html='';
+  GAME_NAMES.forEach((n,i)=>{
+    let has=false;
+    ['easy','normal','hard'].forEach(d=>{
+      const key=i+'_'+d;
+      if(s[key]&&s[key].length>0){
+        if(!has){html+=`<div class="hs-section"><div class="hs-section-title">${n}</div>`;has=true;}
+        html+=`<div style="font-size:10px;color:#ffe870;margin:2px 0">${DIFF_LABELS[d]}:</div>`;
+        s[key].forEach((e,j)=>{
+          html+=`<div class="hs-entry"><span class="hs-medal">${medals[j]||''}</span><span style="color:#ff44aa;flex:1">${e.pts}pts</span><span style="color:#44ffaa">${e.rank}</span><span style="opacity:0.4;margin-left:4px">${e.d}</span></div>`;
+        });
+      }
+    });
+    if(has)html+='</div>';
+  });
+  if(!html){
+    // Check all-stages scores
+    ['easy','normal','hard'].forEach(d=>{
+      const key='all_'+d;
+      if(s[key]&&s[key].length>0){
+        if(!html){html='<div class="hs-section"><div class="hs-section-title">🎵 全ステージ</div>';}
+        html+=`<div style="font-size:10px;color:#ffe870;margin:2px 0">${DIFF_LABELS[d]}:</div>`;
+        s[key].forEach((e,j)=>{
+          html+=`<div class="hs-entry"><span class="hs-medal">${medals[j]||''}</span><span style="color:#ff44aa;flex:1">${e.pts}pts</span><span style="color:#44ffaa">${e.rank}</span></div>`;
+        });
+      }
+    });
+    if(html)html+='</div>';
+  }
+  document.getElementById('hs-body').innerHTML=html||'まだ記録なし';
+}
 
 // ─── Judge ────────────────────────────────────────────────────────────────────
 function judge(deltaMs){
-  if(deltaMs<50)return'perfect';
-  if(deltaMs<120)return'good';
+  const [perf,good]=DIFF_WINDOWS[currentDiff]||DIFF_WINDOWS.normal;
+  if(deltaMs<perf)return'perfect';
+  if(deltaMs<good)return'good';
   return'miss';
+}
+// Helper: get judgment window in pixels for a given px/s speed
+function getJudgePx(speedPxPerSec){
+  const [perf,good]=DIFF_WINDOWS[currentDiff]||DIFF_WINDOWS.normal;
+  return{perf:perf/1000*speedPxPerSec,good:good/1000*speedPxPerSec};
+}
+// Draw judgment zones at a given x position on the bottom bar
+function drawJudgeZones(targetX,barY,barH,speedPxPerSec){
+  const{perf,good}=getJudgePx(speedPxPerSec);
+  ctx.save();
+  ctx.globalAlpha=0.22;
+  ctx.fillStyle='#44ffaa';
+  ctx.fillRect(targetX-good,barY,good*2,barH);
+  ctx.globalAlpha=0.4;
+  ctx.fillStyle='#ffe870';
+  ctx.fillRect(targetX-perf,barY,perf*2,barH);
+  ctx.globalAlpha=1;
+  ctx.restore();
 }
 
 // ─── Game State ───────────────────────────────────────────────────────────────
@@ -621,7 +728,7 @@ function onGameEnd(){
   else if(total>0&&(perfects+goods)/total>=0.6){rank='グレート！';emoji='👍';}
   else if(total>0&&(perfects+goods)/total>=0.3){rank='OK！';emoji='😊';}
   else{rank='もう一回！';emoji='💦';}
-  saveHS(currentGame,rank);
+  saveScore(currentGame,score,rank);
   const ALL_GAME_COUNT = 7;
   if(allStages&&stageIdx<ALL_GAME_COUNT-1){
     showBriefEnd(rank,emoji,()=>{
@@ -695,6 +802,7 @@ function showEndScreen(rank,emoji){
   const total=perfects+goods+misses;
   document.getElementById('end-stats').innerHTML=`
     <div class="end-stat-row"><span>ゲーム</span><span>${(GAME_NAMES[currentGame]||GAME_NAMES[0]).split(' ')[0]}</span></div>
+    <div class="end-stat-row"><span>難易度</span><span style="color:#88ccff">${DIFF_LABELS[currentDiff]}</span></div>
     <div class="end-stat-row"><span>スコア</span><span style="color:#ff44aa">${score}</span></div>
     <div class="end-stat-row"><span>✨ パーフェクト</span><span style="color:#ffe870">${perfects}</span></div>
     <div class="end-stat-row"><span>👍 グッド</span><span style="color:#44ffaa">${goods}</span></div>
@@ -1075,11 +1183,18 @@ function drawTambourine(audioNow){
       }
     }
   });
+  // Judgment zones
+  drawJudgeZones(W*0.5,H-30,30,120);
   // Target line
   ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=2;
   ctx.setLineDash([4,4]);
   ctx.beginPath();ctx.moveTo(W*0.5,H-30);ctx.lineTo(W*0.5,H);ctx.stroke();
   ctx.setLineDash([]);
+  // Zone labels
+  const{perf:pfpx,good:gdpx}=getJudgePx(120);
+  ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillStyle='rgba(255,232,112,0.7)';ctx.fillText('PERFECT',W*0.5,H-28);
+  ctx.fillStyle='rgba(68,255,170,0.5)';ctx.fillText('GOOD',W*0.5+gdpx+8,H-28);
 
   // Title
   ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,32);

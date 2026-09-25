@@ -218,6 +218,38 @@ hr.div { border: none; border-top: 1px solid #2a1868; margin: 8px 0; }
 .rankings-table td:last-child { color: #8070c0; }
 .rank-num { color: #ff60c0; font-weight: bold; margin-right: 4px; }
 @keyframes cardDealIn { from { opacity: 0; transform: translateY(-40px) rotate(-5deg); } to { opacity: 1; transform: translateY(0) rotate(0deg); } }
+/* Stats bar */
+.pk-stats-bar {
+  background: rgba(8,4,20,0.85); border: 1px solid #3020a0; border-radius: 8px;
+  padding: 4px 10px; margin: 4px 0; display: flex; justify-content: space-around;
+  align-items: center; font-size: 11px; flex-wrap: wrap; gap: 4px;
+}
+.pk-stats-bar span { color: #9988ff; }
+.pk-stats-bar strong { color: #ffd700; }
+/* Hand badge */
+.hand-badge {
+  display: inline-block; padding: 2px 14px; border-radius: 14px;
+  border: 1px solid rgba(244,208,63,0.35); background: rgba(0,0,0,0.4);
+  font-weight: 900; font-size: 15px;
+}
+.hand-badge.rank-high { border-color: rgba(255,80,0,0.7); color: #ff6020; text-shadow: 0 0 10px rgba(255,96,32,0.5); }
+.hand-badge.rank-med  { border-color: rgba(255,220,0,0.6); color: #ffe040; text-shadow: 0 0 10px rgba(255,200,0,0.4); }
+/* Chip fly animation */
+@keyframes chipFly { from { opacity: 1; } to { opacity: 0; } }
+.chip-fly {
+  position: fixed; pointer-events: none; z-index: 800;
+  font-size: 22px; animation: chipFly 0.7s ease-out forwards;
+  transition: top 0.6s ease-in, left 0.6s ease-in;
+}
+/* Highlight winning cards */
+.card.winner { box-shadow: 0 0 20px rgba(80,255,80,0.8), 0 4px 12px rgba(0,0,0,0.5) !important; border-color: #60ff60 !important; }
+/* Game history */
+.history-bar { background: rgba(8,4,20,0.85); border: 1px solid #2a1868; border-radius: 8px; padding: 4px 8px; margin: 4px 0; display: flex; gap: 4px; align-items: center; overflow-x: auto; flex-wrap: nowrap; min-height: 32px; }
+.history-label { font-size: 9px; color: #5040a0; letter-spacing: 1px; white-space: nowrap; flex-shrink: 0; }
+.hist-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
+.hist-win  { background: rgba(30,100,20,0.5); color: #7bed9f; border: 1px solid #2a6020; }
+.hist-lose { background: rgba(100,20,20,0.5); color: #ff8888; border: 1px solid #6a2020; }
+.hist-push { background: rgba(50,40,100,0.5); color: #b0a0ff; border: 1px solid #4030a0; }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -277,6 +309,18 @@ body{padding-top:44px!important;}
     <div class="hand" id="playerHand"></div>
     <div class="hand-name" id="playerHandName"></div>
     <div class="phase-hint" id="phaseHint"></div>
+
+    <!-- Stats bar -->
+    <div class="pk-stats-bar" id="pk-stats-bar">
+      <span>本日: <strong id="pk-s-games">0</strong>ゲーム</span>
+      <span>勝率: <strong id="pk-s-rate">0%</strong></span>
+      <span>最高役: <strong id="pk-s-best">なし</strong></span>
+    </div>
+    <!-- Game history -->
+    <div class="history-bar" id="history-bar">
+      <span class="history-label">履歴:</span>
+      <span style="font-size:10px;color:#3a2868">ゲームをプレイすると表示されます</span>
+    </div>
 
     <!-- Status row -->
     <div class="status-row">
@@ -509,8 +553,41 @@ function compareHands(ph, ch) {
 function cpuDiscardMask(hand) {
   const ev = evalHand(hand);
 
-  // Keep everything for strong hands
+  // Keep everything for strong hands (straight or better)
   if (ev.rank >= 4) return hand.map(() => false);
+
+  // Check for flush draw (4 cards of same suit)
+  const suitMap = {};
+  hand.forEach((c, i) => { if (!suitMap[c.s]) suitMap[c.s] = []; suitMap[c.s].push(i); });
+  for (const idxArr of Object.values(suitMap)) {
+    if (idxArr.length === 4) {
+      const keep = new Set(idxArr);
+      return hand.map((_, i) => !keep.has(i));
+    }
+  }
+
+  // Check for straight draw (4 consecutive values, no duplicates)
+  const uniqVals = [...new Set(hand.map(c => RV[c.r]))].sort((a, b) => a - b);
+  if (uniqVals.length >= 4) {
+    // Try all windows of 4+ consecutive
+    for (let w = 0; w <= uniqVals.length - 4; w++) {
+      const window = uniqVals.slice(w, w + 4);
+      if (window[3] - window[0] === 3) {
+        const keepVals = new Set(window);
+        // Keep highest-value card from straight draw group; discard the odd one
+        const keepIdx = new Set();
+        hand.forEach((c, i) => { if (keepVals.has(RV[c.r])) keepIdx.add(i); });
+        if (keepIdx.size === 4) return hand.map((_, i) => !keepIdx.has(i));
+      }
+    }
+    // A-low straight draw: A-2-3-4 or 2-3-4-5
+    if (uniqVals.includes(14) && uniqVals.includes(2) && uniqVals.includes(3) && uniqVals.includes(4)) {
+      const keepVals = new Set([14, 2, 3, 4]);
+      const keepIdx = new Set();
+      hand.forEach((c, i) => { if (keepVals.has(RV[c.r])) keepIdx.add(i); });
+      if (keepIdx.size === 4) return hand.map((_, i) => !keepIdx.has(i));
+    }
+  }
 
   // Build frequency map by index
   const freq = {};
@@ -520,20 +597,34 @@ function cpuDiscardMask(hand) {
     freq[v].push(i);
   });
 
-  // One pair, two pair, three of a kind, full house: keep matched cards
+  // One pair, two pair, three of a kind: keep matched cards
   if (ev.rank >= 1) {
     const keepIdx = new Set();
     Object.values(freq).forEach(idxArr => {
       if (idxArr.length >= 2) idxArr.forEach(i => keepIdx.add(i));
     });
-    // For three of a kind: also included via length >= 2 check above (length 3)
     return hand.map((_, i) => !keepIdx.has(i));
   }
 
-  // High card: keep top 2 cards by rank value (conservative discard)
-  const sorted = hand.map((c,i) => ({v: RV[c.r], i})).sort((a,b) => b.v-a.v);
+  // High card: keep top 2 high-value cards
+  const sorted = hand.map((c, i) => ({ v: RV[c.r], i })).sort((a, b) => b.v - a.v);
   const keep = new Set(sorted.slice(0, 2).map(x => x.i));
   return hand.map((_, i) => !keep.has(i));
+}
+
+// CPU bluff: 20% chance to discard fewer cards (appear stronger)
+function cpuDiscardMaskWithBluff(hand) {
+  const mask = cpuDiscardMask(hand);
+  const discardIdxs = mask.map((d, i) => d ? i : -1).filter(i => i >= 0);
+  // Bluff only if discarding 2+ cards and random chance triggers
+  if (discardIdxs.length >= 2 && Math.random() < 0.20) {
+    const newMask = [...mask];
+    // Keep one extra random card (appear to have a stronger hand)
+    const bluffKeep = discardIdxs[Math.floor(Math.random() * discardIdxs.length)];
+    newMask[bluffKeep] = false;
+    return newMask;
+  }
+  return mask;
 }
 
 // ══════════════════════════════════════════════
@@ -639,6 +730,10 @@ function setMsg(html) { document.getElementById('messageArea').innerHTML = html;
 function setPlayerHN(t) { document.getElementById('playerHandName').textContent = t; }
 function setCpuHN(t)    { document.getElementById('cpuHandName').textContent = t; }
 function setHint(t)     { document.getElementById('phaseHint').textContent = t; }
+// Real-time hand update during discard selection
+function refreshPlayerBadge() {
+  if (playerHand.length === 5) setHandBadge('playerHandName', evalHand(playerHand));
+}
 
 function renderPlayerHand(clickable) {
   const el = document.getElementById('playerHand');
@@ -751,7 +846,7 @@ function renderActionBar() {
 function rulesBtn() {
   const b = document.createElement('button');
   b.className = 'btn';
-  b.textContent = '📖 ルール';
+  b.textContent = '📖 役一覧';
   b.onclick = openRules;
   addBtnTouch(b, openRules);
   return b;
@@ -791,7 +886,7 @@ function doDeal() {
   renderPlayerHand(true);
 
   const pe = evalHand(playerHand);
-  setPlayerHN(pe.nameJa);
+  setHandBadge('playerHandName', pe);
   setCpuHN('');
   setMsg(`ベット <span class="led-sm">${currentBet}</span> チップを賭けました。捨てるカードを選んでください。`);
   updateHint();
@@ -800,8 +895,8 @@ function doDeal() {
 }
 
 function doDraw() {
-  // CPU decides
-  const cpuMask = cpuDiscardMask(cpuHand);
+  // CPU decides (with possible bluff)
+  const cpuMask = cpuDiscardMaskWithBluff(cpuHand);
 
   // Player draws
   const toDiscard = [...discardIdx].sort((a,b) => b-a);
@@ -815,7 +910,7 @@ function doDraw() {
   renderCpuHand(true); // still face down while we compute
 
   const pe = evalHand(playerHand);
-  setPlayerHN(pe.nameJa);
+  setHandBadge('playerHandName', pe);
   setHint('');
 
   // Small delay then reveal CPU
@@ -826,7 +921,7 @@ function doDraw() {
   setTimeout(() => {
     renderCpuHand(false);
     const ce = evalHand(cpuHand);
-    setCpuHN(ce.nameJa);
+    setHandBadge('cpuHandName', ce);
 
     const cmp = compareHands(playerHand, cpuHand);
     let msgHtml = '';
@@ -834,14 +929,26 @@ function doDraw() {
     if (cmp > 0) {
       chips += currentBet * 2;
       saveGame();
+      recordPkResult(true, pe);
+      addToHistory('win', pe.nameJa, currentBet);
       msgHtml = `<span class="badge badge-win">🎉 あなたの勝ち！ +${currentBet.toLocaleString()}G</span>`;
       launchConfetti();
+      animateChips(true);
+      // Highlight winning cards
+      setTimeout(() => {
+        document.querySelectorAll('#playerHand .card').forEach(c => c.classList.add('winner'));
+      }, 200);
     } else if (cmp < 0) {
       saveGame();
+      recordPkResult(false, pe);
+      addToHistory('lose', pe.nameJa, -currentBet);
       msgHtml = `<span class="badge badge-lose">😢 CPUの勝ち！ −${currentBet.toLocaleString()}G</span>`;
+      animateChips(false);
     } else {
       chips += currentBet; // push
       saveGame();
+      recordPkResult(false, pe);
+      addToHistory('push', pe.nameJa, 0);
       msgHtml = `<span class="badge badge-push">🤝 引き分け！ ベット返却</span>`;
     }
 
@@ -862,8 +969,8 @@ function doNextRound() {
 
   document.getElementById('playerHand').innerHTML = '';
   document.getElementById('cpuHand').innerHTML = '';
-  setPlayerHN('');
-  setCpuHN('');
+  setHandBadge('playerHandName', null);
+  setHandBadge('cpuHandName', null);
   setHint('');
   setMsg('ベット額を選んでゲームを開始してください');
   updateTopHUD();
@@ -905,15 +1012,15 @@ function pkResume() {
     renderCpuHand(true);
     renderPlayerHand(true);
     const pe = evalHand(playerHand);
-    setPlayerHN(pe.nameJa);
+    setHandBadge('playerHandName', pe);
     setCpuHN('');
     setMsg(`ベット <span class="led-sm">${currentBet}</span> チップを賭けました。捨てるカードを選んでください。`);
     updateHint();
   } else if (phase === 'result') {
     renderCpuHand(false);
     renderPlayerHand(false);
-    if (playerHand.length) setPlayerHN(evalHand(playerHand).nameJa);
-    if (cpuHand.length)    setCpuHN(evalHand(cpuHand).nameJa);
+    if (playerHand.length) setHandBadge('playerHandName', evalHand(playerHand));
+    if (cpuHand.length)    setHandBadge('cpuHandName', evalHand(cpuHand));
     setMsg('ゲームを再開しました。');
   }
   renderActionBar();
@@ -925,11 +1032,135 @@ function pkResumeNo() {
 }
 
 // ══════════════════════════════════════════════
+//  POKER STATISTICS
+// ══════════════════════════════════════════════
+let pkStats = (function(){
+  try {
+    const s = JSON.parse(localStorage.getItem('poker_stats')||'{}');
+    const today = new Date().toDateString();
+    if (s.date !== today) return {date:today, handsPlayed:0, wins:0, bestHandRank:-1, bestHandName:'なし'};
+    return s;
+  } catch(e) { return {date:new Date().toDateString(), handsPlayed:0, wins:0, bestHandRank:-1, bestHandName:'なし'}; }
+})();
+
+function savePkStats() { try { localStorage.setItem('poker_stats', JSON.stringify(pkStats)); } catch(e) {} }
+
+function updatePkStatsDisplay() {
+  const gEl = document.getElementById('pk-s-games');
+  const rEl = document.getElementById('pk-s-rate');
+  const bEl = document.getElementById('pk-s-best');
+  if (!gEl) return;
+  gEl.textContent = pkStats.handsPlayed;
+  rEl.textContent = pkStats.handsPlayed > 0 ? Math.round(pkStats.wins/pkStats.handsPlayed*100) + '%' : '0%';
+  bEl.textContent = pkStats.bestHandName;
+}
+
+// ══════════════════════════════════════════════
+//  GAME HISTORY (last 5 results)
+// ══════════════════════════════════════════════
+let gameHistory = (function() {
+  try { return JSON.parse(localStorage.getItem('poker_history') || '[]'); } catch(e) { return []; }
+})();
+
+function saveHistory() {
+  try { localStorage.setItem('poker_history', JSON.stringify(gameHistory)); } catch(e) {}
+}
+
+function addToHistory(result, handName, delta) {
+  gameHistory.unshift({ result, handName, delta });
+  if (gameHistory.length > 5) gameHistory.pop();
+  saveHistory();
+  renderHistory();
+}
+
+function renderHistory() {
+  const bar = document.getElementById('history-bar');
+  if (!bar) return;
+  if (gameHistory.length === 0) {
+    bar.innerHTML = '<span class="history-label">履歴:</span><span style="font-size:10px;color:#3a2868">ゲームをプレイすると表示されます</span>';
+    return;
+  }
+  bar.innerHTML = '<span class="history-label">履歴:</span>';
+  gameHistory.forEach(h => {
+    const chip = document.createElement('span');
+    const cls = h.result === 'win' ? 'hist-win' : h.result === 'push' ? 'hist-push' : 'hist-lose';
+    const icon = h.result === 'win' ? '↑' : h.result === 'push' ? '＝' : '↓';
+    chip.className = 'hist-chip ' + cls;
+    chip.textContent = icon + ' ' + h.handName + (h.delta > 0 ? ' +' : ' ') + h.delta;
+    bar.appendChild(chip);
+  });
+}
+
+function recordPkResult(won, pe) {
+  pkStats.handsPlayed++;
+  if (won) pkStats.wins++;
+  if (pe.rank > pkStats.bestHandRank) {
+    pkStats.bestHandRank = pe.rank;
+    pkStats.bestHandName = pe.nameJa;
+  }
+  pkStats.date = new Date().toDateString();
+  savePkStats();
+  updatePkStatsDisplay();
+}
+
+// ══════════════════════════════════════════════
+//  HAND BADGE HELPER
+// ══════════════════════════════════════════════
+function handBadgeText(ev) {
+  const emojis = ['🃏','💫','💫💫','🔥','⚡','🌊','💥','👑','✨','🌟'];
+  const classes = [0,0,0,1,1,1,2,2,2,2]; // 0=normal,1=med,2=high
+  return { text: (emojis[ev.rank]||'🃏') + ' ' + ev.nameJa, cls: ['','rank-med','rank-high'][classes[ev.rank]||0] };
+}
+
+function setHandBadge(elId, ev) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!ev) { el.textContent = ''; el.className = 'hand-name'; return; }
+  const { text, cls } = handBadgeText(ev);
+  el.innerHTML = `<span class="hand-badge ${cls}">${text}</span>`;
+}
+
+// ══════════════════════════════════════════════
+//  CHIP ANIMATION
+// ══════════════════════════════════════════════
+function animateChips(won) {
+  const startEl = document.getElementById(won ? 'cpuHand' : 'playerHand');
+  const endEl   = document.getElementById(won ? 'playerHand' : 'cpuHand');
+  if (!startEl || !endEl) return;
+  const sr = startEl.getBoundingClientRect();
+  const er = endEl.getBoundingClientRect();
+  const count = 6;
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const chip = document.createElement('div');
+      chip.className = 'chip-fly';
+      chip.textContent = '🪙';
+      const sx = sr.left + sr.width * Math.random();
+      const sy = sr.top  + sr.height * 0.5;
+      chip.style.left = sx + 'px';
+      chip.style.top  = sy + 'px';
+      document.body.appendChild(chip);
+      requestAnimationFrame(() => {
+        const ex = er.left + er.width * Math.random();
+        const ey = er.top  + er.height * 0.5;
+        chip.style.transition = 'left 0.55s ease-in, top 0.55s ease-in, opacity 0.55s ease-in';
+        chip.style.left = ex + 'px';
+        chip.style.top  = ey + 'px';
+        chip.style.opacity = '0';
+      });
+      setTimeout(() => chip.remove(), 700);
+    }, i * 70);
+  }
+}
+
+// ══════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════
 updateTopHUD();
 setMsg('ベット額を選んでゲームを開始してください');
 renderActionBar();
+updatePkStatsDisplay();
+renderHistory();
 tryLoadSave();
 </script>
 <script id="home-nav-js">

@@ -159,6 +159,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showRules()">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
   <button class="act-btn" onclick="resetScore()">🔄 スコアリセット</button>
+  <button class="act-btn" id="hintBtn" onclick="showHint()">💡 ヒント</button>
   <select class="act-btn" id="diffSelect" onchange="setDifficulty(this.value)">
     <option value="easy">かんたん</option>
     <option value="normal" selected>ふつう</option>
@@ -244,6 +245,9 @@ let hoverCol = -1;
 let pulsePhase = 0;
 let pulseTimer = null;
 let dropAnim = null; // { col, row, color, progress, targetRow }
+let hintCol = -1;        // column highlighted by hint button
+let hintTimer = null;
+let threatCols = [];     // { col, color } — columns that are 1-move wins
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -272,6 +276,41 @@ function drawBoard() {
   ctx.fillStyle = '#080418';
   ctx.fillRect(0, 0, w, top);
 
+  // ===== THREAT COLUMN HIGHLIGHTS =====
+  threatCols.forEach(({ col, color }) => {
+    const threatColor = color === CPU
+      ? 'rgba(255,200,0,0.14)'   // CPU threat = orange-yellow warning
+      : 'rgba(50,220,100,0.14)'; // Player threat = green (you can win here!)
+    ctx.fillStyle = threatColor;
+    ctx.fillRect(col * cs, top, cs, ROWS * cs);
+    // Pulsing border on top of threatening columns
+    const tPulse = 0.5 + 0.5 * Math.sin(pulsePhase * 1.4);
+    ctx.strokeStyle = color === CPU
+      ? `rgba(255,200,30,${0.5 + tPulse * 0.4})`
+      : `rgba(80,255,120,${0.5 + tPulse * 0.4})`;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(col * cs + 1, top + 1, cs - 2, ROWS * cs - 2);
+  });
+
+  // ===== HINT COLUMN HIGHLIGHT =====
+  if (hintCol >= 0 && !gameOver) {
+    const hPulse = 0.5 + 0.5 * Math.sin(pulsePhase * 2);
+    ctx.fillStyle = `rgba(255,224,50,${0.16 + hPulse * 0.14})`;
+    ctx.fillRect(hintCol * cs, top, cs, ROWS * cs);
+    // Arrow indicator at top
+    ctx.fillStyle = `rgba(255,224,50,${0.7 + hPulse * 0.3})`;
+    ctx.shadowColor = '#ffe040';
+    ctx.shadowBlur = 8 + hPulse * 8;
+    const ax = hintCol * cs + cs / 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, top - 4);
+    ctx.lineTo(ax - cs * 0.22, top - cs * 0.35);
+    ctx.lineTo(ax + cs * 0.22, top - cs * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
   // Drop preview in hover column
   if (!gameOver && !cpuThinking && hoverCol >= 0 && currentTurn === PLAYER) {
     const px = hoverCol * cs + cs / 2;
@@ -281,7 +320,7 @@ function drawBoard() {
     ctx.globalAlpha = 1;
 
     // Column highlight (red-tinted)
-    ctx.fillStyle = 'rgba(255,30,50,0.12)';
+    ctx.fillStyle = 'rgba(255,30,50,0.10)';
     ctx.fillRect(hoverCol * cs, top, cs, ROWS * cs);
   }
 
@@ -621,6 +660,60 @@ function cpuBestMove(board) {
   return bestCol;
 }
 
+// ===== THREAT DETECTION =====
+function updateThreats() {
+  threatCols = [];
+  if (gameOver) return;
+  const seen = new Set();
+  for (let col = 0; col < COLS; col++) {
+    const row = getDropRow(board, col);
+    if (row < 0) continue;
+    // Check if CPU wins here
+    const nb1 = board.map(r => [...r]);
+    nb1[row][col] = CPU;
+    if (checkWin(nb1)) { if (!seen.has('cpu'+col)) { threatCols.push({ col, color: CPU }); seen.add('cpu'+col); } continue; }
+    // Check if player wins here
+    const nb2 = board.map(r => [...r]);
+    nb2[row][col] = PLAYER;
+    if (checkWin(nb2)) { if (!seen.has('pl'+col)) { threatCols.push({ col, color: PLAYER }); seen.add('pl'+col); } }
+  }
+  if (threatCols.length > 0) startThreatLoop();
+}
+
+// ===== HINT =====
+function showHint() {
+  if (gameOver || cpuThinking || currentTurn !== PLAYER || dropAnim) return;
+  // Player-perspective hint: check immediate win first, then use CPU mirror logic
+  const valid = [];
+  for (let c = 0; c < COLS; c++) if (getDropRow(board, c) >= 0) valid.push(c);
+  if (valid.length === 0) return;
+  // 1. Winning move?
+  let picked = -1;
+  for (const c of valid) {
+    const row = getDropRow(board, c);
+    const nb = board.map(r => [...r]);
+    nb[row][c] = PLAYER;
+    if (checkWin(nb)) { picked = c; break; }
+  }
+  // 2. Block CPU win
+  if (picked < 0) {
+    for (const c of valid) {
+      const row = getDropRow(board, c);
+      const nb = board.map(r => [...r]);
+      nb[row][c] = CPU;
+      if (checkWin(nb)) { picked = c; break; }
+    }
+  }
+  // 3. Fallback: use same minimax logic as CPU
+  if (picked < 0) picked = cpuBestMove(board);
+  if (picked < 0) picked = valid[Math.floor(valid.length / 2)];
+  hintCol = picked;
+  if (hintTimer) clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { hintCol = -1; drawBoard(); }, 3000);
+  startThreatLoop();
+  drawBoard();
+}
+
 // ===== DROP ANIMATION =====
 function animateDrop(col, targetRow, color, callback) {
   const totalSteps = 12;
@@ -651,6 +744,20 @@ function startWinPulse() {
   }, 33);
 }
 
+// Threat / hint animation loop (runs when threats or hint are active, game not over)
+let _threatLoopRunning = false;
+function startThreatLoop() {
+  if (_threatLoopRunning) return;
+  _threatLoopRunning = true;
+  function loop() {
+    if (gameOver || (threatCols.length === 0 && hintCol < 0)) { _threatLoopRunning = false; return; }
+    pulsePhase += 0.08;
+    drawBoard();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
 // ===== GAME FLOW =====
 function initBoard() {
   board = Array.from({length: ROWS}, () => new Array(COLS).fill(EMPTY));
@@ -660,6 +767,9 @@ function initBoard() {
   cpuThinking = false;
   hoverCol = -1;
   dropAnim = null;
+  hintCol = -1;
+  if (hintTimer) clearTimeout(hintTimer);
+  threatCols = [];
   if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
   moveHistory = [];
   updateStatus();
@@ -689,6 +799,7 @@ function handleColumnDrop(col) {
   board[row][col] = PLAYER;
   cpuThinking = true;
 
+  hintCol = -1; // clear hint on move
   animateDrop(col, row, PLAYER, () => {
     const win = checkWin(board);
     if (win) {
@@ -696,6 +807,7 @@ function handleColumnDrop(col) {
       gameOver = true;
       playerWinsTotal++;
       cpuThinking = false;
+      threatCols = [];
       updateStatus();
       startWinPulse();
       startConfetti();
@@ -706,6 +818,7 @@ function handleColumnDrop(col) {
     if (isBoardFull(board)) {
       gameOver = true;
       cpuThinking = false;
+      threatCols = [];
       updateStatus(); drawBoard();
       showResult('🤝 引き分け', 'ボードが埋まりました', '#c0b0e8');
       return;
@@ -727,6 +840,7 @@ function handleColumnDrop(col) {
           gameOver = true;
           cpuWinsTotal++;
           cpuThinking = false;
+          threatCols = [];
           updateStatus();
           startWinPulse();
           setTimeout(() => showResult('💀 CPUの勝ち', 'またチャレンジしてね！', '#c0b0e8'), 400);
@@ -736,11 +850,13 @@ function handleColumnDrop(col) {
         if (isBoardFull(board)) {
           gameOver = true;
           cpuThinking = false;
+          threatCols = [];
           updateStatus(); drawBoard();
           showResult('🤝 引き分け', 'ボードが埋まりました', '#c0b0e8');
           return;
         }
 
+        updateThreats();
         currentTurn = PLAYER;
         cpuThinking = false;
         updateStatus(); drawBoard();

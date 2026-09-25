@@ -103,6 +103,14 @@ body {
 }
 
 #msg-flash { height:32px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; color:#ffe870; text-shadow:0 0 12px #ffcc00; letter-spacing:2px; }
+
+/* Level navigation */
+.level-nav { display:flex; align-items:center; justify-content:center; gap:12px; padding:4px 8px; }
+.lnav-btn { background:linear-gradient(160deg,rgba(244,208,63,0.18),rgba(180,140,0,0.12)); color:#f4d03f; border:1px solid rgba(244,208,63,0.4); border-radius:10px; padding:5px 16px; font-size:15px; cursor:pointer; touch-action:manipulation; font-weight:bold; }
+.lnav-btn:disabled { opacity:0.3; cursor:default; }
+.lnav-btn:active { transform:scale(0.92); }
+.level-label { color:#f4d03f; font-size:13px; font-weight:bold; min-width:110px; text-align:center; }
+.cell.hint-flash { background:linear-gradient(145deg,#ffff88,#ffee00) !important; border-color:#ffff00 !important; box-shadow:0 0 24px #ffff00,0 0 48px rgba(255,255,0,0.6) !important; }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -219,13 +227,27 @@ body {
 
   <div class="status-panel">
     <div class="led-group">
+      <span class="led" id="led-level" style="color:#44ddff;text-shadow:0 0 10px #44ddff;font-size:14px">1</span>
+      <span class="led-label">レベル</span>
+    </div>
+    <div class="led-group">
       <span class="led" id="led-moves">0</span>
       <span class="led-label">手数</span>
+    </div>
+    <div class="led-group">
+      <span class="led" id="led-opt" style="color:#aaffaa;text-shadow:0 0 10px #aaffaa;font-size:14px">?</span>
+      <span class="led-label">最適</span>
     </div>
     <div class="led-group">
       <span class="led" id="led-best">—</span>
       <span class="led-label">ベスト</span>
     </div>
+  </div>
+
+  <div class="level-nav">
+    <button class="lnav-btn" id="btn-prev-level" onclick="prevLevel()" disabled>◀</button>
+    <span class="level-label" id="level-label">レベル 1 / 30</span>
+    <button class="lnav-btn" id="btn-next-level" onclick="nextLevel()">▶</button>
   </div>
 
   <div id="msg-flash"></div>
@@ -239,8 +261,8 @@ body {
 
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
-  <button class="act-btn" onclick="newPuzzle()">🔄 新しいパズル</button>
-  <button class="act-btn active-diff" id="diff-btn" onclick="cycleDiff()">難易度: ふつう</button>
+  <button class="act-btn" onclick="restartLevel()">🔄 リスタート</button>
+  <button class="act-btn" id="hintBtn" onclick="showHint()">💡 ヒント</button>
   <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
   <button class="act-btn" onclick="manualSave()">💾 保存</button>
@@ -254,10 +276,12 @@ body {
       • 5×5 のライトグリッドがある<br>
       • ライトをクリック/タップすると、そのライトと上下左右のライトが切り替わる<br>
       • 全ライトを消灯させればクリア！<br><br>
-      <b>難易度</b><br>
-      かんたん: 少ないスイッチ回数<br>
-      ふつう: 標準的な難しさ<br>
-      むずかしい: 多くのスイッチが必要<br><br>
+      <b>レベル制（全30ステージ）</b><br>
+      • ◀ ▶ で前後のレベルに移動できる<br>
+      • 「最適」は最少手数。それ以下で解くと ⭐⭐⭐<br>
+      • 最適+2以内なら ⭐⭐、それ以上は ⭐<br><br>
+      <b>ヒント</b><br>
+      • 「💡 ヒント」で次に押すべきマスが黄色く光る<br><br>
       💾 保存ボタンで進行状況を保存できます。次回起動時に続きから再開できます。
     </div>
   </div>
@@ -284,47 +308,163 @@ function showModal(id){if(id==='modal-hi')updateHiModal();document.getElementByI
 function hideModal(id){document.getElementById(id).classList.remove('visible');}
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');}));
 
-// ── Game ──
+// ── Level Generation ──
 const N=5;
-let grid=Array(N*N).fill(0);
+
+function makeLevelFromSolution(solCells){
+  const g=Array(25).fill(0);
+  solCells.forEach(idx=>{
+    g[idx]^=1;
+    const r=Math.floor(idx/5),c=idx%5;
+    if(r>0)g[idx-5]^=1;
+    if(r<4)g[idx+5]^=1;
+    if(c>0)g[idx-1]^=1;
+    if(c<4)g[idx+1]^=1;
+  });
+  return g;
+}
+
+// Each entry = cells to press from all-off state; pressing same cells solves the puzzle
+const LEVEL_DEFS=[
+  [12],                                                          // L1  easy
+  [0,24],                                                        // L2
+  [2,12,22],                                                     // L3
+  [10,12,14],                                                    // L4
+  [0,4,20,24],                                                   // L5
+  [1,3,21,23],                                                   // L6  medium
+  [6,8,16,18],                                                   // L7
+  [2,10,14,22],                                                  // L8
+  [0,2,4,20,22,24],                                             // L9
+  [5,9,15,19],                                                   // L10
+  [1,5,9,15,19,23],                                             // L11
+  [3,6,8,16,18,21],                                             // L12
+  [0,6,12,18,24],                                               // L13
+  [4,8,12,16,20],                                               // L14
+  [0,4,6,8,16,18,20,24],                                        // L15
+  [0,1,2,3,4],                                                  // L16 hard
+  [0,2,4,22,24],                                                // L17
+  [0,1,3,4,20,21,23,24],                                        // L18
+  [6,7,8,11,13,16,17,18],                                       // L19
+  [0,4,6,8,12,16,18,20,24],                                     // L20
+  [1,2,3,5,9,15,19,21,22,23],                                   // L21
+  [0,1,2,5,10,14,19,22,23,24],                                  // L22
+  [2,6,7,8,11,13,16,17,18,22],                                  // L23
+  [0,3,5,8,9,15,16,19,21,24],                                   // L24
+  [1,3,6,8,12,13,16,18,21,23],                                  // L25
+  [0,1,4,5,9,10,14,15,19,20,24],                                // L26
+  [0,2,4,6,8,10,12,14,16,18,20,22,24],                         // L27
+  [1,2,3,6,7,8,11,12,13,16,17,18,21,22,23],                    // L28
+  [0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24],                  // L29
+  [0,1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24] // L30
+];
+
+const LEVELS=LEVEL_DEFS.map(makeLevelFromSolution);
+
+// ── GF(2) Lights Out Solver (finds minimum-press solution) ──
+function solveLightsOut(gridState){
+  const SZ=25;
+  const mat=[];
+  for(let i=0;i<SZ;i++){
+    const row=Array(SZ+1).fill(0);
+    for(let j=0;j<SZ;j++){
+      const rj=Math.floor(j/5),cj=j%5,ri=Math.floor(i/5),ci=i%5;
+      if(j===i||(rj===ri&&Math.abs(cj-ci)===1)||(cj===ci&&Math.abs(rj-ri)===1))row[j]=1;
+    }
+    row[SZ]=gridState[i];
+    mat.push(row);
+  }
+  // Gaussian elimination → reduced row echelon form over GF(2)
+  const pivotCols=[];
+  let pr=0;
+  for(let col=0;col<SZ&&pr<SZ;col++){
+    let found=-1;
+    for(let row=pr;row<SZ;row++){if(mat[row][col]===1){found=row;break;}}
+    if(found===-1)continue;
+    [mat[pr],mat[found]]=[mat[found],mat[pr]];
+    pivotCols.push({col,row:pr});
+    for(let row=0;row<SZ;row++){
+      if(row!==pr&&mat[row][col]===1){for(let c2=0;c2<=SZ;c2++)mat[row][c2]^=mat[pr][c2];}
+    }
+    pr++;
+  }
+  const rank=pivotCols.length;
+  const pivColSet=new Set(pivotCols.map(p=>p.col));
+  const freeCols=[];
+  for(let j=0;j<SZ;j++)if(!pivColSet.has(j))freeCols.push(j);
+  for(let row=rank;row<SZ;row++){if(mat[row][SZ]===1)return null;} // unsolvable
+  const numFree=freeCols.length;
+  let bestX=null,bestCnt=Infinity;
+  // Try all 2^numFree combinations of free variables
+  for(let mask=0;mask<(1<<numFree);mask++){
+    const x=Array(SZ).fill(0);
+    for(let i=0;i<numFree;i++)x[freeCols[i]]=(mask>>i)&1;
+    pivotCols.forEach(({col,row:r})=>{
+      let val=mat[r][SZ];
+      for(const fc of freeCols)if(mat[r][fc])val^=x[fc];
+      x[col]=val;
+    });
+    const cnt=x.reduce((s,v)=>s+v,0);
+    if(cnt<bestCnt){bestCnt=cnt;bestX=[...x];}
+  }
+  return bestX;
+}
+
+// Pre-compute optimal move counts for all 30 levels
+const LEVEL_OPTS=LEVELS.map(g=>{
+  const sol=solveLightsOut(g);
+  return sol?sol.reduce((s,v)=>s+v,0):0;
+});
+
+// ── Game State ──
+let grid=Array(25).fill(0);
 let moves=0;
 let gameOver=false;
 let moveHistory=[];
-let difficulty='normal'; // easy, normal, hard
-const diffConfig={easy:{toggles:10,label:'かんたん'},normal:{toggles:15,label:'ふつう'},hard:{toggles:22,label:'むずかしい'}};
-const diffOrder=['easy','normal','hard'];
+let currentLevel=1;
+let optimalMoves=0;
+let levelBests={};
+let currentSolution=null;
 
-function cycleDiff(){
-  const i=diffOrder.indexOf(difficulty);
-  difficulty=diffOrder[(i+1)%3];
-  document.getElementById('diff-btn').textContent='難易度: '+diffConfig[difficulty].label;
-  newPuzzle();
+function loadLevelBests(){
+  try{const raw=localStorage.getItem('lo_level_bests');if(raw)levelBests=JSON.parse(raw)||{};}catch(e){}
 }
 
-function toggleCell(idx){
-  grid[idx]^=1;
-  const r=Math.floor(idx/N), c=idx%N;
-  if(r>0) grid[idx-N]^=1;
-  if(r<N-1) grid[idx+N]^=1;
-  if(c>0) grid[idx-1]^=1;
-  if(c<N-1) grid[idx+1]^=1;
+function saveLevelBest(){
+  const prev=levelBests[currentLevel]!==undefined?levelBests[currentLevel]:Infinity;
+  if(moves<prev){levelBests[currentLevel]=moves;localStorage.setItem('lo_level_bests',JSON.stringify(levelBests));}
 }
 
-function generatePuzzle(){
-  grid=Array(N*N).fill(0);
-  const toggles=diffConfig[difficulty].toggles;
-  for(let t=0;t<toggles;t++){
-    const idx=Math.floor(Math.random()*N*N);
-    toggleCell(idx);
-  }
-  // Ensure it's not already solved
-  if(grid.every(x=>x===0)) generatePuzzle();
+function loadLevel(lvl){
+  currentLevel=Math.max(1,Math.min(30,lvl));
+  grid=[...LEVELS[currentLevel-1]];
+  moves=0;gameOver=false;moveHistory=[];
+  optimalMoves=LEVEL_OPTS[currentLevel-1];
+  currentSolution=solveLightsOut(grid);
+  flash('');
+  renderGrid();
+  updateStatusUI();
+  updateUndoBtn();
+  document.getElementById('home-btn').style.display='block';
+  autoSave();
+}
+
+function updateStatusUI(){
+  document.getElementById('led-level').textContent=currentLevel;
+  document.getElementById('led-moves').textContent=moves;
+  document.getElementById('led-opt').textContent=optimalMoves||'?';
+  const best=levelBests[currentLevel];
+  document.getElementById('led-best').textContent=best!==undefined?best:'—';
+  document.getElementById('level-label').textContent='レベル '+currentLevel+' / 30';
+  const pb=document.getElementById('btn-prev-level');
+  const nb=document.getElementById('btn-next-level');
+  if(pb)pb.disabled=currentLevel<=1;
+  if(nb)nb.disabled=currentLevel>=30;
 }
 
 function renderGrid(){
   const container=document.getElementById('grid');
   container.innerHTML='';
-  for(let i=0;i<N*N;i++){
+  for(let i=0;i<25;i++){
     const cell=document.createElement('div');
     cell.className='cell '+(grid[i]?'on':'off');
     cell.dataset.idx=i;
@@ -339,18 +479,26 @@ function renderGrid(){
 
 function updateGrid(){
   const cells=document.querySelectorAll('.cell');
-  cells.forEach((cell,i)=>{
-    cell.className='cell '+(grid[i]?'on':'off');
-  });
+  cells.forEach((cell,i)=>{cell.className='cell '+(grid[i]?'on':'off');});
+}
+
+function toggleCell(idx){
+  grid[idx]^=1;
+  const r=Math.floor(idx/5),c=idx%5;
+  if(r>0)grid[idx-5]^=1;
+  if(r<4)grid[idx+5]^=1;
+  if(c>0)grid[idx-1]^=1;
+  if(c<4)grid[idx+1]^=1;
 }
 
 function handleClick(idx){
-  if(gameOver) return;
+  if(gameOver)return;
   moveHistory.push([...grid]);
-  if(moveHistory.length>10) moveHistory.shift();
+  if(moveHistory.length>10)moveHistory.shift();
   toggleCell(idx);
   moves++;
-  document.getElementById('led-moves').textContent=moves;
+  currentSolution=solveLightsOut(grid);
+  updateStatusUI();
   updateGrid();
   autoSave();
   updateUndoBtn();
@@ -360,130 +508,125 @@ function handleClick(idx){
 function checkWin(){
   if(grid.every(x=>x===0)){
     gameOver=true;
+    saveLevelBest();
     winAnimation();
   }
 }
 
+// Ripple outward from center in Manhattan-distance rings
+const RIPPLE_ORDER=[12,7,11,13,17,2,6,8,10,14,16,18,22,1,3,5,9,15,19,21,23,0,4,20,24];
+
 function winAnimation(){
   const cells=document.querySelectorAll('.cell');
+  const stars=moves<=optimalMoves?'⭐⭐⭐':moves<=optimalMoves+2?'⭐⭐':'⭐';
   let i=0;
-  function nextFlash(){
-    if(i>=N*N){
+  function nextRipple(){
+    if(i>=RIPPLE_ORDER.length){
       setTimeout(()=>{
-        cells.forEach(c=>c.classList.remove('flash-win'));
-        flash('🎉 クリア！'+moves+'手', '#ffe870');
+        cells.forEach(c=>c.classList.remove('flash-win','on'));
+        flash('🎉 クリア！ '+moves+'手 '+stars,'#ffe870');
         startConfetti();
-        saveBest();
-        updateBestLED();
-      },200);
+        updateStatusUI();
+      },400);
       return;
     }
-    cells[i].classList.add('flash-win');
-    cells[i].classList.add('on');
+    const idx=RIPPLE_ORDER[i];
+    cells[idx].classList.add('flash-win','on');
     i++;
-    setTimeout(nextFlash, 60);
+    setTimeout(nextRipple,55);
   }
-  nextFlash();
+  nextRipple();
 }
 
-function saveBest(){
-  const k='lo_best_'+difficulty;
-  const prev=parseInt(localStorage.getItem(k)||'9999');
-  if(moves<prev) localStorage.setItem(k,moves);
+function restartLevel(){loadLevel(currentLevel);}
+function prevLevel(){if(currentLevel>1)loadLevel(currentLevel-1);}
+function nextLevel(){if(currentLevel<30)loadLevel(currentLevel+1);}
+
+function showHint(){
+  if(gameOver)return;
+  const sol=currentSolution||solveLightsOut(grid);
+  if(!sol)return;
+  const hintIdx=sol.indexOf(1);
+  if(hintIdx===-1)return;
+  const cells=document.querySelectorAll('.cell');
+  cells[hintIdx].classList.add('hint-flash');
+  setTimeout(()=>cells[hintIdx].classList.remove('hint-flash'),1000);
 }
 
-function updateBestLED(){
-  const k='lo_best_'+difficulty;
-  const best=localStorage.getItem(k);
-  document.getElementById('led-best').textContent=best||'—';
-}
-
-function flash(msg, color='#ffe870'){
+function flash(msg,color='#ffe870'){
   const el=document.getElementById('msg-flash');
-  el.textContent=msg; el.style.color=color;
-}
-
-function newPuzzle(){
-  gameOver=false; moves=0; moveHistory=[];
-  document.getElementById('led-moves').textContent=0;
-  flash('');
-  generatePuzzle();
-  renderGrid();
-  updateBestLED();
-  updateUndoBtn();
-  document.getElementById('home-btn').style.display = 'block';
-}
-
-function updateHiModal(){
-  let html='<table style="width:100%;border-collapse:collapse;">';
-  html+='<tr><th style="text-align:left;padding:4px;color:#a898d8;">難易度</th><th style="color:#a898d8;padding:4px;">ベスト手数</th></tr>';
-  diffOrder.forEach(d=>{
-    const k='lo_best_'+d;
-    const best=localStorage.getItem(k)||'—';
-    html+=`<tr><td style="padding:4px;color:#c0b0e8;">${diffConfig[d].label}</td><td style="padding:4px;text-align:center;color:#ffe870;font-size:16px;">${best}</td></tr>`;
-  });
-  html+='</table>';
-  document.getElementById('hi-body').innerHTML=html;
+  el.textContent=msg;el.style.color=color;
 }
 
 // ── Undo ──
 function updateUndoBtn(){
   const btn=document.getElementById('undoBtn');
-  if(!btn) return;
+  if(!btn)return;
   const disabled=moveHistory.length===0||gameOver;
-  btn.disabled=disabled;
-  btn.style.opacity=disabled?'0.4':'';
+  btn.disabled=disabled;btn.style.opacity=disabled?'0.4':'';
 }
 
 function undoMove(){
-  if(moveHistory.length===0||gameOver) return;
+  if(moveHistory.length===0||gameOver)return;
   grid=moveHistory.pop();
   moves=Math.max(0,moves-1);
-  document.getElementById('led-moves').textContent=moves;
-  updateGrid();
-  updateUndoBtn();
+  currentSolution=solveLightsOut(grid);
+  updateStatusUI();updateGrid();updateUndoBtn();
 }
 
 // ── Toast ──
 function showToast(msg){let t=document.getElementById('save-toast');if(!t){t=document.createElement('div');t.id='save-toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(50,200,100,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',1500);}
 function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
-function saveGame(){ autoSave(); }
+function saveGame(){autoSave();}
 
 // ── Save / Load ──
 function autoSave(){
-  if(gameOver) return;
-  const data={grid:[...grid],moves,difficulty,ts:Date.now()};
+  if(gameOver)return;
+  const data={grid:[...grid],moves,currentLevel,ts:Date.now()};
   localStorage.setItem('lightsout_save',JSON.stringify(data));
 }
 function manualSave(){autoSave();showToast('💾 保存しました！');}
+
 function tryLoadSave(){
   try{
     const raw=localStorage.getItem('lightsout_save');
-    if(!raw) return false;
+    if(!raw)return false;
     const data=JSON.parse(raw);
-    if(!data||!data.ts) return false;
-    if(Date.now()-data.ts>7*24*60*60*1000) return false;
+    if(!data||!data.ts)return false;
+    if(Date.now()-data.ts>7*24*60*60*1000)return false;
     grid=data.grid;
     moves=data.moves;
-    difficulty=data.difficulty||'normal';
-    document.getElementById('diff-btn').textContent='難易度: '+diffConfig[difficulty].label;
-    document.getElementById('led-moves').textContent=moves;
-    gameOver=false;
-    moveHistory=[];
-    renderGrid();
-    updateBestLED();
-    updateUndoBtn();
+    currentLevel=data.currentLevel||1;
+    gameOver=false;moveHistory=[];
+    optimalMoves=LEVEL_OPTS[currentLevel-1];
+    currentSolution=solveLightsOut(grid);
+    renderGrid();updateStatusUI();updateUndoBtn();
     return true;
   }catch(e){return false;}
 }
 
-if(!tryLoadSave()) newPuzzle();
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
-window.addEventListener('beforeunload', ()=>{ saveGame(); });
-function goHome() {
-  if (!confirm('ホーム画面に戻りますか？')) return;
-  document.getElementById('home-btn').style.display = 'none';
-  location.href = 'index.html';
+function updateHiModal(){
+  let html='<div style="max-height:55vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;">';
+  html+='<tr><th style="text-align:left;padding:4px;color:#a898d8;">レベル</th><th style="color:#a898d8;padding:4px;">ベスト</th><th style="color:#a898d8;padding:4px;">最適</th><th style="color:#a898d8;padding:4px;">評価</th></tr>';
+  for(let lvl=1;lvl<=30;lvl++){
+    const best=levelBests[lvl];
+    const opt=LEVEL_OPTS[lvl-1];
+    const stars=best!==undefined?(best<=opt?'⭐⭐⭐':best<=opt+2?'⭐⭐':'⭐'):'';
+    html+=`<tr><td style="padding:2px 4px;color:#c0b0e8;">Lv.${lvl}</td><td style="padding:2px 4px;text-align:center;color:#ffe870;">${best!==undefined?best:'—'}</td><td style="padding:2px 4px;text-align:center;color:#a0d0a0;">${opt}</td><td style="padding:2px 4px;text-align:center;">${stars}</td></tr>`;
+  }
+  html+='</table></div>';
+  document.getElementById('hi-body').innerHTML=html;
+}
+
+loadLevelBests();
+if(!tryLoadSave())loadLevel(1);
+
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
+window.addEventListener('beforeunload',()=>{saveGame();});
+function goHome(){
+  if(!confirm('ホーム画面に戻りますか？'))return;
+  document.getElementById('home-btn').style.display='none';
+  location.href='index.html';
 }
 </script>
 <script id="home-nav-js">

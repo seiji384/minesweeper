@@ -148,6 +148,8 @@ canvas{display:block;}
     style="position:fixed;right:16px;bottom:170px;width:56px;height:40px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">SG</div>
   <div id="btn-w3" class="mob-btn draggable-btn" data-id="w3"
     style="position:fixed;right:16px;bottom:120px;width:56px;height:40px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">SN</div>
+  <div id="btn-w4" class="mob-btn draggable-btn" data-id="w4"
+    style="position:fixed;right:16px;bottom:70px;width:56px;height:40px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:500;touch-action:none;font-weight:bold">SMG</div>
 
   <!-- Reload button -->
   <div id="btn-reload" class="mob-btn draggable-btn" data-id="reload"
@@ -176,6 +178,14 @@ canvas{display:block;}
     <span class="ctrl-item"><span class="ctrl-key">R</span> リロード</span>
     <span class="ctrl-item"><span class="ctrl-key">1/2/3</span> 武器切替</span>
     <span class="ctrl-item"><span class="ctrl-key">F</span> ADS照準</span>
+  </div>
+  <div style="margin-top:12px;font-size:10px;color:#444;letter-spacing:1px;text-align:left;max-width:280px">
+    <span style="color:#888">敵の種類:</span>
+    <span style="color:#aaa;margin-left:6px">グラント</span>
+    <span style="color:#44ccff;margin-left:6px">スカウト×2</span>
+    <span style="color:#ff8833;margin-left:6px">ヘビー×2</span>
+    <span style="color:#cc44ff;margin-left:6px">エリート×1</span>
+    <span style="color:#ff0000;margin-left:6px">ボス★</span>
   </div>
   <button class="btn" id="start-btn">▶ START MISSION</button>
 </div>
@@ -213,19 +223,20 @@ const SFX = {
     // Low thump oscillator
     const o1=ctx.createOscillator(), g1=ctx.createGain();
     o1.type='sawtooth';
-    o1.frequency.setValueAtTime(type==='shotgun'?90:type==='sniper'?250:160, t);
-    o1.frequency.exponentialRampToValueAtTime(30, t+0.2);
-    g1.gain.setValueAtTime(type==='shotgun'?1.0:type==='sniper'?0.7:0.55, t);
-    g1.gain.exponentialRampToValueAtTime(0.001, t+0.2);
-    o1.connect(g1); g1.connect(ctx.destination); o1.start(t); o1.stop(t+0.22);
+    const isSMG=type==='smg';
+    o1.frequency.setValueAtTime(type==='shotgun'?90:type==='sniper'?250:isSMG?180:160, t);
+    o1.frequency.exponentialRampToValueAtTime(30, t+(isSMG?0.08:0.2));
+    g1.gain.setValueAtTime(type==='shotgun'?1.0:type==='sniper'?0.7:isSMG?0.38:0.55, t);
+    g1.gain.exponentialRampToValueAtTime(0.001, t+(isSMG?0.08:0.2));
+    o1.connect(g1); g1.connect(ctx.destination); o1.start(t); o1.stop(t+(isSMG?0.1:0.22));
     // Noise crack
-    const rate=ctx.sampleRate, dur=0.06;
+    const rate=ctx.sampleRate, dur=isSMG?0.04:0.06;
     const buf=ctx.createBuffer(1,rate*dur,rate);
     const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
     const ns=ctx.createBufferSource(), g2=ctx.createGain(), bf=ctx.createBiquadFilter();
-    bf.type='bandpass'; bf.frequency.value=type==='sniper'?3800:type==='shotgun'?1200:2000; bf.Q.value=0.4;
+    bf.type='bandpass'; bf.frequency.value=type==='sniper'?3800:type==='shotgun'?1200:isSMG?2500:2000; bf.Q.value=0.4;
     ns.buffer=buf; ns.connect(bf); bf.connect(g2); g2.connect(ctx.destination);
-    g2.gain.setValueAtTime(type==='shotgun'?0.9:0.45, t);
+    g2.gain.setValueAtTime(type==='shotgun'?0.9:isSMG?0.3:0.45, t);
     g2.gain.exponentialRampToValueAtTime(0.001, t+dur); ns.start(t);
   },
   reload(){
@@ -510,19 +521,20 @@ const WDEFS=[
   {id:'ar',    nameJP:'アサルトライフル', ammo:30,maxAmmo:30,reserve:120,dmg:25,  rate:0.1,  auto:true,  spread:0.02,  pellets:1, zoom:false},
   {id:'sg',    nameJP:'ショットガン',     ammo:8, maxAmmo:8, reserve:32, dmg:85,  rate:0.9,  auto:false, spread:0.13,  pellets:7, zoom:false},
   {id:'sr',    nameJP:'スナイパー',        ammo:10,maxAmmo:10,reserve:30, dmg:150, rate:1.6,  auto:false, spread:0.002, pellets:1, zoom:true },
+  {id:'smg',   nameJP:'サブマシンガン',   ammo:45,maxAmmo:45,reserve:180,dmg:18,  rate:0.07, auto:true,  spread:0.035, pellets:1, zoom:false},
 ];
 
 function buildGunMesh(id){
   while(gunGroup.children.length) gunGroup.remove(gunGroup.children[0]);
-  const cm={ar:0x2a3a4a, sg:0x4a3020, sr:0x1a2830}[id];
+  const cm={ar:0x2a3a4a, sg:0x4a3020, sr:0x1a2830, smg:0x3a2a1a}[id];
   const bm=new THREE.MeshLambertMaterial({color:cm});
   const sm=new THREE.MeshLambertMaterial({color:0x777788});
   // Body
-  const bodyW=id==='sg'?0.22:0.13, bodyD=id==='sr'?0.72:id==='sg'?0.5:0.48;
+  const bodyW=id==='sg'?0.22:id==='smg'?0.11:0.13, bodyD=id==='sr'?0.72:id==='sg'?0.5:id==='smg'?0.36:0.48;
   const body=new THREE.Mesh(new THREE.BoxGeometry(bodyW,0.1,bodyD),bm);
   body.position.set(0.2,-0.12,-0.36); gunGroup.add(body);
   // Barrel
-  const barLen=id==='sr'?0.65:id==='sg'?0.42:0.38;
+  const barLen=id==='sr'?0.65:id==='sg'?0.42:id==='smg'?0.28:0.38;
   const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,barLen,8),sm);
   bar.rotation.x=Math.PI/2; bar.position.set(0.2,-0.1,-0.6-barLen/2); gunGroup.add(bar);
   // Grip
@@ -612,9 +624,14 @@ function hasLOS(from, to){
   return true;
 }
 
+// Enemy types: grunt|scout|heavy|elite
 class Enemy{
-  constructor(hp, speed, isBoss){
-    this.hp=hp; this.maxHp=hp; this.speed=speed; this.isBoss=isBoss;
+  constructor(hp, speed, isBoss, type='grunt'){
+    this.type=type||'grunt';
+    // Apply type multipliers
+    const mult={grunt:{hp:1,spd:1,dmg:1},scout:{hp:0.5,spd:1.7,dmg:0.7},heavy:{hp:2.2,spd:0.55,dmg:1.8},elite:{hp:1.4,spd:1.15,dmg:1.3}}[this.type]||{hp:1,spd:1,dmg:1};
+    this.hp=Math.round(hp*mult.hp); this.maxHp=this.hp; this.speed=speed*mult.spd; this.isBoss=isBoss;
+    this.dmgMult=mult.dmg;
     this.pos=new THREE.Vector3(); this.state=ES.PATROL;
     this.stateT=0; this.attackT=0; this.walkPhase=Math.random()*Math.PI*2;
     this.alerted=false; this.deathT=0;
@@ -624,9 +641,15 @@ class Enemy{
   }
   _build(){
     const boss=this.isBoss;
-    const torsoC=boss?0x880000:0x445566;
-    const headC=boss?0xaa2222:0x88aacc;
-    const limbC=boss?0x662222:0x334455;
+    const typeColors={
+      grunt:{torso:0x445566,head:0x88aacc,limb:0x334455},
+      scout:{torso:0x226688,head:0x44aacc,limb:0x114466},
+      heavy:{torso:0x554433,head:0x997755,limb:0x443322},
+      elite:{torso:0x660088,head:0xaa44cc,limb:0x440066},
+    }[this.type]||{torso:0x445566,head:0x88aacc,limb:0x334455};
+    const torsoC=boss?0x880000:typeColors.torso;
+    const headC=boss?0xaa2222:typeColors.head;
+    const limbC=boss?0x662222:typeColors.limb;
     const mf=(g,c)=>new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:c}));
     // Torso
     this.torso=mf(new THREE.CylinderGeometry(0.3,0.26,0.85,8),torsoC);
@@ -657,6 +680,9 @@ class Enemy{
     this.hbGroup.renderOrder=999;
     this.meshes=[this.torso,this.head,this.legL,this.legR,this.armL,this.armR];
     if(boss) this.group.scale.set(1.6,1.6,1.6);
+    else if(this.type==='scout') this.group.scale.set(0.78,0.78,0.78);
+    else if(this.type==='heavy') this.group.scale.set(1.25,1.15,1.25);
+    else if(this.type==='elite') this.group.scale.set(1.05,1.1,1.05);
   }
   _newPatrol(){
     this.patrolTarget.set((Math.random()-0.5)*46,(0),(Math.random()-0.5)*46);
@@ -707,7 +733,7 @@ class Enemy{
       if(this.attackT<=0){
         this.attackT=this.isBoss?0.9:1.5;
         if(dist<16){
-          const dmg=this.isBoss?22:10;
+          const dmg=Math.round((this.isBoss?22:10)*this.dmgMult);
           player.hp=Math.max(0,player.hp-dmg);
           player.lastHitTime=clock.getElapsedTime();
           showHitFlash(); SFX.hurt(); updateHUD();
@@ -753,20 +779,33 @@ class Enemy{
   }
   die(){
     this.state=ES.DEAD; SFX.enemyDie();
-    emitParticles(this.group.position.clone().add(new THREE.Vector3(0,1,0)), 0xff1122, 18, 5);
+    const pColor=this.type==='scout'?0x44aaff:this.type==='heavy'?0xff8844:this.type==='elite'?0xcc44ff:0xff1122;
+    emitParticles(this.group.position.clone().add(new THREE.Vector3(0,1,0)), pColor, 18, 5);
     emitParticles(this.group.position.clone().add(new THREE.Vector3(0,1,0)), 0xff8800, 8, 3, 0.5);
     this.hbGroup.visible=false; this.eyeLight.intensity=0;
     if(Math.random()<0.45) spawnAmmo(this.pos.clone());
+    if(Math.random()<0.30) spawnHealth(this.pos.clone().add(new THREE.Vector3((Math.random()-0.5)*2,0,(Math.random()-0.5)*2)));
   }
 }
 
-let enemies=[], ammoDrops=[];
+let enemies=[], ammoDrops=[], healthDrops=[];
+// ─── KILL STREAK ─────────────────────────────────────────────
+let killStreak=0, killStreakTimer=0;
 
 function spawnAmmo(pos){
   const m=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), new THREE.MeshBasicMaterial({color:0x00ffff}));
   m.position.set(pos.x,0.3,pos.z); scene.add(m);
   ammoDrops.push({mesh:m,pos:pos.clone(),life:18});
   emitParticles(pos.clone().add(new THREE.Vector3(0,0.3,0)),0x00ffff,6,2,0.5);
+}
+function spawnHealth(pos){
+  const g=new THREE.Group(); g.position.set(pos.x,0.28,pos.z);
+  const mat=new THREE.MeshBasicMaterial({color:0x00ff66});
+  const hbar=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.08,0.08),mat); g.add(hbar);
+  const vbar=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.32,0.08),mat); g.add(vbar);
+  scene.add(g);
+  healthDrops.push({mesh:g,pos:pos.clone(),life:22});
+  emitParticles(pos.clone().add(new THREE.Vector3(0,0.3,0)),0x00ff66,5,2,0.5);
 }
 
 // ─── SHOOTING ─────────────────────────────────────────────────
@@ -829,16 +868,26 @@ function hitEnemy(e,dmg,pt,isHead,doCombo){
   e.hp-=dmg;
   emitParticles(pt,0xff1133,isHead?14:8,4.5);
   showDmgNum(pt,dmg,isHead);
-  if(isHead) bigText('HEADSHOT!',1.2,0xffd700);
+  if(isHead) bigText('HEADSHOT! ★',1.2,0xffd700);
   if(e.hp<=0){
-    e.die(); score+=isHead?300:100; roundKills++; totalKills++;
+    // Type-based score bonus
+    const typeBonus={grunt:0,scout:50,heavy:120,elite:200}[e.type]||0;
+    const hsBonus=isHead?300:100;
+    e.die();
+    // Kill streak
+    killStreak++; killStreakTimer=4.5;
+    const streakBonus=killStreak>=3?killStreak*75:0;
+    score+=hsBonus+typeBonus+streakBonus;
+    roundKills++; totalKills++;
+    if(streakBonus>0) bigText(`${killStreak}× STREAK! +${streakBonus}`,1.8,0xff6600);
     // Combo
     if(doCombo){
       player.comboTimer=3.5; player.comboCount++;
-      if(player.comboCount>=3) bigText('TRIPLE KILL!',1.5,0xff8800);
-      else if(player.comboCount>=2) bigText('DOUBLE KILL!',1.0,0xffaa00);
+      const COMBOS=['DOUBLE KILL!','TRIPLE KILL!','QUAD KILL!','PENTA KILL!','RAMPAGE!'];
+      if(player.comboCount>=2) bigText(COMBOS[Math.min(player.comboCount-2,4)],1.5,0xff8800);
     }
-    addKillFeed(e.isBoss?'★ BOSS':'ENEMY');
+    const typeLabel={grunt:'GRUNT',scout:'SCOUT',heavy:'HEAVY',elite:'ELITE ★'}[e.type]||'ENEMY';
+    addKillFeed(e.isBoss?'★ BOSS':typeLabel);
     updateHUD();
   }
 }
@@ -932,12 +981,16 @@ function drawMinimap(){
   });
   // Ammo drops
   ammoDrops.forEach(a=>{ cx.fillStyle='#00ffff'; cx.beginPath(); cx.arc((a.pos.x+31)*scale,(a.pos.z+31)*scale,2.5,0,Math.PI*2); cx.fill(); });
+  // Health drops
+  healthDrops.forEach(h=>{ cx.fillStyle='#00ff66'; cx.fillRect((h.pos.x+31)*scale-2,(h.pos.z+31)*scale-2,4,4); });
   // Enemies
   enemies.forEach(e=>{
     if(e.state===ES.DEAD) return;
     const ex=(e.pos.x+31)*scale, ez=(e.pos.z+31)*scale;
-    const col=e.isBoss?'#ff0000':e.state===ES.ATTACK?'#ff4444':e.state===ES.CHASE?'#ff8800':'#ffff00';
-    cx.fillStyle=col; cx.beginPath(); cx.arc(ex,ez,e.isBoss?5:3.5,0,Math.PI*2); cx.fill();
+    const typeCol={scout:'#44ccff',heavy:'#ff8833',elite:'#cc44ff',grunt:'#ff4444'}[e.type]||'#ff4444';
+    const col=e.isBoss?'#ff0000':e.state===ES.ALERT||e.state===ES.CHASE||e.state===ES.ATTACK?typeCol:'#888888';
+    const r=e.isBoss?5:e.type==='heavy'?5:e.type==='scout'?2.5:3.5;
+    cx.fillStyle=col; cx.beginPath(); cx.arc(ex,ez,r,0,Math.PI*2); cx.fill();
   });
   // Player
   const px=(player.pos.x+31)*scale, pz=(player.pos.z+31)*scale;
@@ -990,26 +1043,45 @@ function updateCrosshair(){
 }
 
 // ─── ROUND MANAGEMENT ─────────────────────────────────────────
+// count = total grunts, scouts, heavies, elites, bossCount
 const ROUNDS=[
-  {count:5, hp:60, speed:3.0, bossCount:0},
-  {count:7, hp:80, speed:4.2, bossCount:0},
-  {count:9, hp:100,speed:5.0, bossCount:1},
+  {count:4, scouts:1, heavies:0, elites:0, hp:60, speed:3.0, bossCount:0},
+  {count:4, scouts:2, heavies:1, elites:0, hp:80, speed:4.2, bossCount:0},
+  {count:4, scouts:2, heavies:2, elites:1, hp:100,speed:5.0, bossCount:1},
 ];
 
 function startRound(r){
-  round=r; roundKills=0;
+  round=r; roundKills=0; killStreak=0; killStreakTimer=0;
   enemies.forEach(e=>{ if(e.group.parent) scene.remove(e.group); }); enemies=[];
   ammoDrops.forEach(a=>scene.remove(a.mesh)); ammoDrops=[];
+  healthDrops.forEach(h=>scene.remove(h.mesh)); healthDrops=[];
   particlePool.forEach(p=>scene.remove(p)); particlePool.length=0;
   const cfg=ROUNDS[r-1];
   const spawns=[[-22,-22],[-22,22],[22,-22],[22,22],[0,-26],[0,26],[-26,0],[26,0],[-18,-10],[18,10],[10,-18],[-10,18],[20,20],[-20,-20]];
   spawns.sort(()=>Math.random()-0.5);
+  let si=0;
+  // Spawn grunts
   for(let i=0;i<cfg.count;i++){
-    const e=new Enemy(cfg.hp*(0.8+Math.random()*0.4|0)*1, cfg.speed*(0.85+Math.random()*0.3), false);
-    e.spawnAt(spawns[i%spawns.length][0],spawns[i%spawns.length][1]); enemies.push(e);
+    const e=new Enemy(cfg.hp*(0.85+Math.random()*0.3|0)*1, cfg.speed*(0.85+Math.random()*0.3), false,'grunt');
+    e.spawnAt(spawns[si%spawns.length][0],spawns[si%spawns.length][1]); enemies.push(e); si++;
+  }
+  // Spawn scouts
+  for(let i=0;i<(cfg.scouts||0);i++){
+    const e=new Enemy(cfg.hp, cfg.speed, false,'scout');
+    e.spawnAt(spawns[si%spawns.length][0],spawns[si%spawns.length][1]); enemies.push(e); si++;
+  }
+  // Spawn heavies
+  for(let i=0;i<(cfg.heavies||0);i++){
+    const e=new Enemy(cfg.hp, cfg.speed, false,'heavy');
+    e.spawnAt(spawns[si%spawns.length][0],spawns[si%spawns.length][1]); enemies.push(e); si++;
+  }
+  // Spawn elites
+  for(let i=0;i<(cfg.elites||0);i++){
+    const e=new Enemy(cfg.hp, cfg.speed, false,'elite');
+    e.spawnAt(spawns[si%spawns.length][0],spawns[si%spawns.length][1]); enemies.push(e); si++;
   }
   if(cfg.bossCount){
-    const boss=new Enemy(300, cfg.speed*1.4, true);
+    const boss=new Enemy(350, cfg.speed*1.4, true,'grunt');
     boss.spawnAt(0,-24); enemies.push(boss);
   }
   player.hp=100; player.isADS=false;
@@ -1058,7 +1130,7 @@ function endGame(win){
 }
 
 function resetGame(){
-  score=0; totalKills=0;
+  score=0; totalKills=0; killStreak=0; killStreakTimer=0;
   player.hp=100; player.shotsFired=0; player.shotsHit=0;
   player.pos.set(0,PH,10); player.yaw=0; player.pitch=0;
   player.wIdx=0; player.reloading=false; player.isADS=false;
@@ -1090,6 +1162,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Digit1') switchWeapon(0);
   if(e.code==='Digit2') switchWeapon(1);
   if(e.code==='Digit3') switchWeapon(2);
+  if(e.code==='Digit4') switchWeapon(3);
   if(e.code==='KeyR') tryReload();
   if(e.code==='KeyF') toggleADS();
   if(['Space','Tab'].includes(e.code)) e.preventDefault();
@@ -1180,8 +1253,10 @@ btnAds.addEventListener('touchend',e=>{
 },{passive:false});
 
 // Weapon buttons
-['w1','w2','w3'].forEach((id,i)=>{
-  document.getElementById('btn-'+id).addEventListener('touchstart',e=>{
+['w1','w2','w3','w4'].forEach((id,i)=>{
+  const btn=document.getElementById('btn-'+id);
+  if(!btn) return;
+  btn.addEventListener('touchstart',e=>{
     if(layoutEditMode) return;
     e.preventDefault();
     switchWeapon(i);
@@ -1379,6 +1454,9 @@ function loop(now){
     player.comboTimer-=dt;
     if(player.comboTimer<=0) player.comboCount=0;
 
+    // Kill streak timer
+    killStreakTimer-=dt; if(killStreakTimer<=0) killStreak=0;
+
     // Ammo drops
     const t=clock.getElapsedTime();
     ammoDrops=ammoDrops.filter(a=>{
@@ -1389,6 +1467,17 @@ function loop(now){
         scene.remove(a.mesh); SFX.pickup(); bigText('AMMO+',0.8,0x00ffff); updateHUD(); return false;
       }
       if(a.life<=0){ scene.remove(a.mesh); return false; }
+      return true;
+    });
+    // Health drops
+    healthDrops=healthDrops.filter(h=>{
+      h.life-=dt; h.mesh.rotation.y+=dt*2.5; h.mesh.position.y=0.22+Math.sin(t*4)*0.08;
+      const dx=player.pos.x-h.pos.x, dz=player.pos.z-h.pos.z;
+      if(dx*dx+dz*dz<1.6 && player.hp<player.maxHp){
+        const heal=25; player.hp=Math.min(player.maxHp,player.hp+heal);
+        scene.remove(h.mesh); SFX.pickup(); bigText(`+${heal} HP`,0.9,0x00ff66); updateHUD(); return false;
+      }
+      if(h.life<=0){ scene.remove(h.mesh); return false; }
       return true;
     });
 

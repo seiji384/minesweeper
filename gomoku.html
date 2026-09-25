@@ -173,8 +173,10 @@ body{padding-top:44px!important;}
     <option value="normal" selected>ふつう</option>
     <option value="hard">つよい</option>
   </select>
+  <button class="act-btn" id="hintBtn" onclick="showHint()">💡 ヒント</button>
   <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
+  <button class="act-btn" id="forbiddenBtn" onclick="toggleForbidden()">🚫 禁じ手 OFF</button>
 </div>
 
 <div id="restore-overlay" style="display:none;position:fixed;inset:0;z-index:15000;background:rgba(0,0,0,0.78);justify-content:center;align-items:center;padding:16px;">
@@ -248,6 +250,13 @@ let playerWins = 0, cpuWins = 0;
 let difficulty = 'normal';
 let cpuThinking = false;
 let moveHistory = [];
+let hintCell = null;
+let hintTimer = null;
+let animating = false;
+let forbiddenMode = false;
+let forbiddenCells = []; // {r, c, reason} for 禁じ手 overlay
+let dropAnim = null; // { r, c, progress } — stone drop animation
+let threatCells = []; // [{r, c, color}] — 1-move-to-win threats
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -321,6 +330,41 @@ function drawBoard() {
     ctx.fill();
   });
 
+  // ===== COORDINATES — column letters A-O (top), row numbers 1-15 (left) =====
+  const coordFontSz = Math.max(7, Math.floor(cs * 0.38));
+  ctx.font = `bold ${coordFontSz}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(201,168,76,0.5)';
+  const GMKU_LETTERS = 'ABCDEFGHIJKLMNO';
+  for (let i = 0; i < SIZE; i++) {
+    const { x: gx, y: gy } = boardToXY(0, i);
+    ctx.fillText(GMKU_LETTERS[i], gx, cs * 0.42);        // column letters along top
+    const { y: ly } = boardToXY(i, 0);
+    ctx.fillText(String(i + 1), cs * 0.4, ly);            // row numbers along left
+  }
+  ctx.textAlign = 'left';
+
+  // ===== THREAT VISUALIZATION — pulse ring where 1 more stone = win =====
+  if (threatCells.length > 0 && !gameOver) {
+    const tPulse = 0.45 + 0.45 * Math.sin(Date.now() * 0.005);
+    threatCells.forEach(({ r, c, color }) => {
+      const { x: tx, y: ty } = boardToXY(r, c);
+      ctx.save();
+      // Black threat = red ring; White threat = orange ring
+      const tc = color === BLACK ? `rgba(255,70,70,${0.4 + tPulse * 0.5})` : `rgba(255,155,30,${0.4 + tPulse * 0.5})`;
+      ctx.shadowColor = color === BLACK ? 'rgba(255,70,70,0.7)' : 'rgba(255,155,30,0.7)';
+      ctx.shadowBlur = 5 + tPulse * 9;
+      ctx.strokeStyle = tc;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tx, ty, cs * 0.37, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    });
+    requestAnimationFrame(() => { if (!gameOver && threatCells.length > 0) drawBoard(); });
+  }
+
   // Stones
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
@@ -329,6 +373,47 @@ function drawBoard() {
         drawStone(r, c, board[r][c], isLast);
       }
     }
+  }
+
+  // ===== FORBIDDEN CELLS (禁じ手) — semi-transparent ✕ on invalid black moves =====
+  if (forbiddenMode && forbiddenCells.length > 0 && !gameOver) {
+    const csf = cellSize();
+    const sz = csf * 0.28;
+    forbiddenCells.forEach(({r, c}) => {
+      const {x, y} = boardToXY(r, c);
+      ctx.save();
+      ctx.globalAlpha = 0.62;
+      ctx.strokeStyle = '#ff2222';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x-sz, y-sz); ctx.lineTo(x+sz, y+sz);
+      ctx.moveTo(x+sz, y-sz); ctx.lineTo(x-sz, y+sz);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  // ===== HINT CELL — golden glowing ring at best move =====
+  if (hintCell && !gameOver) {
+    const { x: hx, y: hy } = boardToXY(hintCell.r, hintCell.c);
+    const hPulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.007);
+    ctx.save();
+    ctx.shadowColor = '#ffe040';
+    ctx.shadowBlur = 14 + hPulse * 14;
+    ctx.strokeStyle = `rgba(255,224,50,${0.75 + hPulse * 0.25})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(hx, hy, cs * 0.44, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,220,50,${0.18 + hPulse * 0.18})`;
+    ctx.beginPath();
+    ctx.arc(hx, hy, cs * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    requestAnimationFrame(() => { if (hintCell && !gameOver) drawBoard(); });
   }
 
   // Win highlight — pulsing gold line connecting 5 in a row
@@ -368,9 +453,22 @@ function drawBoard() {
 }
 
 function drawStone(r, c, color, isLast) {
-  const { x, y } = boardToXY(r, c);
+  const { x, y: baseY } = boardToXY(r, c);
   const cs = cellSize();
   const radius = cs * 0.42;
+
+  // Drop animation: stone falls from top of board area to its position
+  let y = baseY;
+  if (dropAnim && dropAnim.r === r && dropAnim.c === c) {
+    const startY = cs * 0.6;
+    const p = dropAnim.progress;
+    // Gravity ease-in then slight bounce
+    let ep;
+    if (p < 0.75) { ep = (p / 0.75) * (p / 0.75); }
+    else { const q = (p - 0.75) / 0.25; ep = 1 + Math.sin(q * Math.PI) * 0.06; }
+    y = startY + (baseY - startY) * Math.min(1.06, ep);
+    if (y > baseY) y = baseY;
+  }
 
   if (color === BLACK) {
     // Black stone: dark radial gradient with white highlight spot
@@ -422,6 +520,85 @@ function drawStone(r, c, color, isLast) {
   }
 }
 
+// ===== FORBIDDEN MOVES (禁じ手 — 黒番のみ) =====
+function isForbidden(board, r, c) {
+  // Temporarily place BLACK stone and analyse
+  board[r][c] = BLACK;
+  let fours = 0, threes = 0, isFive = false, isLong = false;
+  for (const [dr, dc] of DIRS) {
+    let countP = 0, nr = r+dr, nc = c+dc;
+    while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===BLACK){countP++;nr+=dr;nc+=dc;}
+    const openP = nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===EMPTY;
+    let countN = 0; nr=r-dr; nc=c-dc;
+    while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===BLACK){countN++;nr-=dr;nc-=dc;}
+    const openN = nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]===EMPTY;
+    const count = 1 + countP + countN;
+    if(count >= 6) isLong = true;
+    else if(count === 5) isFive = true;
+    else if(count === 4 && (openP || openN)) fours++;
+    else if(count === 3 && openP && openN) threes++;
+  }
+  board[r][c] = EMPTY;
+  if(isFive) return null; // winning move — not forbidden
+  if(isLong) return '長連';
+  if(fours >= 2) return '四四';
+  if(threes >= 2) return '三三';
+  return null;
+}
+
+function updateForbiddenCells() {
+  forbiddenCells = [];
+  if(!forbiddenMode || gameOver || currentTurn !== PLAYER) return;
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) {
+    if(board[r][c] === EMPTY) {
+      const reason = isForbidden(board, r, c);
+      if(reason) forbiddenCells.push({r, c, reason});
+    }
+  }
+}
+
+function toggleForbidden() {
+  forbiddenMode = !forbiddenMode;
+  const btn = document.getElementById('forbiddenBtn');
+  if(btn) {
+    btn.textContent = forbiddenMode ? '🚫 禁じ手 ON' : '🚫 禁じ手 OFF';
+    btn.style.background = forbiddenMode ? 'linear-gradient(160deg,#5a0810 0%,#3a0408 100%)' : '';
+    btn.style.color = forbiddenMode ? '#ff8888' : '';
+    btn.style.borderColor = forbiddenMode ? '#cc2030' : '';
+    btn.style.boxShadow = forbiddenMode ? '0 0 10px rgba(200,30,30,0.6)' : '';
+  }
+  updateForbiddenCells();
+  drawBoard();
+}
+
+// ===== THREAT DETECTION =====
+function updateThreats() {
+  threatCells = [];
+  if (gameOver) return;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] !== EMPTY) continue;
+      for (const color of [BLACK, WHITE]) {
+        board[r][c] = color;
+        const isWin = checkWin(board, r, c, color);
+        board[r][c] = EMPTY;
+        if (isWin) { threatCells.push({ r, c, color }); break; }
+      }
+    }
+  }
+}
+
+// ===== HINT =====
+function showHint() {
+  if (gameOver || cpuThinking || currentTurn !== PLAYER || animating) return;
+  const move = getBestMove(board, difficulty === 'easy' ? 'normal' : difficulty);
+  if (!move) return;
+  hintCell = move;
+  if (hintTimer) clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { hintCell = null; drawBoard(); }, 3500);
+  drawBoard();
+}
+
 // ===== GAME LOGIC =====
 function initBoard() {
   board = Array.from({length: SIZE}, () => new Array(SIZE).fill(EMPTY));
@@ -431,7 +608,14 @@ function initBoard() {
   lastMove = null;
   winCells = [];
   cpuThinking = false;
+  animating = false;
+  dropAnim = null;
+  hintCell = null;
+  if (hintTimer) clearTimeout(hintTimer);
+  threatCells = [];
   moveHistory = [];
+  forbiddenCells = [];
+  updateForbiddenCells();
   updateStatus();
   drawBoard();
   document.getElementById('home-btn').style.display = 'block';
@@ -448,55 +632,78 @@ function updateStatus() {
 }
 
 function placeStone(r, c) {
-  if (gameOver || board[r][c] !== EMPTY || currentTurn !== PLAYER || cpuThinking) return;
+  if (gameOver || board[r][c] !== EMPTY || currentTurn !== PLAYER || cpuThinking || animating) return;
   if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return;
+
+  // Check forbidden move (禁じ手チェック)
+  if (forbiddenMode) {
+    const reason = isForbidden(board, r, c);
+    if (reason) { showToast('禁じ手: ' + reason); return; }
+  }
 
   // Stone placement click sound
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
+    const osc = ac.createOscillator(), gain = ac.createGain();
     osc.connect(gain); gain.connect(ac.destination);
-    osc.type = 'sine'; osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.18, ac.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.08);
-    osc.start(); osc.stop(ac.currentTime + 0.08);
+    osc.type = 'sine'; osc.frequency.value = 820;
+    gain.gain.setValueAtTime(0.16, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.09);
+    osc.start(); osc.stop(ac.currentTime + 0.09);
   } catch(e) {}
+
+  // Clear hint
+  hintCell = null; if (hintTimer) clearTimeout(hintTimer);
 
   moveHistory.push({ board: board.map(row => [...row]), moveCount, lastMove: lastMove ? {...lastMove} : null });
   if (moveHistory.length > 10) moveHistory.shift();
+
+  // Start drop animation (stone is placed on board immediately so drawStone animates it)
   board[r][c] = PLAYER;
   lastMove = { r, c };
-  moveCount++;
+  animating = true;
+  dropAnim = { r, c, progress: 0 };
+  const totalFrames = 20;
+  let frame = 0;
 
-  const win = checkWin(board, r, c, PLAYER);
-  if (win) {
-    winCells = win;
-    gameOver = true;
-    playerWins++;
-    updateStatus();
+  function dropFrame() {
+    frame++;
+    dropAnim.progress = frame / totalFrames;
     drawBoard();
-    startConfetti();
-    setTimeout(() => showResult('🎉 あなたの勝ち！', '五目並べました！勝利おめでとう！'), 400);
-    return;
+    if (frame < totalFrames) {
+      requestAnimationFrame(dropFrame);
+    } else {
+      dropAnim = null;
+      animating = false;
+      moveCount++;
+
+      const win = checkWin(board, r, c, PLAYER);
+      if (win) {
+        winCells = win;
+        gameOver = true;
+        playerWins++;
+        threatCells = [];
+        updateStatus(); drawBoard();
+        startConfetti();
+        setTimeout(() => showResult('🎉 あなたの勝ち！', '五目並べました！勝利おめでとう！'), 400);
+        return;
+      }
+
+      let full = true;
+      for (let i = 0; i < SIZE && full; i++) for (let j = 0; j < SIZE && full; j++) if (board[i][j] === EMPTY) full = false;
+      if (full) { gameOver = true; threatCells = []; updateStatus(); drawBoard(); showResult('引き分け', 'マスが全て埋まりました'); return; }
+
+      updateThreats();
+      currentTurn = CPU;
+      updateForbiddenCells(); // clear overlay while CPU thinks
+      cpuThinking = true;
+      updateStatus(); drawBoard();
+
+      const delay = difficulty === 'easy' ? 250 : difficulty === 'normal' ? 450 : 550;
+      setTimeout(() => { doCpuMove(); cpuThinking = false; updateStatus(); }, delay + Math.random() * 150);
+    }
   }
-
-  let full = true;
-  for (let i = 0; i < SIZE && full; i++) for (let j = 0; j < SIZE && full; j++) if (board[i][j] === EMPTY) full = false;
-  if (full) {
-    gameOver = true;
-    updateStatus(); drawBoard();
-    showResult('引き分け', 'マスが全て埋まりました');
-    return;
-  }
-
-  currentTurn = CPU;
-  cpuThinking = true;
-  updateStatus();
-  drawBoard();
-
-  const delay = difficulty === 'easy' ? 250 : difficulty === 'normal' ? 450 : 550;
-  setTimeout(() => { doCpuMove(); cpuThinking = false; updateStatus(); }, delay + Math.random() * 150);
+  requestAnimationFrame(dropFrame);
 }
 
 function doCpuMove() {
@@ -525,7 +732,9 @@ function doCpuMove() {
     return;
   }
 
+  updateThreats();
   currentTurn = PLAYER;
+  updateForbiddenCells();
   updateStatus(); drawBoard();
 }
 
@@ -693,7 +902,7 @@ function updateUndoBtn() {
 }
 
 function undoMove() {
-  if (moveHistory.length === 0 || cpuThinking || gameOver) return;
+  if (moveHistory.length === 0 || cpuThinking || gameOver || animating) return;
   const prev = moveHistory.pop();
   board = prev.board;
   moveCount = prev.moveCount;
@@ -702,6 +911,10 @@ function undoMove() {
   gameOver = false;
   currentTurn = PLAYER;
   cpuThinking = false;
+  hintCell = null;
+  dropAnim = null;
+  updateThreats();
+  updateForbiddenCells();
   updateStatus();
   drawBoard();
 }
@@ -778,6 +991,7 @@ function saveGame() {
     cpuWins: cpuWins,
     gameOver: gameOver,
     difficulty: difficulty,
+    forbiddenMode: forbiddenMode,
     ts: Date.now()
   };
   localStorage.setItem('gomoku_save', JSON.stringify(data));
@@ -813,7 +1027,19 @@ function restoreGame() {
       difficulty = data.difficulty;
       document.getElementById('diffSelect').value = difficulty;
     }
+    if (data.forbiddenMode !== undefined) {
+      forbiddenMode = data.forbiddenMode;
+      const fb = document.getElementById('forbiddenBtn');
+      if(fb) {
+        fb.textContent = forbiddenMode ? '🚫 禁じ手 ON' : '🚫 禁じ手 OFF';
+        fb.style.background = forbiddenMode ? 'linear-gradient(160deg,#5a0810 0%,#3a0408 100%)' : '';
+        fb.style.color = forbiddenMode ? '#ff8888' : '';
+        fb.style.borderColor = forbiddenMode ? '#cc2030' : '';
+        fb.style.boxShadow = forbiddenMode ? '0 0 10px rgba(200,30,30,0.6)' : '';
+      }
+    }
     document.getElementById('restore-overlay').style.display = 'none';
+    updateForbiddenCells();
     updateStatus();
     drawBoard();
   } catch(e) {

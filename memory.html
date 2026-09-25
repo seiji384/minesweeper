@@ -114,8 +114,11 @@ body {
   touch-action: pan-x pan-y;
 }
 .card { perspective: 700px; cursor: pointer; touch-action: manipulation; aspect-ratio: 1; }
-.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.34,1.1,0.64,1); }
+.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.52s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
+/* Flash effect on click */
+@keyframes cardPulse { 0%{box-shadow:0 0 0 rgba(255,255,255,0)} 40%{box-shadow:0 0 18px rgba(255,255,255,0.45)} 100%{box-shadow:0 0 0 rgba(255,255,255,0)} }
+.card.flipping .card-inner { animation: cardPulse 0.52s ease-out; }
 .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 /* Card back — dark blue with decorative pattern */
 .card-front {
@@ -162,6 +165,24 @@ body {
 .hs-record{color:#60ff90;font-weight:900;text-shadow:0 0 6px #60ff90;}
 .hs-val{color:#4038a0;}
 .hs-date{color:#7060a0;font-size:9px;margin-left:4px;}
+/* Theme bar */
+.theme-bar{display:flex;gap:4px;margin:6px 8px 0;justify-content:center;}
+.theme-btn{flex:1;padding:5px 2px;font-size:10px;border-radius:10px;cursor:pointer;background:linear-gradient(160deg,#0a2018 0%,#061208 100%);color:#608060;border:1px solid #204030;font-weight:bold;transition:all 0.15s;touch-action:manipulation;text-align:center;}
+.theme-btn.active{background:linear-gradient(160deg,#205040 0%,#102820 100%);color:#a0ffcc;border-color:#50c080;box-shadow:0 0 8px rgba(123,237,159,0.4);}
+.theme-btn:active{transform:scale(0.95);}
+/* Combo display */
+#combo-display{text-align:center;height:28px;font-size:15px;font-weight:900;color:#f5c842;text-shadow:0 0 12px rgba(255,200,0,0.8);letter-spacing:2px;display:flex;align-items:center;justify-content:center;}
+/* Global ranking */
+.rank-table{width:100%;border-collapse:collapse;}
+.rank-row{display:flex;align-items:center;padding:5px 8px;border-radius:8px;margin:3px 0;gap:8px;}
+.rank-row.player-row{background:rgba(123,237,159,0.15);border:1px solid rgba(123,237,159,0.4);}
+.rank-row:not(.player-row){background:rgba(80,60,180,0.08);border:1px solid rgba(80,60,180,0.15);}
+.rank-pos{font-size:13px;font-weight:900;color:#ff60c0;min-width:28px;text-align:right;}
+.rank-pos.top3{color:#ffd700;}
+.rank-name{flex:1;font-size:12px;color:#b898ff;}
+.rank-name.player-row{color:#7bed9f;font-weight:bold;}
+.rank-score{font-size:12px;font-weight:bold;color:#60ff90;}
+.rank-country{font-size:14px;}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -206,20 +227,27 @@ body{padding-top:44px!important;}
     <span style="width:24px"></span>
   </div>
 
+  <div class="theme-bar">
+    <button class="theme-btn active" data-theme="animals" onclick="setTheme('animals')">🐾 動物</button>
+    <button class="theme-btn" data-theme="food" onclick="setTheme('food')">🍎 食べ物</button>
+    <button class="theme-btn" data-theme="sports" onclick="setTheme('sports')">⚽ スポーツ</button>
+    <button class="theme-btn" data-theme="flags" onclick="setTheme('flags')">🌍 国旗</button>
+  </div>
   <div class="diff-bar">
-    <button class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">かんたん<br>4×4</button>
-    <button class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">ふつう<br>4×6</button>
-    <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">むずかしい<br>6×6</button>
+    <button class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">かんたん<br>3×4</button>
+    <button class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">ふつう<br>4×4</button>
+    <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">むずかしい<br>5×4</button>
+    <button class="diff-btn" data-diff="insane" onclick="setDifficulty('insane')">激ムズ<br>6×4</button>
   </div>
 
   <div class="status-panel">
     <div class="led-group">
-      <span class="led" id="led-pairs">0</span>
-      <span class="led-label">ペア</span>
+      <span class="led" id="led-score">0</span>
+      <span class="led-label">スコア</span>
     </div>
     <div class="led-group">
-      <span class="led" id="led-attempts">0</span>
-      <span class="led-label">挑戦回数</span>
+      <span class="led" id="led-pairs">0</span>
+      <span class="led-label">ペア</span>
     </div>
     <div class="led-group">
       <span class="led" id="led-time">0:00</span>
@@ -229,6 +257,7 @@ body{padding-top:44px!important;}
 
   <div class="content">
     <div class="win-msg" id="win-msg">🎉 クリア！</div>
+    <div id="combo-display"></div>
     <div class="card-grid" id="card-grid"></div>
   </div>
 </div>
@@ -238,6 +267,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
   <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
+  <button class="act-btn" onclick="showGlobalRanking()">🌍 世界ランキング</button>
   <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
 </div>
 
@@ -268,6 +298,17 @@ body{padding-top:44px!important;}
       <button class="modal-close" onclick="closeModal('hs-modal')">✕</button>
     </div>
     <div class="modal-body" id="hs-body"></div>
+  </div>
+</div>
+
+<!-- Global ranking modal -->
+<div class="modal-overlay" id="global-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🌍 世界ランキング</span>
+      <button class="modal-close" onclick="closeModal('global-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="global-body"></div>
   </div>
 </div>
 
@@ -357,18 +398,27 @@ function saveHiRec(key,val){const today=getDateKey(),wk=getWeekKey(),mo=getMonth
 function saveHiRecLow(key,val){const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();let d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');if(!d.all||val<d.all.v)d.all={v:val,date:today};if(!d.today||d.today.date!==today||val<d.today.v)d.today={v:val,date:today};if(!d.week||d.week.key!==wk||val<d.week.v)d.week={v:val,key:wk,date:today};if(!d.month||d.month.key!==mo||val<d.month.v)d.month={v:val,key:mo,date:today};localStorage.setItem(key+'_rec',JSON.stringify(d));}
 function renderHiRec(key,unit){const today=getDateKey(),wk=getWeekKey(),mo=getMonthKey();const d=JSON.parse(localStorage.getItem(key+'_rec')||'{}');const fmt=e=>e?`<span class="hs-record">${e.v}${unit}</span><span class="hs-date">(${fmtDate(e.date)})</span>`:'<span class="hs-val">--</span>';const tV=d.today?.date===today?fmt(d.today):'<span class="hs-val">--</span>';const wV=d.week?.key===wk?fmt(d.week):'<span class="hs-val">--</span>';const mV=d.month?.key===mo?fmt(d.month):'<span class="hs-val">--</span>';return`<div class="hs-table"><div class="hs-row"><span class="hs-period">本日</span>${tV}</div><div class="hs-row"><span class="hs-period">今週</span>${wV}</div><div class="hs-row"><span class="hs-period">今月</span>${mV}</div><div class="hs-row"><span class="hs-period">全期間</span>${fmt(d.all)}</div></div>`;}
 
-const EMOJIS = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦆'];
+const THEMES = {
+  animals: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮'],
+  food:    ['🍎','🍊','🍋','🍇','🍓','🍑','🍒','🥝','🍌','🫐','🍉','🍍'],
+  sports:  ['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🤿'],
+  flags:   ['🇯🇵','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇮🇹','🇨🇳','🇰🇷','🇧🇷','🇦🇺','🇨🇦','🇲🇽']
+};
 const DIFF = {
-  easy:   { cols: 4, rows: 4, pairs: 8 },
-  medium: { cols: 4, rows: 6, pairs: 12 },
-  hard:   { cols: 6, rows: 6, pairs: 18 }
+  easy:   { cols: 3, rows: 4, pairs: 6 },
+  medium: { cols: 4, rows: 4, pairs: 8 },
+  hard:   { cols: 5, rows: 4, pairs: 10 },
+  insane: { cols: 6, rows: 4, pairs: 12 }
 };
 
 let currentDiff = 'easy';
+let currentTheme = 'animals';
 let cards = [];
 let flipped = [];
 let matched = 0;
 let attempts = 0;
+let score = 0;
+let combo = 0;
 let locked = false;
 let timerInterval = null;
 let startTime = null;
@@ -379,13 +429,56 @@ function setDifficulty(d) {
   document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
   newGame();
 }
+function setTheme(t) {
+  currentTheme = t;
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+  newGame();
+}
+// Sound effects via Web Audio API
+function playSound(type) {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'flip') {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.09), ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * (1 - i/d.length) * 0.25;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1800;
+      src.connect(f); f.connect(ac.destination); src.start();
+    } else if (type === 'match') {
+      [[880,0,0.28],[1320,0.05,0.14]].forEach(([freq,delay,vol]) => {
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=freq;
+        const t=ac.currentTime+delay;
+        g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+        o.start(t);o.stop(t+0.45);
+      });
+    } else if (type === 'nomatch') {
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=140;
+      o.frequency.linearRampToValueAtTime(60,ac.currentTime+0.18);
+      g.gain.setValueAtTime(0.22,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.22);
+      o.start();o.stop(ac.currentTime+0.22);
+    } else if (type === 'win') {
+      [523,659,784,1047].forEach((freq,i) => {
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=freq;
+        const t=ac.currentTime+i*0.13;
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.22,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001,t+0.42);
+        o.start(t);o.stop(t+0.42);
+      });
+    }
+  } catch(e) {}
+}
 
 function newGame() {
   localStorage.removeItem('memory_save');
   clearInterval(timerInterval);
-  elapsed = 0; matched = 0; attempts = 0; flipped = []; locked = false;
+  elapsed = 0; matched = 0; attempts = 0; score = 0; combo = 0; flipped = []; locked = false;
   updateLEDs();
   document.getElementById('win-msg').style.display = 'none';
+  document.getElementById('combo-display').textContent = '';
   buildGrid();
   startTimer();
   document.getElementById('home-btn').style.display = 'block';
@@ -393,7 +486,7 @@ function newGame() {
 
 function buildGrid() {
   const cfg = DIFF[currentDiff];
-  const emojiSet = EMOJIS.slice(0, cfg.pairs);
+  const emojiSet = THEMES[currentTheme].slice(0, cfg.pairs);
   const deck = [...emojiSet, ...emojiSet];
   // Fisher-Yates shuffle
   for (let i = deck.length - 1; i > 0; i--) {
@@ -432,17 +525,28 @@ function buildGrid() {
 
 function onCardClick(idx, el) {
   if (locked || cards[idx].matched || flipped.includes(idx) || el.classList.contains('flipped')) return;
-  el.classList.add('flipped');
+  el.classList.add('flipped', 'flipping');
+  setTimeout(() => el.classList.remove('flipping'), 520);
   flipped.push(idx);
+  playSound('flip');
 
   if (flipped.length === 2) {
     locked = true;
     attempts++;
-    document.getElementById('led-attempts').textContent = attempts;
     const [a, b] = flipped;
     const els = document.getElementById('card-grid').children;
     if (cards[a].emoji === cards[b].emoji) {
       // Match
+      combo++;
+      score += 100;
+      updateLEDs();
+      if (combo >= 2) {
+        const cd = document.getElementById('combo-display');
+        cd.textContent = `🔥 ${combo}連続！`;
+        clearTimeout(cd._t);
+        cd._t = setTimeout(() => { cd.textContent = ''; }, 1500);
+      }
+      playSound('match');
       setTimeout(() => {
         els[a].classList.add('matched');
         els[b].classList.add('matched');
@@ -450,12 +554,19 @@ function onCardClick(idx, el) {
         cards[b].matched = true;
         matched++;
         document.getElementById('led-pairs').textContent = matched;
+        // Particle burst from both matched cards
+        spawnMatchParticles(els[a]);
+        spawnMatchParticles(els[b]);
         flipped = []; locked = false;
         if (matched === DIFF[currentDiff].pairs) onWin();
         else saveGame();
       }, 400);
     } else {
       // No match
+      combo = 0;
+      score = Math.max(0, score - 5);
+      updateLEDs();
+      playSound('nomatch');
       setTimeout(() => {
         els[a].classList.remove('flipped');
         els[b].classList.remove('flipped');
@@ -476,41 +587,46 @@ function startTimer() {
 }
 
 function updateLEDs() {
+  document.getElementById('led-score').textContent = score;
   document.getElementById('led-pairs').textContent = matched;
-  document.getElementById('led-attempts').textContent = attempts;
   document.getElementById('led-time').textContent = '0:00';
 }
 
 function onWin() {
   clearInterval(timerInterval);
   localStorage.removeItem('memory_save');
+  playSound('win');
   startConfetti();
   saveHiRecLow('memory_'+currentDiff, attempts);
-  // Save high score
+  const timeBonus = elapsed < 60 ? (60 - elapsed) * 50 : 0;
+  const finalScore = score + timeBonus;
+  saveHiRec('memory_score_'+currentDiff, finalScore);
   const key = 'memory_hs_' + currentDiff;
   let scores = JSON.parse(localStorage.getItem(key) || '[]');
-  scores.push({ attempts, time: elapsed });
-  scores.sort((a, b) => a.attempts - b.attempts || a.time - b.time);
+  scores.push({ attempts, time: elapsed, score: finalScore });
+  scores.sort((a, b) => b.score - a.score || a.time - b.time);
   scores = scores.slice(0, 5);
   localStorage.setItem(key, JSON.stringify(scores));
-
   const min = Math.floor(elapsed / 60), sec = elapsed % 60;
   document.getElementById('win-body').innerHTML = `
     <p style="font-size:16px;color:#f5c842;text-align:center;margin-bottom:12px">🎉 クリア！</p>
-    <p>挑戦回数: <strong style="color:#ff44aa">${attempts}</strong></p>
+    <p>マッチスコア: <strong style="color:#7bed9f">+${score}</strong></p>
+    <p>タイムボーナス: <strong style="color:#7bed9f">+${timeBonus}</strong>${elapsed<60?' ⚡':''}</p>
+    <p style="border-top:1px solid #204030;margin-top:8px;padding-top:8px">合計スコア: <strong style="color:#f5c842;font-size:18px">${finalScore}</strong></p>
     <p>タイム: <strong style="color:#ff44aa">${min}:${String(sec).padStart(2,'0')}</strong></p>
-    <p>ペア数: <strong style="color:#ff44aa">${matched}</strong></p>
-    <br><button class="act-btn" style="width:100%;padding:10px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
+    <p>挑戦回数: <strong style="color:#ff44aa">${attempts}</strong></p>
+    <br><button class="act-btn" style="width:100%;padding:10px;margin-bottom:6px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
+    <button class="act-btn" style="width:100%;padding:8px" onclick="closeModal('win-modal');showGlobalRanking()">🌍 世界ランキングを見る</button>
   `;
   showModal('win-modal');
 }
 
 function showHighScore() {
-  const names = { easy:'かんたん', medium:'ふつう', hard:'むずかしい' };
+  const names = { easy:'かんたん', medium:'ふつう', hard:'むずかしい', insane:'激ムズ' };
   let html = '';
-  ['easy','medium','hard'].forEach(d => {
+  ['easy','medium','hard','insane'].forEach(d => {
     html += `<p style="color:#f5c842;font-weight:bold;margin:10px 0 4px">${names[d]}</p>`;
-    html += renderHiRec('memory_'+d,'回');
+    html += renderHiRec('memory_score_'+d,'点');
   });
   document.getElementById('hs-body').innerHTML = html;
   showModal('hs-modal');
@@ -528,10 +644,10 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 function saveGame(){
   if(matched===DIFF[currentDiff].pairs){localStorage.removeItem('memory_save');return;}
   localStorage.setItem('memory_save',JSON.stringify({
-    currentDiff,
+    currentDiff,currentTheme,
     cardEmojis:cards.map(c=>c.emoji),
     matchedCards:cards.map(c=>c.matched),
-    attempts,elapsed,matched,savedAt:Date.now()
+    attempts,elapsed,matched,score,combo,savedAt:Date.now()
   }));
 }
 
@@ -572,13 +688,15 @@ function tryLoadSave(){
       document.getElementById('resume-overlay').classList.remove('visible');
       clearInterval(timerInterval);
       currentDiff=s.currentDiff||'easy';
+      currentTheme=s.currentTheme||'animals';
       document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active',b.dataset.diff===currentDiff));
-      attempts=s.attempts||0;matched=s.matched||0;elapsed=s.elapsed||0;
+      document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===currentTheme));
+      attempts=s.attempts||0;matched=s.matched||0;elapsed=s.elapsed||0;score=s.score||0;combo=s.combo||0;
       flipped=[];locked=false;
       document.getElementById('win-msg').style.display='none';
       const m=Math.floor(elapsed/60),sec=elapsed%60;
+      document.getElementById('led-score').textContent=score;
       document.getElementById('led-pairs').textContent=matched;
-      document.getElementById('led-attempts').textContent=attempts;
       document.getElementById('led-time').textContent=m+':'+String(sec).padStart(2,'0');
       rebuildGridFromSave(s.cardEmojis,s.matchedCards||[]);
       startTimer();
@@ -599,6 +717,118 @@ function showSaveToast(){
 }
 
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
+
+// ══════════════════════════════════════════════
+//  PARTICLE EFFECT ON MATCH
+// ══════════════════════════════════════════════
+function spawnMatchParticles(el) {
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const colors = ['#7bed9f','#f5c842','#ff60c0','#60c0ff','#ff9040'];
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.5;
+    const speed = 40 + Math.random() * 60;
+    const size = 4 + Math.random() * 6;
+    p.style.cssText = [
+      'position:fixed',
+      'left:' + (cx - size/2) + 'px',
+      'top:' + (cy - size/2) + 'px',
+      'width:' + size + 'px',
+      'height:' + size + 'px',
+      'border-radius:50%',
+      'background:' + colors[Math.floor(Math.random() * colors.length)],
+      'pointer-events:none',
+      'z-index:9998',
+      'transition:left 0.6s ease-out,top 0.6s ease-out,opacity 0.6s ease-out',
+      'opacity:1'
+    ].join(';');
+    document.body.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.left = (cx + Math.cos(angle) * speed) + 'px';
+      p.style.top  = (cy + Math.sin(angle) * speed) + 'px';
+      p.style.opacity = '0';
+    });
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  GLOBAL RANKING (local data with fake world players)
+// ══════════════════════════════════════════════
+const FAKE_PLAYERS = [
+  {name:'Yuki T.',country:'🇯🇵'},{name:'Alex M.',country:'🇺🇸'},{name:'Li Wei',country:'🇨🇳'},
+  {name:'Sofia B.',country:'🇧🇷'},{name:'Joon-ho',country:'🇰🇷'},{name:'Emma S.',country:'🇬🇧'},
+  {name:'Carlos R.',country:'🇲🇽'},{name:'Hana K.',country:'🇩🇪'},{name:'Raj P.',country:'🇮🇳'},
+  {name:'Mei L.',country:'🇹🇼'},{name:'Tom H.',country:'🇦🇺'},{name:'Aiko F.',country:'🇯🇵'},
+  {name:'Marco V.',country:'🇮🇹'},{name:'Sara O.',country:'🇸🇪'},{name:'Kim D.',country:'🇰🇷'},
+  {name:'Nadia C.',country:'🇫🇷'},{name:'Luca B.',country:'🇮🇹'},{name:'Yuna S.',country:'🇯🇵'}
+];
+
+const DIFF_BASE = {easy:1200, medium:1800, hard:2400, insane:3200};
+
+function generateFakePlayers(diff, playerScore) {
+  const base = DIFF_BASE[diff] || 1500;
+  // Generate 18 fake scores spread around base ± 40%
+  const seed = diff.charCodeAt(0) * 37;
+  return FAKE_PLAYERS.map((p, i) => {
+    const pseudo = ((seed * (i + 1) * 31 + 7919) % 1000) / 1000; // deterministic-ish
+    const score = Math.round(base * (0.6 + pseudo * 0.8));
+    return { ...p, score };
+  });
+}
+
+function showGlobalRanking() {
+  const diff = currentDiff;
+  const diffNames = { easy:'かんたん', medium:'ふつう', hard:'むずかしい', insane:'激ムズ' };
+  // Get player best score
+  let playerBest = 0;
+  try {
+    const rec = JSON.parse(localStorage.getItem('memory_score_' + diff + '_rec') || '{}');
+    playerBest = rec.all ? rec.all.v : 0;
+  } catch(e) {}
+
+  const fakes = generateFakePlayers(diff, playerBest);
+  const youEntry = { name:'あなた', country:'👤', score: playerBest, isPlayer: true };
+  const allEntries = [...fakes, youEntry].sort((a, b) => b.score - a.score);
+  const playerRank = allEntries.findIndex(e => e.isPlayer) + 1;
+
+  let html = `<p style="color:#f5c842;font-weight:bold;margin-bottom:10px;text-align:center">難易度: ${diffNames[diff]}</p>`;
+  html += `<div style="font-size:11px;color:#7060a0;margin-bottom:8px;text-align:center">※ ローカルシミュレーション (世界風ランキング)</div>`;
+
+  // Show entries around player (±4 from player position, plus top 3)
+  const showIdxs = new Set([0, 1, 2]);
+  for (let i = Math.max(0, playerRank - 3); i <= Math.min(allEntries.length - 1, playerRank + 1); i++) showIdxs.add(i);
+
+  let prevShown = -1;
+  [...showIdxs].sort((a,b) => a-b).forEach(idx => {
+    if (prevShown !== -1 && idx > prevShown + 1) {
+      html += `<div style="text-align:center;color:#4030a0;font-size:11px;padding:2px 0">・・・</div>`;
+    }
+    const e = allEntries[idx];
+    const rank = idx + 1;
+    const isTop3 = rank <= 3;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+    const rowCls = e.isPlayer ? 'rank-row player-row' : 'rank-row';
+    const nameCls = e.isPlayer ? 'rank-name player-row' : 'rank-name';
+    const posCls = isTop3 ? 'rank-pos top3' : 'rank-pos';
+    html += `<div class="${rowCls}">
+      <span class="${posCls}">${medal || rank}</span>
+      <span class="rank-country">${e.country}</span>
+      <span class="${nameCls}">${e.isPlayer ? '👤 あなた' : e.name}</span>
+      <span class="rank-score">${e.score > 0 ? e.score.toLocaleString() + '点' : '--'}</span>
+    </div>`;
+    prevShown = idx;
+  });
+
+  if (playerBest === 0) {
+    html += `<p style="color:#7060a0;font-size:11px;margin-top:10px;text-align:center">ゲームをクリアするとランクインします！</p>`;
+  }
+
+  document.getElementById('global-body').innerHTML = html;
+  showModal('global-modal');
+}
 
 // Init
 tryLoadSave();

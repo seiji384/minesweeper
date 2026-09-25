@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -31,6 +31,23 @@ body {
   display: flex; justify-content: space-between; align-items: center;
 }
 .titlebar a { color: #3a1a00; text-decoration: none; font-size: 18px; }
+/* Difficulty bar */
+.diff-bar {
+  display: flex; padding: 5px 8px; gap: 4px;
+  background: linear-gradient(160deg, #150d38 0%, #0d0820 100%);
+  border-bottom: 1px solid #4030a0; justify-content: center; flex-wrap: wrap;
+}
+.diff-btn {
+  padding: 4px 12px; font-size: 11px; border-radius: 14px;
+  background: linear-gradient(160deg, #2a1a6a 0%, #1a0a4a 100%);
+  color: #a080ff; border: 1px solid #4030a0; font-weight: bold; cursor: pointer;
+  touch-action: manipulation; transition: all 0.15s;
+}
+.diff-btn.active {
+  background: linear-gradient(160deg, #6040cc 0%, #4020aa 100%);
+  color: #e8d0ff; border-color: #9070ee; box-shadow: 0 0 10px rgba(144,112,238,0.6);
+}
+.diff-btn:active { transform: scale(0.93); }
 .action-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
   display: flex; gap: 6px; padding: 8px 12px 10px;
@@ -48,6 +65,7 @@ body {
   cursor: pointer; font-weight: bold; transition: all 0.15s; touch-action: manipulation;
 }
 .act-btn:active { transform: scale(0.93); }
+.act-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
 .modal-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.78); z-index: 10000;
@@ -122,7 +140,7 @@ body {
   box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 6px rgba(96,80,192,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
-/* Tile colors */
+/* Tile colors (cycle through 15 colors) */
 .tile-1 { color: #60b8ff; text-shadow: 0 0 8px #60b8ff; }
 .tile-2 { color: #60ff90; text-shadow: 0 0 8px #60ff90; }
 .tile-3 { color: #ff6060; text-shadow: 0 0 8px #ff6060; }
@@ -143,6 +161,24 @@ body {
 .tile.solved {
   border-color: #f5c842;
   box-shadow: 0 0 10px rgba(245,200,66,0.4), 0 3px 10px rgba(0,0,0,0.5);
+}
+
+/* Shuffle animation */
+@keyframes shuffleIn {
+  0% { transform: scale(0.3) rotate(90deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.tile.shuffle-anim {
+  animation: shuffleIn 0.45s ease-out forwards;
+}
+
+/* Win flash animation */
+@keyframes winFlash {
+  0%, 100% { background: linear-gradient(145deg, #2a1870 0%, #1a0a50 100%); border-color: #5040a0; }
+  50% { background: linear-gradient(145deg, #0a3a18 0%, #052210 100%); border-color: rgba(60,220,90,0.9); box-shadow: 0 0 18px rgba(60,220,90,0.6); }
+}
+.tile.win-flash {
+  animation: winFlash 0.35s ease-in-out 3;
 }
 </style>
 <style id="home-nav-css">
@@ -220,6 +256,9 @@ body {
   box-shadow: 0 0 10px rgba(76,201,240,0.3), 0 3px 10px rgba(0,0,0,0.5) !important;
   background: linear-gradient(145deg, #162434 0%, #0c1a28 100%) !important;
 }
+.tile.win-flash {
+  animation: winFlash 0.35s ease-in-out 3 !important;
+}
 .act-btn {
   background: linear-gradient(160deg, rgba(76,201,240,0.18) 0%, rgba(30,120,180,0.12) 100%) !important;
   color: #4cc9f0 !important;
@@ -228,6 +267,7 @@ body {
 }
 .act-btn:hover { box-shadow: 0 0 14px rgba(76,201,240,0.4) !important; }
 .act-btn:active { transform: scale(0.93) !important; }
+.act-btn:disabled { opacity: 0.4 !important; transform: none !important; }
 .action-bar {
   background: linear-gradient(0deg, rgba(0,6,10,0.99) 0%, rgba(0,8,14,0.97) 100%) !important;
   border-top-color: rgba(76,201,240,0.2) !important;
@@ -240,6 +280,21 @@ body {
 }
 .modal-title { background: linear-gradient(90deg, #002535 0%, #0a7090 28%, #4cc9f0 50%, #0a7090 72%, #002535 100%) !important; color: #fff !important; }
 .modal-close { color: #fff !important; }
+.diff-bar {
+  background: rgba(76,201,240,0.06) !important;
+  border-bottom-color: rgba(76,201,240,0.2) !important;
+}
+.diff-btn {
+  background: linear-gradient(160deg, rgba(76,201,240,0.1) 0%, rgba(30,120,180,0.07) 100%) !important;
+  color: #4cc9f0 !important;
+  border-color: rgba(76,201,240,0.3) !important;
+}
+.diff-btn.active {
+  background: linear-gradient(160deg, rgba(76,201,240,0.35) 0%, rgba(30,120,180,0.25) 100%) !important;
+  color: #fff !important;
+  border-color: rgba(76,201,240,0.8) !important;
+  box-shadow: 0 0 12px rgba(76,201,240,0.5) !important;
+}
 </style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -257,8 +312,15 @@ body {
 <div class="window">
   <div class="titlebar">
     <a href="index.html">🏠</a>
-    <span>🔢 15パズル</span>
+    <span>🔢 スライドパズル</span>
     <span style="width:24px"></span>
+  </div>
+
+  <!-- Difficulty bar -->
+  <div class="diff-bar">
+    <button class="diff-btn" data-n="3" onclick="setDifficulty(3)">3×3 やさしい</button>
+    <button class="diff-btn active" data-n="4" onclick="setDifficulty(4)">4×4 普通</button>
+    <button class="diff-btn" data-n="5" onclick="setDifficulty(5)">5×5 難しい</button>
   </div>
 
   <div class="status-panel">
@@ -285,7 +347,7 @@ body {
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 シャッフル</button>
-  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
+  <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled>↩ 戻る</button>
   <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
   <button class="act-btn" onclick="manualSave()">💾 保存</button>
 </div>
@@ -298,17 +360,16 @@ body {
       <button class="modal-close" onclick="closeModal('rules-modal')">✕</button>
     </div>
     <div class="modal-body">
-      <p>🔢 <strong>15パズル</strong>の遊び方</p><br>
+      <p>🔢 <strong>スライドパズル</strong>の遊び方</p><br>
       <p>① 空きマスに隣接したタイルを<br>　タップして動かします</p>
-      <p>② 1〜15を左上から順番に並べると<br>　クリア！</p>
+      <p>② 1〜(N²-1)を左上から順番に並べると<br>　クリア！</p>
       <p>③ 少ない手数でクリアするのが目標</p>
       <br>
-      <p>ゴール配置:</p>
-      <p style="font-family:monospace;color:#f5c842;font-size:12px">
-        1  2  3  4<br>
-        5  6  7  8<br>
-        9 10 11 12<br>
-       13 14 15 □
+      <p>難易度選択:</p>
+      <p style="color:#f5c842;font-size:12px">
+        3×3 (8ピース) — やさしい<br>
+        4×4 (15ピース) — 普通<br>
+        5×5 (24ピース) — 難しい
       </p><br>
       <p>💾 保存ボタンで進行状況を保存できます。次回起動時に続きから再開できます。</p>
     </div>
@@ -356,6 +417,23 @@ function startConfetti(){
   anim();
 }
 
+// Victory sound
+function playWin() {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    [[523,0],[659,0.13],[784,0.26],[1047,0.39],[1319,0.52]].forEach(([freq,t]) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.frequency.value = freq; o.type = 'sine';
+      const s = ac.currentTime + t;
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(0.18, s + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, s + 0.35);
+      o.start(s); o.stop(s + 0.35);
+    });
+  } catch(e) {}
+}
+
 // Visual Viewport
 const actionBar = document.querySelector('.action-bar');
 function fixActionBar() {
@@ -389,7 +467,8 @@ if (window.visualViewport) {
   fixActionBar();
 }
 
-// Game logic
+// ── Game State ────────────────────────────────────────────────────────────────
+let N = 4; // grid size (3, 4, or 5)
 let tiles = [];
 let moves = 0;
 let moveHistory = [];
@@ -397,14 +476,22 @@ let timerInterval = null;
 let startTime = null;
 let elapsed = 0;
 let gameActive = false;
-let best = parseInt(localStorage.getItem('puzzle15_best') || '0') || null;
 
-// Update best display
+function getBestKey() { return `puzzle15_best_${N}`; }
+function getScoresKey() { return `puzzle15_scores_${N}`; }
+
 function updateBestDisplay() {
-  const stored = localStorage.getItem('puzzle15_best');
+  const stored = localStorage.getItem(getBestKey());
   document.getElementById('led-best').textContent = stored ? stored : '--';
 }
 updateBestDisplay();
+
+function setDifficulty(n) {
+  N = n;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.n) === n));
+  updateBestDisplay();
+  newGame();
+}
 
 function isSolvable(tiles) {
   const arr = tiles.filter(t => t !== 0);
@@ -412,21 +499,26 @@ function isSolvable(tiles) {
   for (let i = 0; i < arr.length; i++)
     for (let j = i+1; j < arr.length; j++)
       if (arr[i] > arr[j]) inv++;
-  const emptyRow = Math.floor(tiles.indexOf(0) / 4);
-  const rowFromBottom = 4 - emptyRow;
-  if (rowFromBottom % 2 === 0) return inv % 2 === 1;
-  return inv % 2 === 0;
+  if (N % 2 === 1) {
+    // Odd grid: solvable iff inversions is even
+    return inv % 2 === 0;
+  } else {
+    // Even grid: solvable iff (inversions + row of blank from bottom) is odd
+    const emptyRow = Math.floor(tiles.indexOf(0) / N);
+    const rowFromBottom = N - emptyRow;
+    return (inv + rowFromBottom) % 2 === 1;
+  }
 }
 
 function isGoal(tiles) {
-  for (let i = 0; i < 15; i++) if (tiles[i] !== i+1) return false;
-  return tiles[15] === 0;
+  for (let i = 0; i < N*N - 1; i++) if (tiles[i] !== i+1) return false;
+  return tiles[N*N - 1] === 0;
 }
 
 function shuffleTiles() {
   let t;
   do {
-    t = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+    t = [...Array.from({length:N*N-1},(_,i)=>i+1), 0];
     for (let i = t.length-1; i > 0; i--) {
       const j = Math.floor(Math.random()*(i+1));
       [t[i],t[j]] = [t[j],t[i]];
@@ -442,14 +534,15 @@ function newGame() {
   moveHistory = [];
   document.getElementById('led-moves').textContent = '0';
   document.getElementById('led-time').textContent = '0:00';
-  render();
+  render(true); // animate shuffle
   startTimer();
   updateUndoBtn();
+  updateBestDisplay();
   document.getElementById('home-btn').style.display = 'block';
 }
 
 function startTimer() {
-  startTime = Date.now();
+  startTime = Date.now() - elapsed * 1000;
   timerInterval = setInterval(() => {
     elapsed = Math.floor((Date.now() - startTime) / 1000);
     const m = Math.floor(elapsed / 60);
@@ -462,8 +555,8 @@ function getEmptyIdx() { return tiles.indexOf(0); }
 
 function canMove(idx) {
   const empty = getEmptyIdx();
-  const row = Math.floor(idx / 4), col = idx % 4;
-  const erow = Math.floor(empty / 4), ecol = empty % 4;
+  const row = Math.floor(idx / N), col = idx % N;
+  const erow = Math.floor(empty / N), ecol = empty % N;
   return (row === erow && Math.abs(col - ecol) === 1) ||
          (col === ecol && Math.abs(row - erow) === 1);
 }
@@ -482,19 +575,28 @@ function moveTile(idx) {
   if (isGoal(tiles)) onWin();
 }
 
-function render() {
+function render(animateShuffle = false) {
   const board = document.getElementById('puzzle-board');
+  board.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+
+  // Font size based on grid size
+  const fontSize = N <= 3 ? '30px' : N === 4 ? '24px' : '16px';
+
   board.innerHTML = '';
-  const empty = getEmptyIdx();
   tiles.forEach((val, idx) => {
     const el = document.createElement('div');
     if (val === 0) {
       el.className = 'tile empty';
     } else {
-      el.className = `tile tile-${val}`;
+      const colorClass = ((val - 1) % 15) + 1;
+      el.className = `tile tile-${colorClass}`;
+      if (animateShuffle) {
+        el.classList.add('shuffle-anim');
+        el.style.animationDelay = `${Math.random() * 0.3}s`;
+      }
       if (canMove(idx)) el.classList.add('can-move');
-      // Check if in correct position
       if (val === idx + 1) el.classList.add('solved');
+      el.style.fontSize = fontSize;
       el.textContent = val;
       el.addEventListener('click', () => moveTile(idx));
       let startX=0,startY=0,moved=false;
@@ -509,30 +611,39 @@ function render() {
 function onWin() {
   clearInterval(timerInterval);
   gameActive = false;
+
+  // Flash all tiles green
+  document.querySelectorAll('#puzzle-board .tile:not(.empty)').forEach(el => {
+    el.classList.add('win-flash');
+  });
+
+  // Confetti + sound
   startConfetti();
+  playWin();
 
   // Save best
-  const stored = parseInt(localStorage.getItem('puzzle15_best') || '0');
+  const stored = parseInt(localStorage.getItem(getBestKey()) || '0');
   let isNew = false;
   if (!stored || moves < stored) {
-    localStorage.setItem('puzzle15_best', moves);
+    localStorage.setItem(getBestKey(), moves);
     isNew = true;
     updateBestDisplay();
   }
 
-  // Save to score list
-  let scores = JSON.parse(localStorage.getItem('puzzle15_scores') || '[]');
+  // Save to score list per difficulty
+  let scores = JSON.parse(localStorage.getItem(getScoresKey()) || '[]');
   scores.push({ moves, time: elapsed });
   scores.sort((a,b) => a.moves - b.moves || a.time - b.time);
   scores = scores.slice(0, 5);
-  localStorage.setItem('puzzle15_scores', JSON.stringify(scores));
+  localStorage.setItem(getScoresKey(), JSON.stringify(scores));
 
   const min = Math.floor(elapsed / 60), sec = elapsed % 60;
+  const timeStr = `${min}:${String(sec).padStart(2,'0')}`;
   document.getElementById('win-body').innerHTML = `
-    <p style="font-size:16px;color:#f5c842;text-align:center;margin-bottom:12px">🎉 クリア！</p>
-    <p>手数: <strong style="color:#ff44aa">${moves}</strong> ${isNew ? '<span style="color:#f5c842">★ 新記録！</span>' : ''}</p>
-    <p>タイム: <strong style="color:#ff44aa">${min}:${String(sec).padStart(2,'0')}</strong></p>
-    <br><button class="act-btn" style="width:100%;padding:10px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
+    <p style="font-size:16px;color:#f5c842;text-align:center;margin-bottom:12px">🎉 完成！</p>
+    <p>手数: <strong style="color:#ff44aa">${moves}手</strong> ${isNew ? '<span style="color:#f5c842">★ 新記録！</span>' : ''}</p>
+    <p>タイム: <strong style="color:#ff44aa">${timeStr}</strong></p>
+    <br><button class="act-btn" style="width:100%;padding:10px;font-size:13px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>
   `;
   showModal('win-modal');
 }
@@ -543,7 +654,6 @@ function updateUndoBtn() {
   if (!btn) return;
   const disabled = moveHistory.length === 0 || !gameActive;
   btn.disabled = disabled;
-  btn.style.opacity = disabled ? '0.4' : '';
 }
 
 function undoMove() {
@@ -556,16 +666,23 @@ function undoMove() {
 }
 
 function showHighScore() {
-  const scores = JSON.parse(localStorage.getItem('puzzle15_scores') || '[]');
-  let html = '<p style="color:#f5c842;font-weight:bold;margin-bottom:8px">ベストスコア TOP5</p>';
-  if (scores.length === 0) {
-    html += '<p style="color:#6050a0">記録なし</p>';
-  } else {
-    scores.forEach((s, i) => {
-      const min = Math.floor(s.time/60), sec = s.time%60;
-      html += `<p>${i+1}位: <span style="color:#ff44aa">${s.moves}手</span> ${min}:${String(sec).padStart(2,'0')}</p>`;
-    });
-  }
+  let html = '';
+  [
+    {n:3, label:'3×3 やさしい'},
+    {n:4, label:'4×4 普通'},
+    {n:5, label:'5×5 難しい'}
+  ].forEach(({n, label}) => {
+    const scores = JSON.parse(localStorage.getItem(`puzzle15_scores_${n}`) || '[]');
+    html += `<p style="color:#f5c842;font-weight:bold;margin-top:10px;margin-bottom:4px">${label}</p>`;
+    if (!scores.length) {
+      html += '<p style="color:#6050a0;margin-bottom:4px">記録なし</p>';
+    } else {
+      scores.forEach((s, i) => {
+        const min = Math.floor(s.time/60), sec = s.time%60;
+        html += `<p>${i+1}位: <span style="color:#ff44aa">${s.moves}手</span> ${min}:${String(sec).padStart(2,'0')}</p>`;
+      });
+    }
+  });
   document.getElementById('hs-body').innerHTML = html;
   showModal('hs-modal');
 }
@@ -602,27 +719,26 @@ document.addEventListener('keydown', e => {
 function handleSwipeDir(dx, dy) {
   if (!gameActive) return;
   const empty = getEmptyIdx();
-  const emptyRow = Math.floor(empty / 4), emptyCol = empty % 4;
+  const emptyRow = Math.floor(empty / N), emptyCol = empty % N;
   let target = -1;
   if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx < 0 && emptyCol < 3) target = empty + 1;
+    if (dx < 0 && emptyCol < N-1) target = empty + 1;
     if (dx > 0 && emptyCol > 0) target = empty - 1;
   } else {
-    if (dy < 0 && emptyRow < 3) target = empty + 4;
-    if (dy > 0 && emptyRow > 0) target = empty - 4;
+    if (dy < 0 && emptyRow < N-1) target = empty + N;
+    if (dy > 0 && emptyRow > 0) target = empty - N;
   }
-  if (target >= 0 && target < 16) moveTile(target);
+  if (target >= 0 && target < N*N) moveTile(target);
 }
 
 // ── Toast ──
 function showToast(msg){let t=document.getElementById('save-toast');if(!t){t=document.createElement('div');t.id='save-toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(50,200,100,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',1500);}
-function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
 function saveGame(){ autoSave(); }
 
 // ── Save / Load ──
 function autoSave(){
   if(!gameActive) return;
-  const data={tiles:[...tiles],moves,ts:Date.now()};
+  const data={tiles:[...tiles], moves, N, ts:Date.now()};
   localStorage.setItem('puzzle15_save',JSON.stringify(data));
 }
 function manualSave(){autoSave();showToast('💾 保存しました！');}
@@ -634,6 +750,7 @@ function tryLoadSave(){
     if(!data||!data.ts) return false;
     if(Date.now()-data.ts>7*24*60*60*1000) return false;
     clearInterval(timerInterval);
+    N = data.N || 4;
     tiles=data.tiles;
     moves=data.moves;
     elapsed=0;
@@ -641,6 +758,8 @@ function tryLoadSave(){
     moveHistory=[];
     document.getElementById('led-moves').textContent=moves;
     document.getElementById('led-time').textContent='0:00';
+    // Update active difficulty button
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.n) === N));
     render();
     startTimer();
     updateBestDisplay();

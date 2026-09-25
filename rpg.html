@@ -169,6 +169,14 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
 @keyframes chFadeIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
 #chapter-overlay.show .ch-title,.ch-num,.ch-sub{animation:chFadeIn 0.7s ease-out;}
 
+/* CLASS SELECTION */
+.class-card{background:linear-gradient(160deg,#1e1248 0%,#0d0830 100%);border:2px solid #4a38a0;border-radius:6px;padding:14px 16px;cursor:pointer;touch-action:manipulation;transition:border-color 0.15s,background 0.15s;}
+.class-card:hover,.class-card:active{border-color:#ffd700;background:linear-gradient(160deg,#2a1a60 0%,#180a48 100%);}
+.class-card-title{color:#ffd700;font-size:15px;font-weight:bold;margin-bottom:6px;letter-spacing:2px;}
+.class-card-stats{color:#aaa;font-size:11px;line-height:1.6;}
+.class-card-skills{color:#8888cc;font-size:10px;margin-top:4px;}
+.class-card-icon{font-size:28px;float:right;line-height:1;}
+
 /* NAME ENTRY SCREEN */
 #name-screen{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;}
 #name-screen.active{display:flex;}
@@ -207,6 +215,25 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
   45%{transform:translate(-4px,4px)}60%{transform:translate(4px,-2px)}75%{transform:translate(-2px,2px)}100%{transform:translate(0,0)}
 }
 #dungeon-hud{display:none;background:rgba(8,4,22,0.97);border-bottom:2px solid #5a3aaa;padding:5px 10px 6px;font-family:monospace;font-size:11px;color:#ddd;z-index:5;}
+
+/* MINIMAP */
+#rpg-minimap{position:absolute;top:4px;right:4px;width:90px;height:90px;background:rgba(0,0,0,0.8);border:1px solid rgba(255,215,0,0.5);border-radius:4px;z-index:10;pointer-events:none;}
+#rpg-minimap-canvas{display:block;border-radius:3px;}
+
+/* XP BAR */
+#xp-bar-row{background:#0a0a14;border-top:1px solid #1a0a40;padding:2px 10px;display:flex;align-items:center;gap:6px;font-family:monospace;font-size:9px;}
+.xp-label{color:#8888cc;white-space:nowrap;}
+#xp-bar-bg{flex:1;height:5px;background:#111;border:1px solid #2a1060;border-radius:3px;overflow:hidden;}
+#xp-bar-fill{height:100%;background:linear-gradient(90deg,#7b2fff,#cc88ff);transition:width 0.4s;border-radius:3px;}
+#xp-text{color:#8888cc;white-space:nowrap;}
+
+/* LEVEL UP FLASH OVERLAY */
+#lvup-overlay{position:fixed;inset:0;z-index:2000;pointer-events:none;display:none;align-items:center;justify-content:center;flex-direction:column;}
+#lvup-overlay.show{display:flex;animation:lvupFade 1.8s ease-out forwards;}
+@keyframes lvupFade{0%{background:rgba(180,100,255,0.55)}40%{background:rgba(150,80,255,0.35)}100%{background:rgba(0,0,0,0)}}
+#lvup-text{font-family:'Courier New',monospace;font-size:28px;font-weight:bold;color:#fff;text-shadow:0 0 24px #cc88ff,0 0 48px #7b2fff;letter-spacing:4px;animation:lvupPop 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes lvupPop{from{transform:scale(0.4);opacity:0}to{transform:scale(1);opacity:1}}
+#lvup-sub{font-family:'Courier New',monospace;font-size:13px;color:#cc88ff;margin-top:8px;letter-spacing:2px;text-align:center;padding:0 16px;}
 #dungeon-hud-name{color:#ff9966;font-weight:bold;}
 #dungeon-hud-floor{color:#ffccaa;margin-left:8px;}
 #dungeon-hud-desc{color:#887799;font-size:10px;margin-top:2px;}
@@ -299,6 +326,15 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
   </div>
 </div>
 
+<!-- CLASS SELECTION SCREEN -->
+<div id="class-screen" style="display:none;position:fixed;inset:0;z-index:605;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;overflow-y:auto;">
+  <div style="max-width:380px;width:90%;padding:24px 16px;font-family:'MS Gothic','Hiragino Sans','Courier New',monospace">
+    <div style="color:#ffd700;font-size:15px;font-weight:bold;text-align:center;letter-spacing:3px;margin-bottom:6px">しょくぎょうを　えらんでください</div>
+    <div style="color:#888;font-size:11px;text-align:center;margin-bottom:20px;letter-spacing:1px">それぞれ　とくちょうが　ちがいます</div>
+    <div id="class-cards" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</div>
+
 <!-- OPENING STORY SCREEN -->
 <div id="opening-screen">
   <div id="opening-inner">
@@ -318,6 +354,12 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
   <div style="margin-top:40px;font-size:10px;color:#2a1860;font-family:monospace">&copy; 2025 MINI GAME COLLECTION</div>
 </div>
 
+<!-- LEVEL UP OVERLAY -->
+<div id="lvup-overlay">
+  <div id="lvup-text">LEVEL UP!</div>
+  <div id="lvup-sub"></div>
+</div>
+
 <!-- FIELD SCREEN -->
 <div id="field-screen" class="screen">
   <div id="field-status">
@@ -330,6 +372,11 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
     <button onclick="showPartyOverlay()" style="padding:3px 8px;font-size:10px;background:linear-gradient(180deg,#1e1248,#0d0830);border:1px solid #4a38a0;border-radius:10px;color:#b898ff;font-weight:bold;cursor:pointer;touch-action:manipulation;font-family:monospace;">⚙ パーティ</button>
     <button onclick="showEquipMenu()" style="padding:3px 8px;font-size:10px;background:linear-gradient(180deg,#3a1a00,#1a0a00);border:1px solid #cc8800;border-radius:10px;color:#ffd700;font-weight:bold;cursor:pointer;touch-action:manipulation;font-family:monospace;">⚔ そうび</button>
   </div>
+  <div id="xp-bar-row">
+    <span class="xp-label">EXP</span>
+    <div id="xp-bar-bg"><div id="xp-bar-fill" style="width:0%"></div></div>
+    <span id="xp-text">0/9</span>
+  </div>
   <div id="field-location" id="field-location-bar">&nbsp;</div>
   <div id="dungeon-hud">
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -341,7 +388,10 @@ body{background:radial-gradient(ellipse at center,#0a0420 0%,#020108 100%);min-h
     </div>
     <div id="dungeon-hud-desc"></div>
   </div>
-  <canvas id="fieldCanvas" width="480" height="384"></canvas>
+  <div style="position:relative;">
+    <canvas id="fieldCanvas" width="480" height="384"></canvas>
+    <div id="rpg-minimap"><canvas id="rpg-minimap-canvas" width="90" height="90"></canvas></div>
+  </div>
   <div id="dpad-area">
     <div id="dpad">
       <div></div>
@@ -711,6 +761,65 @@ dragon:`<svg width="120" height="120" viewBox="0 0 120 120">
   <path d="M80,95 Q85,108 90,113" stroke="#bb2200" stroke-width="10" fill="none" stroke-linecap="round"/>
 </svg>`,
 
+goldenSlime:`<svg width="90" height="110" viewBox="0 0 90 110">
+  <defs><radialGradient id="gsG" cx="35%" cy="30%"><stop offset="0%" stop-color="#fffaaa"/><stop offset="50%" stop-color="#ffd700"/><stop offset="100%" stop-color="#cc8800"/></radialGradient></defs>
+  <ellipse cx="45" cy="78" rx="36" ry="28" fill="url(#gsG)"/>
+  <path d="M9,78 Q12,28 45,12 Q78,28 81,78" fill="url(#gsG)"/>
+  <ellipse cx="30" cy="46" rx="13" ry="10" fill="rgba(255,255,200,0.6)"/>
+  <circle cx="34" cy="70" r="9" fill="white"/>
+  <circle cx="56" cy="70" r="9" fill="white"/>
+  <circle cx="36" cy="72" r="5" fill="#222"/>
+  <circle cx="58" cy="72" r="5" fill="#222"/>
+  <circle cx="37" cy="71" r="2" fill="white"/>
+  <circle cx="59" cy="71" r="2" fill="white"/>
+  <path d="M37,84 Q45,92 53,84" stroke="#aa6600" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M68,14 L70,8 L72,14 L78,16 L72,18 L70,24 L68,18 L62,16 Z" fill="#fffaaa" opacity="0.95"/>
+  <path d="M14,22 L15,18 L16,22 L20,23 L16,24 L15,28 L14,24 L10,23 Z" fill="#fffaaa" opacity="0.8"/>
+</svg>`,
+
+zombie:`<svg width="88" height="120" viewBox="0 0 88 120">
+  <ellipse cx="44" cy="88" rx="18" ry="24" fill="#2a5528"/>
+  <ellipse cx="44" cy="44" rx="20" ry="20" fill="#335533"/>
+  <ellipse cx="30" cy="38" rx="7" ry="8" fill="#ffcc44"/>
+  <ellipse cx="58" cy="38" rx="7" ry="8" fill="#ffcc44"/>
+  <circle cx="31" cy="39" r="4" fill="#220000"/>
+  <circle cx="59" cy="39" r="4" fill="#220000"/>
+  <circle cx="32" cy="38" r="1.5" fill="white"/>
+  <circle cx="60" cy="38" r="1.5" fill="white"/>
+  <path d="M36,52 Q44,58 52,52" stroke="#0a1a0a" stroke-width="2" fill="none"/>
+  <rect x="38" y="54" width="4" height="7" fill="#ccddcc" rx="1"/>
+  <rect x="45" y="54" width="4" height="7" fill="#ccddcc" rx="1"/>
+  <path d="M24,30 Q20,16 28,14 Q26,24 24,30" fill="#335533" opacity="0.8"/>
+  <path d="M64,30 Q68,16 60,14 Q62,24 64,30" fill="#335533" opacity="0.8"/>
+  <ellipse cx="20" cy="88" rx="10" ry="6" fill="#335533" transform="rotate(-30 20 88)"/>
+  <ellipse cx="68" cy="88" rx="10" ry="6" fill="#335533" transform="rotate(30 68 88)"/>
+  <ellipse cx="28" cy="110" rx="10" ry="8" fill="#2a5528"/>
+  <ellipse cx="60" cy="110" rx="10" ry="8" fill="#2a5528"/>
+  <path d="M15,60 Q2,68 4,82" stroke="#335533" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <path d="M73,60 Q86,68 84,82" stroke="#335533" stroke-width="8" stroke-linecap="round" fill="none"/>
+</svg>`,
+
+golem:`<svg width="110" height="120" viewBox="0 0 110 120">
+  <ellipse cx="55" cy="100" rx="30" ry="16" fill="#5a5a6a"/>
+  <rect x="30" y="52" width="50" height="52" fill="#5a5a6a" rx="6"/>
+  <rect x="32" y="54" width="46" height="48" fill="#6a6a7a" rx="5"/>
+  <rect x="22" y="56" width="12" height="40" fill="#5a5a6a" rx="4"/>
+  <rect x="76" y="56" width="12" height="40" fill="#5a5a6a" rx="4"/>
+  <rect x="22" y="88" width="18" height="14" fill="#4a4a5a" rx="3"/>
+  <rect x="70" y="88" width="18" height="14" fill="#4a4a5a" rx="3"/>
+  <ellipse cx="55" cy="40" rx="22" ry="20" fill="#5a5a6a"/>
+  <ellipse cx="55" cy="38" rx="18" ry="16" fill="#6a6a7a"/>
+  <rect x="39" y="30" width="34" height="6" fill="#5a5a6a" rx="3"/>
+  <ellipse cx="44" cy="40" rx="8" ry="7" fill="#ff4400"/>
+  <ellipse cx="66" cy="40" rx="8" ry="7" fill="#ff4400"/>
+  <ellipse cx="44" cy="40" rx="4" ry="4" fill="#ff8800"/>
+  <ellipse cx="66" cy="40" rx="4" ry="4" fill="#ff8800"/>
+  <rect x="43" y="50" width="24" height="5" fill="#4a4a5a" rx="2"/>
+  <line x1="34" y1="60" x2="76" y2="60" stroke="#4a4a5a" stroke-width="3"/>
+  <line x1="34" y1="72" x2="76" y2="72" stroke="#4a4a5a" stroke-width="3"/>
+  <line x1="34" y1="84" x2="76" y2="84" stroke="#4a4a5a" stroke-width="3"/>
+</svg>`,
+
 demonLord:`<svg width="100" height="130" viewBox="0 0 100 130">
   <path d="M20,62 Q14,94 10,122 L90,122 Q86,94 80,62 Q65,77 50,74 Q35,77 20,62" fill="#1a0033"/>
   <path d="M50,74 L50,122" stroke="#440066" stroke-width="2"/>
@@ -951,20 +1060,23 @@ const WALKABLE = new Set([0,4,5,6,7,8,9,10]);
 const ENCOUNTER_TILES = new Set([0,8,9,10]);
 
 const MONSTERS = {
-  slime:     {name:'スライム',     hp:12, atk:4,  def:2,  xp:4,   gold:3,  lv:1, spr:'slime'},
-  goblin:    {name:'ゴブリン',     hp:20, atk:8,  def:4,  xp:8,   gold:6,  lv:2, spr:'goblin'},
-  metalSlime:{name:'メタルスライム',hp:4,  atk:5,  def:100,xp:115, gold:60, lv:1, spr:'metalSlime', metal:true},
-  slug:      {name:'おおなめくじ', hp:30, atk:12, def:6,  xp:15,  gold:12, lv:3, spr:'slug'},
-  chimera:   {name:'キメーラ',     hp:55, atk:22, def:10, xp:30,  gold:25, lv:5, spr:'chimera'},
-  dragon:    {name:'ドラゴン',     hp:90, atk:32, def:18, xp:80,  gold:60, lv:8, spr:'dragon'},
-  demonLord: {name:'冥王ネルゲル', hp:200,atk:40, def:25, xp:500, gold:100,lv:10, spr:'demonLord', boss:true},
+  slime:      {name:'スライム',       hp:12,  atk:4,  def:2,   xp:4,   gold:3,   lv:1, spr:'slime'},
+  goblin:     {name:'ゴブリン',       hp:20,  atk:8,  def:4,   xp:8,   gold:6,   lv:2, spr:'goblin'},
+  metalSlime: {name:'メタルスライム', hp:4,   atk:5,  def:100, xp:115, gold:60,  lv:1, spr:'metalSlime', metal:true},
+  goldenSlime:{name:'きんのスライム', hp:6,   atk:8,  def:200, xp:500, gold:300, lv:1, spr:'goldenSlime', metal:true, rare:true},
+  slug:       {name:'おおなめくじ',   hp:30,  atk:12, def:6,   xp:15,  gold:12,  lv:3, spr:'slug'},
+  zombie:     {name:'ゾンビ',         hp:40,  atk:14, def:8,   xp:22,  gold:15,  lv:4, spr:'zombie', regenerates:true},
+  golem:      {name:'ゴーレム',       hp:70,  atk:20, def:22,  xp:45,  gold:35,  lv:6, spr:'golem',  immuneInstakill:true},
+  chimera:    {name:'キメーラ',       hp:55,  atk:22, def:10,  xp:30,  gold:25,  lv:5, spr:'chimera'},
+  dragon:     {name:'ドラゴン',       hp:90,  atk:32, def:18,  xp:80,  gold:60,  lv:8, spr:'dragon'},
+  demonLord:  {name:'冥王ネルゲル',   hp:200, atk:40, def:25,  xp:500, gold:100, lv:10, spr:'demonLord', boss:true},
 };
 
 const ENC_TABLE = {
-  north:    ['slime','slime','goblin','slime','goblin','metalSlime'],
-  south:    ['slug','slug','chimera','slug'],
-  dungeon1: ['slug','chimera','chimera','slug'],
-  dungeon2: ['chimera','dragon','dragon','chimera'],
+  north:    ['slime','slime','goblin','slime','goblin','metalSlime','goldenSlime','zombie'],
+  south:    ['slug','slug','chimera','slug','golem','zombie'],
+  dungeon1: ['slug','chimera','chimera','slug','golem','zombie'],
+  dungeon2: ['chimera','dragon','dragon','chimera','golem','goldenSlime'],
   dungeon3: ['demonLord'],
 };
 
@@ -1255,7 +1367,7 @@ let G = {};
 function defaultState() {
   return {
     hero: {name:'主人公',lv:1,hp:50,maxHp:50,mp:20,maxMp:20,
-           atk:8,def:5,xp:0,xpNext:9,gold:50,weapon:null,armor:null,
+           atk:8,def:5,xp:0,xpNext:10,gold:50,weapon:null,armor:null,
            chikara:14,mimamori:12,subayasa:15,kiyosa:10,atkMagic:8,healMagic:8,
            spells:[], skills:[], btBuffs:{},
            equip:{ weapon:null, armor:null, accessory:null }},
@@ -2000,7 +2112,8 @@ function renderField() {
 
 function updateFieldHUD() {
   const h = G.hero;
-  document.getElementById('fs-name').textContent = h.name + ' Lv.' + h.lv;
+  const clsIcon = h.heroClass ? (HERO_CLASSES[h.heroClass]?.icon || '') : '';
+  document.getElementById('fs-name').textContent = clsIcon + h.name + ' Lv.' + h.lv;
   document.getElementById('fs-hp').textContent = 'HP ' + h.hp + '/' + h.maxHp;
   document.getElementById('fs-mp').textContent = 'MP ' + h.mp + '/' + h.maxMp;
   document.getElementById('fs-gold').textContent = h.gold + 'G';
@@ -2029,6 +2142,65 @@ function updateFieldHUD() {
   }
   document.getElementById('field-location').textContent = locationText;
   updateDungeonHUD();
+  updateXPBar();
+  drawMinimap();
+}
+
+// ── Minimap renderer ──
+function drawMinimap() {
+  const mc = document.getElementById('rpg-minimap-canvas');
+  if (!mc || !G || !G.pos) return;
+  const mx = mc.getContext('2d');
+  const W = mc.width, H = mc.height;
+  mx.clearRect(0, 0, W, H);
+
+  if (G.dungeonFloor > 0) {
+    // Dungeon view
+    mx.fillStyle = '#0a0010';
+    mx.fillRect(0, 0, W, H);
+    const tw = W / MAP_W, th = H / MAP_H;
+    const DCOLORS = {0:'#3a2a50',1:'#0a0010',2:'#1a0a30',3:'#4a3a60',8:'#220011',9:'#180008',10:'#100005'};
+    for (let row = 0; row < MAP_H; row++) {
+      for (let col = 0; col < MAP_W; col++) {
+        const t = MAP[row][col];
+        mx.fillStyle = DCOLORS[t] || '#1a0a30';
+        mx.fillRect(Math.floor(col * tw), Math.floor(row * th), Math.ceil(tw), Math.ceil(th));
+      }
+    }
+    // Hero dot
+    mx.fillStyle = '#ffd700';
+    mx.beginPath();
+    mx.arc((G.pos.x + 0.5) * tw, (G.pos.y + 0.5) * th, Math.max(2, tw * 0.7), 0, Math.PI * 2);
+    mx.fill();
+    // Floor label
+    mx.fillStyle = 'rgba(200,150,255,0.9)';
+    mx.font = 'bold 8px monospace';
+    mx.textAlign = 'center';
+    mx.fillText('B' + G.dungeonFloor + 'F', W / 2, H - 3);
+    return;
+  }
+
+  // World map
+  const mapData = G.currentMap && WORLD_MAPS[G.currentMap];
+  if (!mapData || !mapData.tiles) return;
+  const cols = mapData.width, rows = mapData.height;
+  const tw = W / cols, th = H / rows;
+  const MCOLORS = {0:'#48b034',1:'#1a6610',2:'#1a44bb',3:'#c8a870',4:'#ffd700',5:'#ffd700',6:'#ffd700',7:'#ffd700',8:'#880033',9:'#660022',10:'#440011'};
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const t = mapData.tiles[row][col];
+      mx.fillStyle = MCOLORS[t] !== undefined ? MCOLORS[t] : '#48b034';
+      mx.fillRect(Math.floor(col * tw), Math.floor(row * th), Math.ceil(tw), Math.ceil(th));
+    }
+  }
+  // Hero dot with outline
+  mx.fillStyle = '#ffd700';
+  mx.strokeStyle = '#000';
+  mx.lineWidth = 0.8;
+  mx.beginPath();
+  mx.arc((G.pos.x + 0.5) * tw, (G.pos.y + 0.5) * th, Math.max(2.5, tw * 0.55), 0, Math.PI * 2);
+  mx.fill();
+  mx.stroke();
 }
 
 function getNearbyLocation() {
@@ -3549,7 +3721,7 @@ function _execCharSkill(idx, char, key) {
       if (mon.currentHp <= 0) doVictory(); else nextPartyTurn();
     });
   } else if (sk.type === 'instakill') {
-    const ok = !mon.boss && Math.random() < (sk.rate || 0.35);
+    const ok = !mon.boss && !mon.immuneInstakill && Math.random() < (sk.rate || 0.35);
     sndMagic();
     if (ok) {
       mon.currentHp = 0; updateBattleHUD();
@@ -3812,6 +3984,13 @@ function doEnemyTurn() {
     return;
   }
 
+  // Zombie regeneration: recover 8% max HP each turn (silent)
+  if (mon.regenerates && mon.currentHp > 0 && mon.currentHp < mon.hp) {
+    const regen = Math.max(1, Math.floor(mon.hp * 0.08));
+    mon.currentHp = Math.min(mon.hp, mon.currentHp + regen);
+    updateBattleHUD();
+  }
+
   // Boss phase 2 at 50% HP
   if (mon.boss && !mon.phase2 && mon.currentHp < mon.hp*0.5) {
     mon.phase2=true; mon.atk=Math.floor(mon.atk*1.3);
@@ -3885,19 +4064,45 @@ function doEnemyAttack() {
 // After enemy turn ends — delegate to endRound (handles buff expiry)
 function startNextRound() { endRound(); }
 
+// ── Item drop table ──
+function rollItemDrop(mon) {
+  if (!mon) return null;
+  if (mon.metal) return null;          // Metal/golden slime: no drop
+  if (mon.boss) return 'herb';         // Boss: guaranteed herb
+  const lv = mon.lv || 1;
+  const r = Math.random();
+  if (lv >= 6) {
+    if (r < 0.08) return 'mpWater';
+    if (r < 0.28) return 'herb';
+  } else if (lv >= 4) {
+    if (r < 0.05) return 'mpWater';
+    if (r < 0.22) return 'herb';
+  } else {
+    if (r < 0.18) return 'herb';
+  }
+  return null;
+}
+
 // ── Victory ──
 function doVictory() {
   BT.over=true;
   const mon = BT.mon;
   const expGain  = Math.floor((mon.xp   || 10) * 3);
-  const goldGain = Math.floor((mon.gold ||  5) * 3);
+  const thiefMult = (G.hero.heroClass === 'thief') ? 1.5 : 1.0;
+  const goldGain = Math.floor((mon.gold ||  5) * 3 * thiefMult);
   G.hero.gold += goldGain;
   G.hero.xp   += expGain;
   G.monstersKilled = (G.monstersKilled || 0) + 1;
   sndVictory();
+  // Item drop
+  const itemDrop = rollItemDrop(mon);
+  if (itemDrop) {
+    G.inventory[itemDrop] = (G.inventory[itemDrop] || 0) + 1;
+  }
   const lvMsgs = checkLevelUp();
   updateBattleHUD();
   updateFieldHUD();
+  updateXPBar();
   saveGame();
 
   // Final boss (冥王ネルゲル) — triggers ending
@@ -3992,17 +4197,21 @@ function doVictory() {
   // Dungeon regular enemy
   if (BT.isDungeon) {
     G.dungeonFloorCleared = true;
+    const dropMsg = itemDrop ? [`${ITEM_DATA[itemDrop]?.name||itemDrop}を　ひろった！`] : [];
     seqMsg([
       `${mon.name}を　たおした！`,
       `${expGain}けいけんちと　${goldGain}Gを　てにいれた！`,
+      ...dropMsg,
       ...lvMsgs
     ], ()=>checkRecruitOffer(mon, ()=>showVictoryPanel()));
     return;
   }
 
+  const dropMsg2 = itemDrop ? [`${ITEM_DATA[itemDrop]?.name||itemDrop}を　ひろった！`] : [];
   seqMsg([
     `${mon.name}を　たおした！`,
     `${expGain}けいけんちと　${goldGain}Gを　てにいれた！`,
+    ...dropMsg2,
     ...lvMsgs
   ], ()=>checkRecruitOffer(mon, ()=>showVictoryPanel()));
 }
@@ -4066,12 +4275,25 @@ function declineMonsterRecruit() {
   typeMsg('そうか……またいつか　あおう。', () => { if(onDec) onDec(); else showVictoryPanel(); });
 }
 
+// Smooth XP curve: xpToNext(lv) = floor(10 * 1.5^(lv-1))
+function xpToNext(lv) { return Math.floor(10 * Math.pow(1.5, lv - 1)); }
+
+function showLevelUpOverlay(lv, skillName) {
+  const ol = document.getElementById('lvup-overlay');
+  const sub = document.getElementById('lvup-sub');
+  if (!ol) return;
+  document.getElementById('lvup-text').textContent = `LEVEL UP!  Lv.${lv}`;
+  sub.textContent = skillName ? `新しいスキル「${skillName}」を　おぼえた！` : '';
+  ol.classList.add('show');
+  setTimeout(() => { ol.classList.remove('show'); }, 1800);
+}
+
 function checkLevelUp() {
   const msgs = [];
   while (G.hero.xp >= G.hero.xpNext && G.hero.lv < 15) {
     G.hero.xp -= G.hero.xpNext;
     G.hero.lv++;
-    G.hero.xpNext = Math.floor(G.hero.lv * 9);
+    G.hero.xpNext = xpToNext(G.hero.lv);
     // Also update legacy atk/def fields for compatibility
     G.hero.atk = (G.hero.atk||8) + 2;
     G.hero.def = (G.hero.def||5) + 2;
@@ -4083,11 +4305,13 @@ function checkLevelUp() {
       `\nすばやさ+${gains.subayasa} きようさ+${gains.kiyosa} 攻撃魔力+${gains.atkMagic} 回復魔力+${gains.healMagic}`
     );
     // Check ALL_SKILLS for auto-learn at this level
+    let newSkillName = null;
     Object.entries(ALL_SKILLS).forEach(([key, sk]) => {
       if (sk.learnLv === G.hero.lv && !G.hero.skills.includes(key)) {
         if (G.hero.skills.length < 10) {
           G.hero.skills.push(key);
           msgs.push(`${G.hero.name}は　${sk.name}を　おぼえた！`);
+          if (!newSkillName) newSkillName = sk.name;
         } else {
           msgs.push(`${G.hero.name}は　${sk.name}を　おぼえようとした！`);
           msgs.push('しかし　わざが　いっぱいだ！\nパーティ管理から　わすれさせよう。');
@@ -4095,8 +4319,25 @@ function checkLevelUp() {
         }
       }
     });
+    // Also check class-specific skills
+    const classSkill = learnClassSkills(G.hero.lv);
+    if (classSkill && classSkill !== newSkillName) {
+      msgs.push(`${G.hero.name}は　クラス技　${classSkill}を　おぼえた！`);
+      if (!newSkillName) newSkillName = classSkill;
+    }
+    showLevelUpOverlay(G.hero.lv, newSkillName);
+    updateXPBar();
   }
   return msgs;
+}
+
+function updateXPBar() {
+  if (!G || !G.hero) return;
+  const pct = G.hero.xpNext > 0 ? Math.min(100, (G.hero.xp / G.hero.xpNext) * 100) : 100;
+  const fill = document.getElementById('xp-bar-fill');
+  const text = document.getElementById('xp-text');
+  if (fill) fill.style.width = pct + '%';
+  if (text) text.textContent = `${G.hero.xp}/${G.hero.xpNext}`;
 }
 
 function showVictoryPanel() {
@@ -4470,7 +4711,100 @@ function confirmName() {
   let name = inp.value.trim().substring(0, 6) || '主人公';
   G.hero.name = name;
   document.getElementById('name-screen').classList.remove('active');
+  showClassSelect();
+}
+
+// ============================================================
+// CLASS SELECTION SYSTEM
+// ============================================================
+const HERO_CLASSES = {
+  warrior: {
+    id: 'warrior', name: '戦士', icon: '⚔️',
+    desc: 'HP・防御が高く、打たれ強い。\n力で敵を打ち砕くタイプ。',
+    statMod: { maxHp:+20, maxMp:-5, atk:+5, def:+8, chikara:+6, mimamori:+8, subayasa:-2, atkMagic:-3, healMagic:-3 },
+    startSkills: ['バイキルト','スカラ'],
+    classSkills: { 1:'バイキルト', 6:'スクルト', 9:'スカラ', 12:'ルカナン' },
+    color: '#cc4422',
+  },
+  mage: {
+    id: 'mage', name: '魔法使い', icon: '🔮',
+    desc: 'MPと攻撃魔力が高い。\n強力な呪文で敵を一掃する。',
+    statMod: { maxHp:-10, maxMp:+25, atk:-3, def:-2, chikara:-3, mimamori:-2, subayasa:0, atkMagic:+12, healMagic:+8 },
+    startSkills: ['ギラ','ヒール'],
+    classSkills: { 1:'ギラ', 3:'ヒール', 5:'ヒャド', 7:'マジックパワー', 9:'ベギラマ', 12:'メダパニ', 14:'マホカンタ' },
+    color: '#4488ff',
+  },
+  thief: {
+    id: 'thief', name: '盗賊', icon: '🗡️',
+    desc: 'すばやさが高く先制しやすい。\n戦闘後にゴールドをボーナス獲得。',
+    statMod: { maxHp:+5, maxMp:+5, atk:+3, def:+2, chikara:+2, mimamori:+2, subayasa:+12, atkMagic:0, healMagic:0 },
+    startSkills: ['ボミオス','ピオリム'],
+    classSkills: { 1:'ボミオス', 5:'ピオリム', 8:'ピオラ', 11:'メダパニ' },
+    color: '#22aa44',
+  },
+};
+
+function showClassSelect() {
+  const el = document.getElementById('class-screen');
+  el.style.display = 'flex';
+  const cards = document.getElementById('class-cards');
+  cards.innerHTML = '';
+  Object.values(HERO_CLASSES).forEach(cls => {
+    const statLines = Object.entries(cls.statMod)
+      .filter(([,v]) => v !== 0)
+      .map(([k,v]) => {
+        const names = {maxHp:'最大HP',maxMp:'最大MP',atk:'こうげき',def:'ぼうぎょ',chikara:'ちから',mimamori:'みのまもり',subayasa:'すばやさ',atkMagic:'こうげき魔力',healMagic:'かいふく魔力'};
+        return (names[k]||k) + (v>0?' +'+v:' '+v);
+      }).join('　');
+    const div = document.createElement('div');
+    div.className = 'class-card';
+    div.innerHTML = `
+      <div class="class-card-title"><span class="class-card-icon">${cls.icon}</span>${cls.name}</div>
+      <div class="class-card-stats" style="white-space:pre-line">${cls.desc}\n<span style="color:#ffcc44;font-size:10px">${statLines}</span></div>
+      <div class="class-card-skills">初期スキル: ${cls.startSkills.join('、')}</div>`;
+    div.addEventListener('click', () => applyClass(cls.id));
+    cards.appendChild(div);
+  });
+}
+
+function applyClass(classId) {
+  const cls = HERO_CLASSES[classId];
+  if (!cls) return;
+  G.hero.heroClass = classId;
+  // Apply stat modifiers
+  Object.entries(cls.statMod).forEach(([stat, mod]) => {
+    if (G.hero[stat] !== undefined) G.hero[stat] += mod;
+    else G.hero[stat] = mod;
+  });
+  // Ensure minimums
+  G.hero.maxHp  = Math.max(20, G.hero.maxHp);
+  G.hero.maxMp  = Math.max(5,  G.hero.maxMp);
+  G.hero.hp     = G.hero.maxHp;
+  G.hero.mp     = G.hero.maxMp;
+  G.hero.atk    = Math.max(1,  G.hero.atk);
+  G.hero.def    = Math.max(1,  G.hero.def);
+  // Apply start skills
+  cls.startSkills.forEach(sk => {
+    if (!G.hero.skills.includes(sk)) G.hero.skills.push(sk);
+  });
+  // Hide class screen
+  document.getElementById('class-screen').style.display = 'none';
+  // Proceed to opening story
   startOpeningStory();
+}
+
+// Hook into level-up skill learning to also check class-specific skills
+const _origCheckLvSkill = (typeof checkLvSkill !== 'undefined') ? checkLvSkill : null;
+function learnClassSkills(lv) {
+  if (!G.hero.heroClass) return null;
+  const cls = HERO_CLASSES[G.hero.heroClass];
+  if (!cls) return null;
+  const sk = cls.classSkills[lv];
+  if (sk && !G.hero.skills.includes(sk) && G.hero.skills.length < 10) {
+    G.hero.skills.push(sk);
+    return sk;
+  }
+  return null;
 }
 
 const OPENING_SCREENS = [

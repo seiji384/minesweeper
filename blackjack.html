@@ -106,7 +106,18 @@ body {
   border-color: #7060cc;
 }
 @keyframes cardSlideIn { from { opacity: 0; transform: translateY(-30px) scale(0.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
-.card { animation: cardSlideIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+.card { animation: cardSlideIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; transition: transform 0.3s ease, opacity 0.3s; }
+.card.dealing { transform: translateY(-80px) !important; opacity: 0 !important; animation: none !important; }
+/* Stats bar */
+.stats-bar { background: rgba(8,4,20,0.85); border: 1px solid #3020a0; border-radius: 8px; padding: 4px 10px; margin: 4px 8px 0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; flex-wrap: wrap; gap: 4px; }
+.bj-stats-rec { color: #9988ff; }
+.bj-streak-win { color: #ffd700; font-weight: bold; }
+.bj-streak-lose { color: #ff7777; font-weight: bold; }
+/* Odds hint */
+.odds-hint { text-align: center; font-size: 11px; padding: 2px 8px; border-radius: 6px; margin-top: 3px; font-weight: bold; min-height: 16px; }
+.odds-high { color: #ff5555; }
+.odds-mid { color: #ffbb00; }
+.odds-low { color: #44cc88; }
 
 /* ── Game-specific styles ───────────────────────────────── */
 .felt-area {
@@ -261,6 +272,24 @@ body {
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px; padding: 6px; opacity: 0.58;
 }
+/* Insurance */
+.insurance-area { background: rgba(8,4,20,0.9); border: 1px solid #c08020; border-radius: 10px; padding: 8px 12px; margin: 6px 4px; text-align: center; }
+.insurance-label { font-size: 12px; color: #f4d03f; font-weight: bold; margin-bottom: 6px; }
+.insurance-btns { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
+.ins-yes-btn { padding: 8px 20px; border-radius: 10px; background: linear-gradient(160deg, #1a5a10, #0d3008); color: #7bed9f; border: 2px solid #2a8020; font-size: 13px; font-weight: 900; cursor: pointer; touch-action: manipulation; }
+.ins-yes-btn:active { transform: scale(0.93); }
+.ins-no-btn { padding: 8px 20px; border-radius: 10px; background: linear-gradient(160deg, #5a1a1a, #2a0808); color: #ff8888; border: 1px solid #aa3030; font-size: 13px; font-weight: bold; cursor: pointer; touch-action: manipulation; }
+.ins-no-btn:active { transform: scale(0.93); }
+/* Count hint */
+.count-indicator { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: bold; }
+.count-positive { color: #44cc88; }
+.count-negative { color: #ff5555; }
+.count-neutral { color: #9988ff; }
+/* Preset bet buttons */
+.bet-preset-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+.preset-btn { padding: 5px 14px; font-size: 11px; border-radius: 10px; background: linear-gradient(160deg, #2a1a60, #18103a); color: #b898ff; border: 1px solid #4030a0; cursor: pointer; font-weight: bold; touch-action: manipulation; transition: all 0.1s; }
+.preset-btn:active { transform: scale(0.93); }
+.allin-btn { background: linear-gradient(160deg, #5a2800, #3a1400); color: #ffd700; border-color: #a06010; box-shadow: 0 0 8px rgba(255,215,0,0.3); }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -309,6 +338,12 @@ body{padding-top:44px!important;}
     </div>
   </div>
 
+  <div class="stats-bar">
+    <span id="bj-stats-rec" class="bj-stats-rec">通算: --</span>
+    <span id="bj-stats-streak"></span>
+    <span id="bj-count-hint" class="count-indicator count-neutral"></span>
+  </div>
+
   <div class="content">
 
     <!-- Dealer area -->
@@ -316,6 +351,7 @@ body{padding-top:44px!important;}
       <div class="area-label">ディーラー</div>
       <div class="cards-row" id="dealer-cards"></div>
       <div id="dealer-score"></div>
+      <div id="dealer-odds-hint" class="odds-hint"></div>
     </div>
 
     <div class="divider"></div>
@@ -341,6 +377,12 @@ body{padding-top:44px!important;}
           <button class="chip-btn chip-100" onclick="addBet(100)">100</button>
           <button class="chip-btn chip-500" onclick="addBet(500)">500</button>
         </div>
+        <div class="bet-preset-row">
+          <button class="preset-btn" onclick="addBet(10)">+10</button>
+          <button class="preset-btn" onclick="addBet(50)">+50</button>
+          <button class="preset-btn" onclick="addBet(100)">+100</button>
+          <button class="preset-btn allin-btn" onclick="allIn()">ALL-IN</button>
+        </div>
         <div class="bet-controls">
           <button class="clear-btn" onclick="clearBet()">クリア</button>
           <button class="deal-btn" id="deal-btn" onclick="deal()" disabled>ディール &#9654;</button>
@@ -348,6 +390,18 @@ body{padding-top:44px!important;}
       </div>
       <div id="no-chips" class="no-chips-area" style="display:none;">
         チップが切れました！<br>下の <strong>&#128260; リセット</strong> ボタンで<br>1000チップに戻せます。
+      </div>
+    </div>
+
+    <!-- INSURANCE UI -->
+    <div id="ui-insurance" style="display:none;">
+      <div class="insurance-area">
+        <div class="insurance-label">🛡️ 保険をかけますか？ (ディーラーがAを出しました)</div>
+        <div style="font-size:11px;color:#a090d0;margin-bottom:4px;">保険料: <span id="ins-amount">0</span>チップ ／ 当たれば2倍配当</div>
+        <div class="insurance-btns">
+          <button class="ins-yes-btn" onclick="takeInsurance(true)">✅ 保険をかける</button>
+          <button class="ins-no-btn" onclick="takeInsurance(false)">❌ かけない</button>
+        </div>
       </div>
     </div>
 
@@ -567,29 +621,33 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame
 /* ═══════════════════════════════════════════════════════
    RENDERING
 ═══════════════════════════════════════════════════════ */
-function makeCardEl(card, faceDown) {
+function makeCardEl(card, faceDown, animate) {
   const el = document.createElement('div');
   if (faceDown) {
     el.className = 'card face-down';
     const pat = document.createElement('div');
     pat.className = 'card-back-pattern';
     el.appendChild(pat);
-    return el;
+  } else {
+    const isRed = RED_SUITS.has(card.s);
+    el.className = 'card ' + (isRed ? 'red' : 'black');
+    el.innerHTML =
+      '<div class="card-corner-tl">' + card.r + '<br><span style="font-size:10px">' + card.s + '</span></div>' +
+      '<div class="card-suit-center">' + card.s + '</div>' +
+      '<div class="card-corner-br">' + card.r + '<br><span style="font-size:10px">' + card.s + '</span></div>';
   }
-  const isRed = RED_SUITS.has(card.s);
-  el.className = 'card ' + (isRed ? 'red' : 'black');
-  el.innerHTML =
-    '<div class="card-corner-tl">' + card.r + '<br><span style="font-size:10px">' + card.s + '</span></div>' +
-    '<div class="card-suit-center">' + card.s + '</div>' +
-    '<div class="card-corner-br">' + card.r + '<br><span style="font-size:10px">' + card.s + '</span></div>';
+  if (animate) {
+    el.classList.add('dealing');
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('dealing')));
+  }
   return el;
 }
 
-function renderDealer(revealAll) {
+function renderDealer(revealAll, animateIdx) {
   const row = document.getElementById('dealer-cards');
   const scoreEl = document.getElementById('dealer-score');
   row.innerHTML = '';
-  dCards.forEach((c, i) => row.appendChild(makeCardEl(c, !revealAll && i === 1)));
+  dCards.forEach((c, i) => row.appendChild(makeCardEl(c, !revealAll && i === 1, animateIdx === i)));
 
   if (!dCards.length) { scoreEl.innerHTML = ''; return; }
 
@@ -606,7 +664,7 @@ function renderDealer(revealAll) {
   }
 }
 
-function renderPlayer() {
+function renderPlayer(animateLastCard) {
   const wrap = document.getElementById('player-hands');
   wrap.innerHTML = '';
   const multi = pHands.length > 1;
@@ -630,7 +688,7 @@ function renderPlayer() {
       inner.className = active ? 'hand-active' : 'hand-inactive';
       const cr = document.createElement('div');
       cr.className = 'cards-row';
-      hand.forEach(c => cr.appendChild(makeCardEl(c)));
+      hand.forEach((c, ci) => cr.appendChild(makeCardEl(c, false, animateLastCard && hi === activeH && ci === hand.length - 1)));
       inner.appendChild(cr);
       const sb = document.createElement('span');
       sb.className = 'score-badge' + (bust ? ' bust' : bj ? ' blackjack' : '');
@@ -640,7 +698,7 @@ function renderPlayer() {
     } else {
       const cr = document.createElement('div');
       cr.className = 'cards-row';
-      hand.forEach(c => cr.appendChild(makeCardEl(c)));
+      hand.forEach((c, ci) => cr.appendChild(makeCardEl(c, false, animateLastCard && ci === hand.length - 1)));
       hw.appendChild(cr);
       const sb = document.createElement('span');
       sb.className = 'score-badge' + (bust ? ' bust' : bj ? ' blackjack' : '');
@@ -685,9 +743,10 @@ function updatePlayBtns() {
    UI PHASE SWITCHING
 ═══════════════════════════════════════════════════════ */
 function showPhase(ph) {
-  document.getElementById('ui-betting').style.display = ph === 'BETTING' ? '' : 'none';
-  document.getElementById('ui-playing').style.display = ph === 'PLAYING' ? '' : 'none';
-  document.getElementById('ui-result' ).style.display = ph === 'RESULT'  ? '' : 'none';
+  document.getElementById('ui-betting'  ).style.display = ph === 'BETTING'   ? '' : 'none';
+  document.getElementById('ui-insurance').style.display = ph === 'INSURANCE' ? '' : 'none';
+  document.getElementById('ui-playing'  ).style.display = ph === 'PLAYING'   ? '' : 'none';
+  document.getElementById('ui-result'   ).style.display = ph === 'RESULT'    ? '' : 'none';
 }
 
 function refreshBetZone() {
@@ -724,10 +783,13 @@ function clearBet() {
    DEAL
 ═══════════════════════════════════════════════════════ */
 function ensureDeck() {
-  if (deck.length < 20)
+  if (deck.length < 20) {
     deck = shuffle(
       makeDeck().concat(makeDeck(), makeDeck(), makeDeck(), makeDeck(), makeDeck())
     );
+    runningCount = 0;
+    updateCountHint();
+  }
 }
 
 function deal() {
@@ -742,31 +804,73 @@ function deal() {
   hDoubled   = [false];
   hFromSplit = [false];
   activeH    = 0;
+  insuranceBet = 0;
   phase      = 'PLAYING';
 
+  // Count visible cards: dealer up card + both player cards
+  countCard(dCards[0]);
+  countCard(pHands[0][0]);
+  countCard(pHands[0][1]);
+
   setMsg('', '');
-  renderDealer(false);
-  renderPlayer();
+  renderDealer(false, 0);
+  renderPlayer(true);
   updateLEDs();
   saveGame();
+  playCardSound();
+  updateOddsHint();
+  updateCountHint();
 
-  // Check for naturals immediately
+  // If dealer shows Ace, offer insurance before checking for BJ
+  if (dCards[0].r === 'A') {
+    const insAmt = Math.floor(hBets[0] / 2);
+    if (insAmt > 0 && chips >= insAmt) {
+      document.getElementById('ins-amount').textContent = insAmt;
+      showPhase('INSURANCE');
+      return;
+    }
+  }
+
+  resolveAfterInsurance();
+}
+
+function resolveAfterInsurance() {
+  // Check for naturals
   const pBJ = isNatural(pHands[0]);
   const dBJ = isNatural(dCards);
 
   if (pBJ || dBJ) {
+    countCard(dCards[1]); // reveal hole card for counting
     renderDealer(true);
+    updateCountHint();
+    if (insuranceBet > 0) {
+      if (dBJ) {
+        chips += insuranceBet * 3; // win insurance (2:1)
+      }
+      // insurance already deducted
+    }
     if (pBJ && dBJ) {
-      chips += bet; // push – return stake
+      chips += hBets[0]; // push – return stake
       setMsg('引き分け', 'push');
+      recordBJResult('push');
     } else if (pBJ) {
-      const win = Math.floor(bet * 1.5);
-      chips += bet + win;
+      const win = Math.floor(hBets[0] * 1.5);
+      chips += hBets[0] + win;
       setMsg('BLACKJACK! &#9733;', 'blackjack');
       startConfetti();
+      playBlackjackSound();
+      recordBJResult('win');
     } else {
-      setMsg('負け', 'lose');
+      if (insuranceBet > 0) {
+        setMsg('ディーラーBJ！保険成立', 'push');
+        recordBJResult('push');
+      } else {
+        setMsg('負け', 'lose');
+        playLoseSound();
+        recordBJResult('lose');
+      }
     }
+    updateOddsHint();
     updateLEDs();
     phase = 'RESULT';
     saveGame();
@@ -791,8 +895,9 @@ function drawCard() {
 ═══════════════════════════════════════════════════════ */
 function hit() {
   if (phase !== 'PLAYING') return;
-  pHands[activeH].push(drawCard());
-  renderPlayer();
+  const c = drawCard(); countCard(c); pHands[activeH].push(c);
+  playCardSound();
+  renderPlayer(true);
   const v = handValue(pHands[activeH]);
   if (v >= 21) {
     advanceHand();
@@ -816,8 +921,9 @@ function doDouble() {
   hDoubled[activeH] = true;
   saveGame();
   updateLEDs();
-  pHands[activeH].push(drawCard());
-  renderPlayer();
+  const dc = drawCard(); countCard(dc); pHands[activeH].push(dc);
+  playCardSound();
+  renderPlayer(true);
   advanceHand();
 }
 
@@ -833,8 +939,10 @@ function doSplit() {
   saveGame();
   updateLEDs();
 
-  const h1 = [hand[0], drawCard()];
-  const h2 = [hand[1], drawCard()];
+  const sc1 = drawCard(); countCard(sc1);
+  const sc2 = drawCard(); countCard(sc2);
+  const h1 = [hand[0], sc1];
+  const h2 = [hand[1], sc2];
   pHands.splice(activeH, 1, h1, h2);
   hBets.splice(activeH, 1, hb, hb);
   hDoubled.splice(activeH, 1, false, false);
@@ -860,13 +968,15 @@ function advanceHand() {
 ═══════════════════════════════════════════════════════ */
 function dealerTurn() {
   phase = 'RESULT';
+  countCard(dCards[1]); // count hole card now revealed
   renderDealer(true);
 
   // Dealer draws until 17+
   while (handValue(dCards) < 17) {
-    dCards.push(drawCard());
+    const dc = drawCard(); countCard(dc); dCards.push(dc);
   }
   renderDealer(true);
+  updateCountHint();
 
   const dv   = handValue(dCards);
   const dBust = dv > 21;
@@ -895,27 +1005,39 @@ function dealerTurn() {
 
   saveGame();
   updateLEDs();
+  updateOddsHint();
 
   // Show summary message
   if (total === 1) {
-    if (wins === 1)   { setMsg('勝ち！', 'win'); startConfetti(); }
-    else if (pushes === 1) { setMsg('引き分け', 'push'); }
-    else {
+    if (wins === 1) {
+      setMsg('勝ち！', 'win'); startConfetti(); playWinSound(); recordBJResult('win');
+    } else if (pushes === 1) {
+      setMsg('引き分け', 'push'); recordBJResult('push');
+    } else {
       const allBust = pHands.every(h => handValue(h) > 21);
       setMsg(allBust ? 'バスト' : '負け', 'lose');
+      if (allBust) playBustSound(); else playLoseSound();
+      recordBJResult('lose');
     }
   } else {
     // Split result summary
-    if (wins === total)   { setMsg('勝ち！', 'win'); startConfetti(); }
-    else if (pushes === total) { setMsg('引き分け', 'push'); }
-    else if (losses === total) {
+    if (wins === total) {
+      setMsg('勝ち！', 'win'); startConfetti(); playWinSound(); recordBJResult('win');
+    } else if (pushes === total) {
+      setMsg('引き分け', 'push'); recordBJResult('push');
+    } else if (losses === total) {
       const allBust = pHands.every(h => handValue(h) > 21);
       setMsg(allBust ? 'バスト' : '負け', 'lose');
+      if (allBust) playBustSound(); else playLoseSound();
+      recordBJResult('lose');
     } else {
       // Mixed
       const label = wins + '勝ち / ' + losses + '負け';
-      if (wins > losses) { setMsg(label, 'win'); startConfetti(); }
-      else               { setMsg(label, 'lose'); }
+      if (wins > losses) {
+        setMsg(label, 'win'); startConfetti(); playWinSound(); recordBJResult('win');
+      } else {
+        setMsg(label, 'lose'); playLoseSound(); recordBJResult('lose');
+      }
     }
   }
 
@@ -930,14 +1052,15 @@ function dealerTurn() {
    NEW ROUND
 ═══════════════════════════════════════════════════════ */
 function newRound() {
-  bet        = 0;
-  phase      = 'BETTING';
-  dCards     = [];
-  pHands     = [];
-  hBets      = [];
-  hDoubled   = [];
-  hFromSplit = [];
-  activeH    = 0;
+  bet          = 0;
+  insuranceBet = 0;
+  phase        = 'BETTING';
+  dCards       = [];
+  pHands       = [];
+  hBets        = [];
+  hDoubled     = [];
+  hFromSplit   = [];
+  activeH      = 0;
 
   setMsg('', '');
   renderDealer(false);
@@ -958,6 +1081,237 @@ function confirmReset() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   STATISTICS
+═══════════════════════════════════════════════════════ */
+let bjStats = (function(){
+  try { return JSON.parse(localStorage.getItem('bj_stats')||'{}'); } catch(e) { return {}; }
+})();
+bjStats.totalGames = bjStats.totalGames||0;
+bjStats.wins       = bjStats.wins||0;
+bjStats.losses     = bjStats.losses||0;
+bjStats.currentStreak = bjStats.currentStreak||0;
+bjStats.bestStreak    = bjStats.bestStreak||0;
+bjStats.streakType    = bjStats.streakType||'';
+
+function saveBJStats() {
+  try { localStorage.setItem('bj_stats', JSON.stringify(bjStats)); } catch(e) {}
+}
+
+function updateStatsDisplay() {
+  const rec = document.getElementById('bj-stats-rec');
+  const str = document.getElementById('bj-stats-streak');
+  if (!rec) return;
+  const rate = bjStats.totalGames > 0 ? Math.round(bjStats.wins / bjStats.totalGames * 100) : 0;
+  rec.textContent = '通算: ' + bjStats.wins + '勝/' + bjStats.losses + '敗 (' + rate + '%)';
+  str.textContent = '';
+  str.className = '';
+  if (bjStats.currentStreak >= 2 && bjStats.streakType === 'win') {
+    str.textContent = '🔥 ' + bjStats.currentStreak + '連勝中';
+    str.className = 'bj-streak-win';
+  } else if (bjStats.currentStreak >= 2 && bjStats.streakType === 'lose') {
+    str.textContent = '💔 ' + bjStats.currentStreak + '連敗中';
+    str.className = 'bj-streak-lose';
+  }
+}
+
+function recordBJResult(result) {
+  bjStats.totalGames++;
+  if (result === 'win') {
+    bjStats.wins++;
+    if (bjStats.streakType === 'win') bjStats.currentStreak++;
+    else { bjStats.streakType = 'win'; bjStats.currentStreak = 1; }
+    if (bjStats.currentStreak > bjStats.bestStreak) bjStats.bestStreak = bjStats.currentStreak;
+  } else if (result === 'lose') {
+    bjStats.losses++;
+    if (bjStats.streakType === 'lose') bjStats.currentStreak++;
+    else { bjStats.streakType = 'lose'; bjStats.currentStreak = 1; }
+  } else {
+    bjStats.currentStreak = 0; bjStats.streakType = '';
+  }
+  saveBJStats();
+  updateStatsDisplay();
+}
+
+/* ═══════════════════════════════════════════════════════
+   ODDS DISPLAY
+═══════════════════════════════════════════════════════ */
+function updateOddsHint() {
+  const el = document.getElementById('dealer-odds-hint');
+  if (!el) return;
+  if (!dCards.length || phase !== 'PLAYING') { el.textContent = ''; el.className = 'odds-hint'; return; }
+  const upRank = dCards[0].r;
+  const val = upRank === 'A' ? 11 : rankPip(upRank);
+  let text, cls;
+  if (val >= 2 && val <= 6) {
+    text = 'ディーラー危険度: 🔴高い (バスト率 High)';
+    cls = 'odds-high';
+  } else if (val <= 9) {
+    text = 'ディーラー危険度: 🟡中程度 (バスト率 Medium)';
+    cls = 'odds-mid';
+  } else {
+    text = 'ディーラー危険度: 🟢低い (バスト率 Low)';
+    cls = 'odds-low';
+  }
+  el.textContent = text;
+  el.className = 'odds-hint ' + cls;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CARD COUNTING (Hi-Lo system)
+═══════════════════════════════════════════════════════ */
+let runningCount = 0;
+
+function hiLoValue(rank) {
+  if ('23456'.includes(rank)) return 1;
+  if ('789'.includes(rank)) return 0;
+  return -1; // 10, J, Q, K, A
+}
+
+function countCard(card) {
+  runningCount += hiLoValue(card.r);
+}
+
+function updateCountHint() {
+  const el = document.getElementById('bj-count-hint');
+  if (!el) return;
+  const decksLeft = Math.max(1, deck.length / 52);
+  const trueCount = Math.round(runningCount / decksLeft);
+  let text, cls;
+  if (trueCount >= 2) {
+    text = '🟢 デッキ有利 (' + (trueCount > 0 ? '+' : '') + trueCount + ')';
+    cls = 'count-positive';
+  } else if (trueCount <= -2) {
+    text = '🔴 デッキ不利 (' + trueCount + ')';
+    cls = 'count-negative';
+  } else {
+    text = '⚪ デッキ中立 (' + (trueCount >= 0 ? '+' : '') + trueCount + ')';
+    cls = 'count-neutral';
+  }
+  el.textContent = text;
+  el.className = 'count-indicator ' + cls;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INSURANCE
+═══════════════════════════════════════════════════════ */
+let insuranceBet = 0;
+
+function takeInsurance(yes) {
+  if (yes) {
+    const insAmt = Math.floor(hBets[0] / 2);
+    if (chips >= insAmt) {
+      insuranceBet = insAmt;
+      chips -= insuranceBet;
+      updateLEDs();
+    }
+  } else {
+    insuranceBet = 0;
+  }
+  resolveAfterInsurance();
+}
+
+/* ═══════════════════════════════════════════════════════
+   ALL-IN BET
+═══════════════════════════════════════════════════════ */
+function allIn() {
+  if (phase !== 'BETTING') return;
+  bet = chips;
+  updateLEDs();
+  document.getElementById('deal-btn').disabled = bet <= 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SOUND EFFECTS (Web Audio API)
+═══════════════════════════════════════════════════════ */
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+
+function playCardSound() {
+  try {
+    const ctx = getAudioCtx();
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++)
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.04));
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    src.connect(gain); gain.connect(ctx.destination);
+    src.start();
+  } catch(e) {}
+}
+
+function playWinSound() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq; osc.type = 'sine';
+      gain.gain.setValueAtTime(0, t + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.25, t + i * 0.1 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t + i * 0.1); osc.stop(t + i * 0.1 + 0.35);
+    });
+  } catch(e) {}
+}
+
+function playLoseSound() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    [350, 260, 180].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq; osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.18, t + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.28);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t + i * 0.15); osc.stop(t + i * 0.15 + 0.28);
+    });
+  } catch(e) {}
+}
+
+function playBustSound() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(420, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(90, ctx.currentTime + 0.55);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.55);
+  } catch(e) {}
+}
+
+function playBlackjackSound() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    [523, 659, 784, 880, 1047, 1319].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq; osc.type = 'sine';
+      gain.gain.setValueAtTime(0, t + i * 0.08);
+      gain.gain.linearRampToValueAtTime(0.3, t + i * 0.08 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.5);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t + i * 0.08); osc.stop(t + i * 0.08 + 0.5);
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════ */
 deck = shuffle(
@@ -966,6 +1320,7 @@ deck = shuffle(
 updateLEDs();
 refreshBetZone();
 showPhase('BETTING');
+updateStatsDisplay();
 
 /* ═══════════════════════════════════════════════════════
    SAVE / RESTORE

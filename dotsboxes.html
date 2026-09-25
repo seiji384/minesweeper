@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -61,7 +61,7 @@ body {
 .content { padding:8px; }
 #confetti { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none; }
 
-#canvas-wrap { display:flex; justify-content:center; padding:4px; }
+#canvas-wrap { display:flex; justify-content:center; padding:4px; position:relative; }
 #game-canvas { touch-action:none; cursor:pointer; }
 #msg-flash { height:28px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:#ffe870; text-shadow:0 0 12px #ffcc00; letter-spacing:2px; }
 #turn-indicator { text-align:center; font-size:11px; color:#8070b0; padding:2px 0 4px; }
@@ -84,71 +84,56 @@ body {
 body{padding-top:44px!important;}
 </style><!-- body-bg-override -->
 <style>
-/* ===== Pokemon SV / Switch UI Redesign: dotsboxes.html — accent #7bed9f ===== */
 body {
   background:
-    radial-gradient(ellipse at 25% 20%, rgba(123,237,159,0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 75% 80%, rgba(80,180,100,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 25% 20%, rgba(30,80,200,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba(200,30,30,0.1) 0%, transparent 50%),
     #0f0f1a !important;
   font-family: 'Segoe UI', sans-serif !important;
 }
 .window {
   background: rgba(255,255,255,0.06) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(123,237,159,0.2) !important;
-  box-shadow: 0 0 40px rgba(123,237,159,0.06), 0 24px 64px rgba(0,0,0,0.8) !important;
+  backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(80,140,255,0.25) !important;
+  box-shadow: 0 0 40px rgba(60,100,255,0.08), 0 24px 64px rgba(0,0,0,0.8) !important;
 }
 .titlebar {
-  background: linear-gradient(90deg, #042010 0%, #106030 28%, #7bed9f 50%, #106030 72%, #042010 100%) !important;
-  color: #011508 !important;
-  border-bottom: 2px solid #7bed9f !important;
-  text-shadow: 0 1px 0 rgba(180,255,210,0.5) !important;
+  background: linear-gradient(90deg, #001030 0%, #003080 28%, #4488ff 50%, #003080 72%, #001030 100%) !important;
+  color: #c0d8ff !important; border-bottom: 2px solid #4488ff !important;
+  text-shadow: 0 1px 0 rgba(180,210,255,0.5) !important;
 }
-.titlebar a { color: #011508 !important; }
-/* Score LEDs: player=green, cpu=orange */
+.titlebar a { color: #c0d8ff !important; }
+/* Player LED = blue, CPU LED = red */
 #led-player {
-  color: #7bed9f !important;
-  text-shadow: 0 0 10px #7bed9f, 0 0 20px rgba(123,237,159,0.5) !important;
-  border-color: rgba(123,237,159,0.35) !important;
-  background: linear-gradient(160deg, #010e04 0%, #010802 100%) !important;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(123,237,159,0.25) !important;
+  color: #4488ff !important;
+  text-shadow: 0 0 10px #4488ff, 0 0 20px rgba(68,136,255,0.5) !important;
+  border-color: rgba(68,136,255,0.35) !important;
+  background: linear-gradient(160deg, #000814 0%, #000408 100%) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(68,136,255,0.25) !important;
+  font-size: 22px !important; font-weight: 900 !important;
 }
 #led-cpu {
-  color: #fb8500 !important;
-  text-shadow: 0 0 10px #fb8500, 0 0 20px rgba(251,133,0,0.5) !important;
-  border-color: rgba(251,133,0,0.35) !important;
-  background: linear-gradient(160deg, #0e0600 0%, #080300 100%) !important;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(251,133,0,0.25) !important;
+  color: #ff4444 !important;
+  text-shadow: 0 0 10px #ff4444, 0 0 20px rgba(255,68,68,0.5) !important;
+  border-color: rgba(255,68,68,0.35) !important;
+  background: linear-gradient(160deg, #140000 0%, #0a0000 100%) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,68,68,0.25) !important;
+  font-size: 22px !important; font-weight: 900 !important;
 }
-.status-panel {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-}
-#msg-flash { color: #7bed9f !important; text-shadow: 0 0 12px #7bed9f !important; }
-#turn-label { color: #a0d8b4 !important; }
+.status-panel { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.08) !important; }
+#msg-flash { color: #88bbff !important; text-shadow: 0 0 12px #4488ff !important; }
+#turn-label { color: #a0b8d8 !important; }
 #session-record { color: rgba(255,255,255,0.35) !important; }
 .act-btn {
-  background: linear-gradient(160deg, rgba(123,237,159,0.15) 0%, rgba(80,180,100,0.1) 100%) !important;
-  color: #7bed9f !important;
-  border: 1px solid rgba(123,237,159,0.35) !important;
-  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s !important;
+  background: linear-gradient(160deg, rgba(68,136,255,0.15) 0%, rgba(40,80,200,0.1) 100%) !important;
+  color: #88bbff !important; border: 1px solid rgba(68,136,255,0.35) !important;
 }
-.act-btn:hover { box-shadow: 0 0 14px rgba(123,237,159,0.4) !important; }
-.act-btn:active { transform: scale(0.93) !important; }
-#diffSelect { color: #7bed9f !important; }
-.action-bar {
-  background: linear-gradient(0deg, rgba(0,6,2,0.99) 0%, rgba(0,8,4,0.97) 100%) !important;
-  border-top-color: rgba(123,237,159,0.2) !important;
-}
-.modal-box {
-  background: rgba(2,10,4,0.96) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border-color: rgba(123,237,159,0.35) !important;
-}
-.modal-title { background: linear-gradient(90deg, #042010 0%, #106030 28%, #7bed9f 50%, #106030 72%, #042010 100%) !important; color: #011508 !important; }
-.modal-close { color: #011508 !important; }
+.act-btn:hover { box-shadow: 0 0 14px rgba(68,136,255,0.4) !important; }
+#diffSelect { color: #88bbff !important; }
+.action-bar { background: linear-gradient(0deg, rgba(0,2,10,0.99) 0%, rgba(0,4,16,0.97) 100%) !important; border-top-color: rgba(68,136,255,0.2) !important; }
+.modal-box { background: rgba(0,4,20,0.96) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border-color: rgba(68,136,255,0.35) !important; }
+.modal-title { background: linear-gradient(90deg, #001030 0%, #003080 28%, #4488ff 50%, #003080 72%, #001030 100%) !important; color: #c0d8ff !important; }
+.modal-close { color: #c0d8ff !important; }
 </style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -164,7 +149,7 @@ body {
 
 <div class="window">
   <div class="titlebar">
-    <span>🔴</span>
+    <span>🔵</span>
     <span>点つなぎ</span>
     <a href="../index.html">⌂</a>
   </div>
@@ -172,14 +157,14 @@ body {
   <div class="status-panel">
     <div class="led-group">
       <span class="led" id="led-player">0</span>
-      <span class="led-label">プレイヤー</span>
+      <span class="led-label" style="color:#4488ff!important">👤 あなた</span>
     </div>
     <div class="led-group" id="turn-group">
       <span style="font-size:11px;color:#a898d8;font-weight:bold;" id="turn-label">あなたのターン</span>
     </div>
     <div class="led-group">
       <span class="led" id="led-cpu">0</span>
-      <span class="led-label">CPU</span>
+      <span class="led-label" style="color:#ff4444!important">🤖 CPU</span>
     </div>
   </div>
 
@@ -215,6 +200,14 @@ body {
   </div>
 </div>
 
+<!-- Win modal -->
+<div class="modal-overlay" id="win-modal">
+  <div class="modal-box">
+    <div class="modal-title"><span id="win-modal-title">🎉 結果</span><button class="modal-close" onclick="hideModal('win-modal')">✕</button></div>
+    <div class="modal-body" id="win-modal-body"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-rules">
   <div class="modal-box">
     <div class="modal-title"><span>📖 ルール</span><button class="modal-close" onclick="hideModal('modal-rules')">✕</button></div>
@@ -224,10 +217,14 @@ body {
       • 四辺形を完成させたプレイヤーが 1 点獲得し、もう 1 回ターンが来る<br>
       • 全マスが埋まったらゲーム終了<br>
       • より多くのマスを取った方が勝ち！<br><br>
+      <b>難易度</b><br>
+      • かんたん: ランダムに置く<br>
+      • ふつう: ボックスを完成させ、相手にチェーンを渡さない<br>
+      • つよい: チェーン分析で最適手を選ぶ<br><br>
       <b>操作方法</b><br>
       ドットをタップして選択(金色に光る)<br>
       次に隣のドットをタップして線を引く<br><br>
-      💾 保存ボタンで進行状況を保存できます。次回起動時に続きから再開できます。
+      💾 保存ボタンで進行状況を保存できます。
     </div>
   </div>
 </div>
@@ -236,7 +233,7 @@ body {
 // Stars
 (function(){const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];function resize(){c.width=window.innerWidth;c.height=window.innerHeight;stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.008});}function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(0.1,Math.min(1,s.a+s.da));if(s.a<=0.1||s.a>=1)s.da*=-1;ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.28);ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}window.addEventListener('resize',resize);resize();draw();})();
 
-function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>180){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
+function startConfetti(){const cv=document.getElementById('confetti');cv.style.display='block';const ctx=cv.getContext('2d');cv.width=window.innerWidth;cv.height=window.innerHeight;const parts=Array.from({length:100},()=>({x:Math.random()*cv.width,y:-10,r:Math.random()*6+3,c:`hsl(${Math.random()*360},90%,60%)`,vx:(Math.random()-0.5)*5,vy:Math.random()*4+2,rot:Math.random()*360,drot:(Math.random()-0.5)*10}));let frame=0;function anim(){if(frame++>220){cv.style.display='none';return;}ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.drot;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});requestAnimationFrame(anim);}anim();}
 
 const actionBar=document.querySelector('.action-bar');
 function fixAB(){const vv=window.visualViewport;if(!vv)return;const lw=document.documentElement.clientWidth;const sr=lw/vv.width;const iz=vv.scale>1.05||sr>1.05;if(!iz){actionBar.style.cssText='';return;}const sc=Math.max(vv.scale,sr);const inv=1/sc;const bh=actionBar.offsetHeight||52;actionBar.style.top=Math.round(vv.offsetTop+vv.height-bh)+'px';actionBar.style.bottom='auto';actionBar.style.left=Math.round(vv.offsetLeft)+'px';actionBar.style.width=lw+'px';actionBar.style.right='auto';actionBar.style.transform=`scale(${inv})`;actionBar.style.transformOrigin='bottom left';}
@@ -247,38 +244,58 @@ function hideModal(id){document.getElementById(id).classList.remove('visible');}
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('visible');}));
 
 // ── Game constants ──
-const GRID=5; // 5x5 dots = 4x4 boxes
+const GRID=5;
 const canvas=document.getElementById('game-canvas');
 const ctx=canvas.getContext('2d');
-const CW=canvas.width, CH=canvas.height;
 const PAD=30;
-const STEP=(CW-PAD*2)/(GRID-1);
 const DOT_R=7;
-const LINE_HIT=18; // hit radius for line selection
+let CW, CH, STEP;
+
+function resizeCanvas(){
+  const wrap=document.getElementById('canvas-wrap');
+  const maxW=Math.min(wrap.clientWidth||window.innerWidth-48, 380);
+  const sz=Math.max(240, maxW);
+  canvas.width=sz; canvas.height=sz;
+  CW=canvas.width; CH=canvas.height;
+  STEP=(CW-PAD*2)/(GRID-1);
+}
+resizeCanvas();
+window.addEventListener('resize',()=>{ resizeCanvas(); render(); });
+
+// Colors: player = blue, cpu = red
+const PLAYER_COLOR = '#4488ff';
+const PLAYER_FILL  = 'rgba(68,136,255,0.18)';
+const CPU_COLOR    = '#ff4444';
+const CPU_FILL     = 'rgba(255,68,68,0.18)';
 
 // ── State ──
-let hLines=[], vLines=[]; // horizontal and vertical lines: null=empty, 'p'=player, 'c'=cpu
-let boxes=[]; // 4x4: null=unclaimed, 'p'=player, 'c'=cpu
+let hLines=[], vLines=[];
+let boxes=[];
 let playerScore=0, cpuScore=0;
-let turn='p'; // 'p' or 'c'
-let selectedDot=null; // {r,c}
+let turn='p';
+let selectedDot=null;
 let gameOver=false;
 let wins=0, losses=0, draws=0;
 let cpuBusy=false;
 let cpuDifficulty='normal';
 let moveHistory=[];
 
+// Box animations: {br, bc, progress 0→1, player}
+let boxAnims=[];
+
+// Hover state for edge highlight
+let hoverEdge=null; // {type, r, c}
+
 function dotXY(r,c){ return {x:PAD+c*STEP, y:PAD+r*STEP}; }
 
 function initGame(){
-  // hLines[r][c]: horizontal line between dot(r,c) and dot(r,c+1), r=0..4, c=0..3
+  resizeCanvas();
   hLines=Array.from({length:GRID},()=>Array(GRID-1).fill(null));
-  // vLines[r][c]: vertical line between dot(r,c) and dot(r+1,c), r=0..3, c=0..4
   vLines=Array.from({length:GRID-1},()=>Array(GRID).fill(null));
   boxes=Array.from({length:GRID-1},()=>Array(GRID-1).fill(null));
   playerScore=0; cpuScore=0;
   turn='p'; selectedDot=null; gameOver=false; cpuBusy=false;
-  moveHistory=[];
+  moveHistory=[]; boxAnims=[]; hoverEdge=null;
   updateLEDs();
   updateTurnLabel();
   render();
@@ -295,7 +312,7 @@ function updateTurnLabel(){
   document.getElementById('turn-label').textContent=turn==='p'?'あなたのターン':'CPU 思考中…';
 }
 
-function flash(msg,color='#ffe870'){
+function flash(msg,color='#88bbff'){
   const el=document.getElementById('msg-flash');
   el.textContent=msg; el.style.color=color;
   if(msg) setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; },2500);
@@ -307,22 +324,12 @@ function updateRecord(){
 
 // ── Box completion check ──
 function checkBox(br,bc){
-  // br,bc = box row, col (0..3)
-  const top=hLines[br][bc];
-  const bottom=hLines[br+1][bc];
-  const left=vLines[br][bc];
-  const right=vLines[br][bc+1];
+  const top=hLines[br][bc], bottom=hLines[br+1][bc];
+  const left=vLines[br][bc], right=vLines[br][bc+1];
   if(top&&bottom&&left&&right&&!boxes[br][bc]) return true;
   return false;
 }
 
-function claimBox(br,bc,player){
-  boxes[br][bc]=player;
-  if(player==='p') playerScore++;
-  else cpuScore++;
-}
-
-// Returns how many sides a box at (br,bc) has
 function countSides(br,bc){
   let n=0;
   if(hLines[br][bc]) n++;
@@ -332,35 +339,55 @@ function countSides(br,bc){
   return n;
 }
 
-// Place a line and return number of boxes claimed
+function claimBox(br,bc,player){
+  boxes[br][bc]=player;
+  if(player==='p') playerScore++;
+  else cpuScore++;
+  // Start animation
+  boxAnims.push({br,bc,player,t:0});
+  // Show floating +1
+  showFloatingScore(br,bc);
+}
+
+function showFloatingScore(br,bc){
+  const {x:x1,y:y1}=dotXY(br,bc);
+  const {x:x2,y:y2}=dotXY(br+1,bc+1);
+  const cx=(x1+x2)/2, cy=(y1+y2)/2;
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=rect.width/CW, scaleY=rect.height/CH;
+  const px=rect.left+cx*scaleX, py=rect.top+cy*scaleY;
+  const el=document.createElement('div');
+  el.textContent='+1';
+  el.style.cssText=`position:fixed;left:${px}px;top:${py}px;transform:translate(-50%,-50%);font-size:20px;font-weight:900;pointer-events:none;z-index:9990;opacity:1;transition:opacity 0.8s,top 0.8s;color:${turn==='p'?PLAYER_COLOR:CPU_COLOR};text-shadow:0 0 10px currentColor;`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>{
+    el.style.top=(py-40)+'px';
+    el.style.opacity='0';
+    setTimeout(()=>el.remove(),900);
+  });
+}
+
 function placeLine(type,r,c,player){
   if(type==='h'){
-    if(hLines[r][c]) return -1; // already taken
+    if(hLines[r][c]) return -1;
     hLines[r][c]=player;
   } else {
     if(vLines[r][c]) return -1;
     vLines[r][c]=player;
   }
   let claimed=0;
-  // Check adjacent boxes
   const toCheck=[];
-  if(type==='h'){
-    if(r>0) toCheck.push([r-1,c]);
-    if(r<GRID-1) toCheck.push([r,c]);
-  } else {
-    if(c>0) toCheck.push([r,c-1]);
-    if(c<GRID-1) toCheck.push([r,c]);
-  }
+  if(type==='h'){ if(r>0) toCheck.push([r-1,c]); if(r<GRID-1) toCheck.push([r,c]); }
+  else { if(c>0) toCheck.push([r,c-1]); if(c<GRID-1) toCheck.push([r,c]); }
   toCheck.forEach(([br,bc])=>{
     if(br>=0&&br<GRID-1&&bc>=0&&bc<GRID-1&&!boxes[br][bc]&&checkBox(br,bc)){
-      claimBox(br,bc,player);
-      claimed++;
+      claimBox(br,bc,player); claimed++;
     }
   });
   return claimed;
 }
 
-// ── CPU AI ──
+// ── Improved CPU AI ──
 function getAllLines(){
   const lines=[];
   for(let r=0;r<GRID;r++) for(let c=0;c<GRID-1;c++) if(!hLines[r][c]) lines.push({type:'h',r,c});
@@ -369,27 +396,51 @@ function getAllLines(){
 }
 
 function cpuAffectedBoxes(type,r,c){
-  const boxes=[];
-  if(type==='h'){
-    if(r>0) boxes.push([r-1,c]);
-    if(r<GRID-1) boxes.push([r,c]);
-  } else {
-    if(c>0) boxes.push([r,c-1]);
-    if(c<GRID-1) boxes.push([r,c]);
+  const result=[];
+  if(type==='h'){ if(r>0) result.push([r-1,c]); if(r<GRID-1) result.push([r,c]); }
+  else { if(c>0) result.push([r,c-1]); if(c<GRID-1) result.push([r,c]); }
+  return result.filter(([br,bc])=>br>=0&&br<GRID-1&&bc>=0&&bc<GRID-1);
+}
+
+// Simulate placing a line to count boxes claimed (without mutating state)
+function simulateLine(type,r,c){
+  let claimed=0;
+  const toCheck=[];
+  if(type==='h'){ if(r>0) toCheck.push([r-1,c]); if(r<GRID-1) toCheck.push([r,c]); }
+  else { if(c>0) toCheck.push([r,c-1]); if(c<GRID-1) toCheck.push([r,c]); }
+  // Temporarily place
+  if(type==='h') hLines[r][c]='c'; else vLines[r][c]='c';
+  toCheck.forEach(([br,bc])=>{ if(br>=0&&br<GRID-1&&bc>=0&&bc<GRID-1&&!boxes[br][bc]&&checkBox(br,bc)) claimed++; });
+  if(type==='h') hLines[r][c]=null; else vLines[r][c]=null;
+  return claimed;
+}
+
+// Count chain length starting from a 3-sided box
+function chainLength(startBr,startBc,visited=new Set()){
+  const key=`${startBr},${startBc}`;
+  if(visited.has(key)||boxes[startBr][startBc]||countSides(startBr,startBc)<3) return 0;
+  visited.add(key);
+  let len=1;
+  // Check neighbours
+  const neighbors=[[startBr-1,startBc],[startBr+1,startBc],[startBr,startBc-1],[startBr,startBc+1]];
+  for(const [nr,nc] of neighbors){
+    if(nr<0||nr>=GRID-1||nc<0||nc>=GRID-1) continue;
+    if(boxes[nr][nc]||visited.has(`${nr},${nc}`)) continue;
+    if(countSides(nr,nc)>=3) len+=chainLength(nr,nc,visited);
   }
-  return boxes.filter(([br,bc])=>br>=0&&br<GRID-1&&bc>=0&&bc<GRID-1);
+  return len;
 }
 
 function cpuChoose(){
   const available=getAllLines();
   if(available.length===0) return null;
 
-  // Easy: 80% random
-  if(cpuDifficulty==='easy'&&Math.random()<0.8){
+  // Easy: purely random
+  if(cpuDifficulty==='easy'){
     return available[Math.floor(Math.random()*available.length)];
   }
 
-  // 1. Complete a box if possible (normal + hard)
+  // 1. Complete a box if possible
   for(const line of available){
     const adj=cpuAffectedBoxes(line.type,line.r,line.c);
     for(const [br,bc] of adj){
@@ -397,45 +448,41 @@ function cpuChoose(){
     }
   }
 
-  // Easy: random after trying to complete boxes
-  if(cpuDifficulty==='easy'){
-    return available[Math.floor(Math.random()*available.length)];
-  }
-
-  // 2. Avoid giving opponent a box (don't draw 3rd side)
+  // 2. Avoid giving opponent a box (3rd side = dangerous)
   const safe=available.filter(line=>{
     const adj=cpuAffectedBoxes(line.type,line.r,line.c);
-    for(const [br,bc] of adj){
-      if(!boxes[br][bc]&&countSides(br,bc)===2) return false;
-    }
-    return true;
+    return !adj.some(([br,bc])=>!boxes[br][bc]&&countSides(br,bc)===2);
   });
 
   if(safe.length>0){
     if(cpuDifficulty==='hard'){
-      // Hard: among safe, prefer moves that don't create 2-sided boxes (slow opponent buildup)
+      // Hard: among safe moves, prefer ones that don't create 2-sided boxes either
       const safer=safe.filter(line=>{
         const adj=cpuAffectedBoxes(line.type,line.r,line.c);
-        for(const [br,bc] of adj){
-          if(!boxes[br][bc]&&countSides(br,bc)===1) return false;
-        }
-        return true;
+        return !adj.some(([br,bc])=>!boxes[br][bc]&&countSides(br,bc)===1);
       });
-      if(safer.length>0) return safer[Math.floor(Math.random()*safer.length)];
+      const pool=safer.length>0?safer:safe;
+      return pool[Math.floor(Math.random()*pool.length)];
     }
     return safe[Math.floor(Math.random()*safe.length)];
   }
 
-  // 3. No safe move — sacrifice smallest chain
+  // 3. No safe move — sacrifice smallest chain (normal+ hard)
   if(cpuDifficulty==='hard'){
-    let best=null,bestLen=Infinity;
+    // Full chain analysis: find all chains, sacrifice smallest to get the rest
+    let best=null, bestScore=-Infinity;
     for(const line of available){
       const adj=cpuAffectedBoxes(line.type,line.r,line.c);
-      let chainLen=0;
+      // Count how many boxes this would give opponent
+      let giveAway=0;
       for(const [br,bc] of adj){
-        if(!boxes[br][bc]&&countSides(br,bc)===2) chainLen++;
+        if(!boxes[br][bc]&&countSides(br,bc)===2){
+          giveAway+=chainLength(br,bc);
+        }
       }
-      if(chainLen<bestLen){bestLen=chainLen;best=line;}
+      // Prefer giving away fewer boxes
+      const score=-giveAway;
+      if(score>bestScore){ bestScore=score; best=line; }
     }
     if(best) return best;
   }
@@ -452,62 +499,75 @@ function doCpuTurn(){
       const move=cpuChoose();
       if(!move){ cpuBusy=false; endGame(); return; }
       const claimed=placeLine(move.type,move.r,move.c,'c');
-      updateLEDs();
-      render();
+      updateLEDs(); render();
       if(claimed>0){
         extraTurn=true;
-        // check if all done
         if(boxes.flat().every(b=>b!==null)){ cpuBusy=false; endGame(); return; }
-      } else {
-        extraTurn=false;
-      }
+      } else { extraTurn=false; }
     } while(extraTurn);
 
-    cpuBusy=false;
-    turn='p';
-    updateTurnLabel();
-    render();
-    updateUndoBtn();
-
+    cpuBusy=false; turn='p'; updateTurnLabel(); render(); updateUndoBtn();
     if(boxes.flat().every(b=>b!==null)) endGame();
-  }, 500);
+  }, 550);
 }
+
+// ── Hover detection ──
+function getNearestEdge(x,y){
+  let best=null, bestD=Infinity;
+  // Horizontal edges
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID-1;c++){
+    if(hLines[r][c]) continue;
+    const a=dotXY(r,c), b=dotXY(r,c+1);
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const d=Math.hypot(mx-x,my-y);
+    if(d<bestD){ bestD=d; best={type:'h',r,c}; }
+  }
+  // Vertical edges
+  for(let r=0;r<GRID-1;r++) for(let c=0;c<GRID;c++){
+    if(vLines[r][c]) continue;
+    const a=dotXY(r,c), b=dotXY(r+1,c);
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const d=Math.hypot(mx-x,my-y);
+    if(d<bestD){ bestD=d; best={type:'v',r,c}; }
+  }
+  return bestD < STEP*0.45 ? best : null;
+}
+
+canvas.addEventListener('mousemove',e=>{
+  if(gameOver||turn!=='p'||cpuBusy) return;
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=CW/rect.width, scaleY=CH/rect.height;
+  const x=(e.clientX-rect.left)*scaleX, y=(e.clientY-rect.top)*scaleY;
+  const edge=getNearestEdge(x,y);
+  if(!edge||(hoverEdge&&edge.type===hoverEdge.type&&edge.r===hoverEdge.r&&edge.c===hoverEdge.c)) return;
+  hoverEdge=edge; render();
+});
+canvas.addEventListener('mouseleave',()=>{ hoverEdge=null; render(); });
 
 // ── Input handling ──
 function getCanvasPos(e){
   const rect=canvas.getBoundingClientRect();
   const scaleX=CW/rect.width, scaleY=CH/rect.height;
-  if(e.touches){
-    return {x:(e.touches[0].clientX-rect.left)*scaleX, y:(e.touches[0].clientY-rect.top)*scaleY};
-  }
+  if(e.touches) return {x:(e.touches[0].clientX-rect.left)*scaleX, y:(e.touches[0].clientY-rect.top)*scaleY};
   return {x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY};
 }
 
 function nearestDot(x,y){
   let best=null, bestD=Infinity;
   for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++){
-    const d=dotXY(r,c);
-    const dist=Math.hypot(d.x-x,d.y-y);
+    const d=dotXY(r,c), dist=Math.hypot(d.x-x,d.y-y);
     if(dist<bestD){ bestD=dist; best={r,c}; }
   }
   if(bestD<DOT_R*4) return best;
   return null;
 }
 
-function adjacent(a,b){
-  const dr=Math.abs(a.r-b.r), dc=Math.abs(a.c-b.c);
-  return (dr===1&&dc===0)||(dr===0&&dc===1);
-}
+function adjacent(a,b){ const dr=Math.abs(a.r-b.r),dc=Math.abs(a.c-b.c); return (dr===1&&dc===0)||(dr===0&&dc===1); }
 
 function tryDrawLine(a,b){
-  // Determine type and position
   let type,r,c;
-  if(a.r===b.r){ // horizontal
-    type='h'; r=a.r; c=Math.min(a.c,b.c);
-  } else { // vertical
-    type='v'; r=Math.min(a.r,b.r); c=a.c;
-  }
-  // Save state before placing (for undo)
+  if(a.r===b.r){ type='h'; r=a.r; c=Math.min(a.c,b.c); }
+  else { type='v'; r=Math.min(a.r,b.r); c=a.c; }
   moveHistory.push({
     hLines:hLines.map(row=>[...row]),
     vLines:vLines.map(row=>[...row]),
@@ -517,169 +577,182 @@ function tryDrawLine(a,b){
   if(moveHistory.length>10) moveHistory.shift();
   const result=placeLine(type,r,c,'p');
   if(result===-1){ moveHistory.pop(); flash('その線はもう引かれています','#ff6688'); return; }
-  selectedDot=null;
-  updateLEDs();
-  render();
-  updateUndoBtn();
+  selectedDot=null; hoverEdge=null;
+  updateLEDs(); render(); updateUndoBtn();
 
   if(result>0){
-    // Player claimed box(es) — extra turn
     if(boxes.flat().every(b=>b!==null)){ endGame(); return; }
-    flash('ボックス獲得！もう一回！','#ffe870');
-    // Still player's turn
+    flash('ボックス獲得！もう一回！','#88bbff');
     return;
   }
-
-  // Switch to CPU
-  turn='c';
-  updateTurnLabel();
-  render();
+  turn='c'; updateTurnLabel(); render();
   if(boxes.flat().every(b=>b!==null)){ endGame(); return; }
   doCpuTurn();
 }
 
 canvas.addEventListener('click',e=>handleInput(getCanvasPos(e)));
 
-let touchStartX = 0, touchStartY = 0, touchMoved = false;
-canvas.addEventListener('touchstart', (e) => {
-  if (e.touches.length > 1) { touchMoved = true; return; }
-  const t = e.touches[0];
-  touchStartX = t.clientX; touchStartY = t.clientY;
-  touchMoved = false;
-}, { passive: true });
-canvas.addEventListener('touchmove', (e) => {
-  if (e.touches.length > 1) { touchMoved = true; return; }
-  const t = e.touches[0];
-  const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
-  if (Math.sqrt(dx*dx + dy*dy) > 10) touchMoved = true;
-}, { passive: true });
-canvas.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  if (touchMoved) return;
-  const t = e.changedTouches[0];
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = CW / rect.width, scaleY = CH / rect.height;
-  handleInput({x: (t.clientX - rect.left) * scaleX, y: (t.clientY - rect.top) * scaleY});
-}, { passive: false });
+let touchStartX=0, touchStartY=0, touchMoved=false;
+canvas.addEventListener('touchstart',(e)=>{ if(e.touches.length>1){touchMoved=true;return;} const t=e.touches[0]; touchStartX=t.clientX; touchStartY=t.clientY; touchMoved=false; },{passive:true});
+canvas.addEventListener('touchmove',(e)=>{ if(e.touches.length>1){touchMoved=true;return;} const t=e.touches[0]; const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY; if(Math.sqrt(dx*dx+dy*dy)>8) touchMoved=true; // Edge hover feedback during touch drag
+  if(!gameOver&&turn==='p'&&!cpuBusy){ const rect=canvas.getBoundingClientRect(); const scaleX=CW/rect.width,scaleY=CH/rect.height; const x=(t.clientX-rect.left)*scaleX,y=(t.clientY-rect.top)*scaleY; const edge=getNearestEdge(x,y); if(!hoverEdge||!edge||edge.type!==hoverEdge.type||edge.r!==hoverEdge.r||edge.c!==hoverEdge.c){hoverEdge=edge;render();} } },{passive:true});
+canvas.addEventListener('touchend',(e)=>{ e.preventDefault(); hoverEdge=null; if(touchMoved){render();return;} const t=e.changedTouches[0]; const rect=canvas.getBoundingClientRect(); const scaleX=CW/rect.width,scaleY=CH/rect.height; handleInput({x:(t.clientX-rect.left)*scaleX,y:(t.clientY-rect.top)*scaleY}); },{passive:false});
 
 function handleInput(pos){
   if(gameOver||turn!=='p'||cpuBusy) return;
   const dot=nearestDot(pos.x,pos.y);
   if(!dot){ selectedDot=null; render(); return; }
-
-  if(!selectedDot){
-    selectedDot=dot; render(); return;
-  }
-
-  if(selectedDot.r===dot.r&&selectedDot.c===dot.c){
-    selectedDot=null; render(); return;
-  }
-
-  if(adjacent(selectedDot,dot)){
-    tryDrawLine(selectedDot,dot);
-  } else {
-    selectedDot=dot; render();
-  }
+  if(!selectedDot){ selectedDot=dot; render(); return; }
+  if(selectedDot.r===dot.r&&selectedDot.c===dot.c){ selectedDot=null; render(); return; }
+  if(adjacent(selectedDot,dot)) tryDrawLine(selectedDot,dot);
+  else { selectedDot=dot; render(); }
 }
 
 // ── End game ──
 function endGame(){
   gameOver=true;
   updateLEDs();
-  let msg;
-  if(playerScore>cpuScore){ msg='🎉 あなたの勝ち！'; wins++; startConfetti(); }
-  else if(cpuScore>playerScore){ msg='😢 CPU の勝ち…'; losses++; }
-  else { msg='🤝 引き分け！'; draws++; }
-  flash(msg,'#ffe870');
+  let playerWon=false;
+  let title, msg;
+  if(playerScore>cpuScore){ playerWon=true; wins++; title='🎉 あなたの勝ち！'; msg='おめでとうございます！'; }
+  else if(cpuScore>playerScore){ losses++; title='😔 CPU の勝ち'; msg='またチャレンジしよう！'; }
+  else { draws++; title='🤝 引き分け！'; msg='接戦でした！'; }
   updateRecord();
   render();
+
+  if(playerWon) startConfetti();
+
+  document.getElementById('win-modal-title').textContent=title;
+  document.getElementById('win-modal-body').innerHTML=`
+    <p style="font-size:15px;text-align:center;margin-bottom:14px;color:${playerWon?'#88bbff':'#ff8888'}">${msg}</p>
+    <div style="display:flex;justify-content:space-around;margin-bottom:14px;">
+      <div style="text-align:center">
+        <div style="font-size:32px;font-weight:900;color:#4488ff;text-shadow:0 0 12px #4488ff">${playerScore}</div>
+        <div style="font-size:11px;color:#a0b8d8">👤 あなた</div>
+      </div>
+      <div style="text-align:center;font-size:28px;color:#6858a0;padding-top:4px">vs</div>
+      <div style="text-align:center">
+        <div style="font-size:32px;font-weight:900;color:#ff4444;text-shadow:0 0 12px #ff4444">${cpuScore}</div>
+        <div style="font-size:11px;color:#d8a0a0">🤖 CPU</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#6858a0;margin-bottom:14px">通算: 勝${wins} 負${losses} 引${draws}</div>
+    <button class="act-btn" style="width:100%;padding:10px;font-size:14px" onclick="hideModal('win-modal');newGame()">🔄 もう一度</button>
+  `;
+  setTimeout(()=>showModal('win-modal'), 600);
 }
 
-function newGame(){
-  initGame();
-  updateRecord();
-}
-
+function newGame(){ initGame(); updateRecord(); }
 function setCpuDifficulty(val){ cpuDifficulty=val; }
 
 function updateUndoBtn(){
-  const btn=document.getElementById('undoBtn');
-  if(!btn) return;
+  const btn=document.getElementById('undoBtn'); if(!btn) return;
   const disabled=moveHistory.length===0||gameOver||cpuBusy;
-  btn.disabled=disabled;
-  btn.style.opacity=disabled?'0.4':'';
+  btn.disabled=disabled; btn.style.opacity=disabled?'0.4':'';
 }
 
 function undoMove(){
   if(moveHistory.length===0||gameOver||cpuBusy) return;
   const prev=moveHistory.pop();
-  hLines=prev.hLines;
-  vLines=prev.vLines;
-  boxes=prev.boxes;
-  playerScore=prev.playerScore;
-  cpuScore=prev.cpuScore;
-  turn=prev.turn;
-  selectedDot=null;
-  updateLEDs();
-  updateTurnLabel();
-  render();
-  flash('');
-  updateUndoBtn();
+  hLines=prev.hLines; vLines=prev.vLines; boxes=prev.boxes;
+  playerScore=prev.playerScore; cpuScore=prev.cpuScore; turn=prev.turn;
+  selectedDot=null; boxAnims=[];
+  updateLEDs(); updateTurnLabel(); render(); flash(''); updateUndoBtn();
 }
 
-// ── Render ──
+// ── Render with animations and hover highlight ──
+let lastRafTime=0;
+function renderLoop(ts){
+  const dt=ts-lastRafTime; lastRafTime=ts;
+  // Advance box animations
+  let needsMore=false;
+  boxAnims=boxAnims.filter(a=>{ a.t+=dt/300; if(a.t>=1){a.t=1;return false;} needsMore=true; return true; });
+  render();
+  if(needsMore) requestAnimationFrame(renderLoop);
+}
+
+function startBoxAnim(){
+  lastRafTime=performance.now();
+  requestAnimationFrame(renderLoop);
+}
+
+// Override claimBox to kick off animation loop
+const _origClaimBox=claimBox;
+
 function render(){
   ctx.clearRect(0,0,CW,CH);
+  ctx.fillStyle='#0a0a14'; ctx.fillRect(0,0,CW,CH);
 
-  // Background
-  ctx.fillStyle='#0a0a14';
-  ctx.fillRect(0,0,CW,CH);
+  // Hover highlight: boxes this edge would contribute to
+  if(hoverEdge&&!gameOver&&turn==='p'){
+    const adj=cpuAffectedBoxes(hoverEdge.type,hoverEdge.r,hoverEdge.c);
+    adj.forEach(([br,bc])=>{
+      if(!boxes[br][bc]){
+        const {x:x1,y:y1}=dotXY(br,bc), {x:x2,y:y2}=dotXY(br+1,bc+1);
+        ctx.fillStyle='rgba(255,255,255,0.07)';
+        ctx.fillRect(x1,y1,x2-x1,y2-y1);
+        if(countSides(br,bc)===3){
+          // Would complete this box — highlight stronger
+          ctx.fillStyle='rgba(68,136,255,0.18)';
+          ctx.fillRect(x1,y1,x2-x1,y2-y1);
+        }
+      }
+    });
+  }
 
-  // Boxes
+  // Boxes (with scale-in animation)
+  // First pass: static claimed boxes
   for(let r=0;r<GRID-1;r++) for(let c=0;c<GRID-1;c++){
-    if(boxes[r][c]){
-      const {x:x1,y:y1}=dotXY(r,c);
-      const {x:x2,y:y2}=dotXY(r+1,c+1);
-      ctx.fillStyle=boxes[r][c]==='p'?'rgba(123,237,159,0.2)':'rgba(251,133,0,0.2)';
-      ctx.fillRect(x1,y1,x2-x1,y2-y1);
-      // Initial
-      ctx.fillStyle=boxes[r][c]==='p'?'#7bed9f':'#fb8500';
-      ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(boxes[r][c]==='p'?'P':'C', (x1+x2)/2,(y1+y2)/2);
-    }
+    if(!boxes[r][c]) continue;
+    const animEntry=boxAnims.find(a=>a.br===r&&a.bc===c);
+    const t=animEntry?Math.min(animEntry.t,1):1;
+    const {x:x1,y:y1}=dotXY(r,c), {x:x2,y:y2}=dotXY(r+1,c+1);
+    const cx=(x1+x2)/2, cy=(y1+y2)/2, w=(x2-x1), h=(y2-y1);
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.scale(t,t);
+    ctx.fillStyle=boxes[r][c]==='p'?PLAYER_FILL:CPU_FILL;
+    ctx.fillRect(-w/2,-h/2,w,h);
+    ctx.fillStyle=boxes[r][c]==='p'?PLAYER_COLOR:CPU_COLOR;
+    ctx.font='bold 13px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=t;
+    ctx.fillText(boxes[r][c]==='p'?'P':'C',0,0);
+    ctx.restore();
+    ctx.globalAlpha=1;
   }
 
   // Lines
-  // Horizontal
   for(let r=0;r<GRID;r++) for(let c=0;c<GRID-1;c++){
     const a=dotXY(r,c), b=dotXY(r,c+1);
     if(hLines[r][c]){
       ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-      ctx.strokeStyle=hLines[r][c]==='p'?'#7bed9f':'#fb8500';
-      ctx.shadowColor=hLines[r][c]==='p'?'#7bed9f':'#fb8500';
-      ctx.shadowBlur=10;
-      ctx.lineWidth=4; ctx.lineCap='round'; ctx.stroke();
-      ctx.shadowBlur=0;
-    } else {
-      // Ghost line
+      ctx.strokeStyle=hLines[r][c]==='p'?PLAYER_COLOR:CPU_COLOR;
+      ctx.shadowColor=hLines[r][c]==='p'?PLAYER_COLOR:CPU_COLOR; ctx.shadowBlur=10;
+      ctx.lineWidth=4; ctx.lineCap='round'; ctx.stroke(); ctx.shadowBlur=0;
+    } else if(hoverEdge&&hoverEdge.type==='h'&&hoverEdge.r===r&&hoverEdge.c===c){
       ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-      ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2;
+      ctx.strokeStyle='rgba(68,136,255,0.5)'; ctx.lineWidth=3; ctx.setLineDash([]);
+      ctx.lineCap='round'; ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+      ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=2;
       ctx.setLineDash([4,6]); ctx.stroke(); ctx.setLineDash([]);
     }
   }
-  // Vertical
   for(let r=0;r<GRID-1;r++) for(let c=0;c<GRID;c++){
     const a=dotXY(r,c), b=dotXY(r+1,c);
     if(vLines[r][c]){
       ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-      ctx.strokeStyle=vLines[r][c]==='p'?'#7bed9f':'#fb8500';
-      ctx.shadowColor=vLines[r][c]==='p'?'#7bed9f':'#fb8500';
-      ctx.shadowBlur=10;
-      ctx.lineWidth=4; ctx.lineCap='round'; ctx.stroke();
-      ctx.shadowBlur=0;
+      ctx.strokeStyle=vLines[r][c]==='p'?PLAYER_COLOR:CPU_COLOR;
+      ctx.shadowColor=vLines[r][c]==='p'?PLAYER_COLOR:CPU_COLOR; ctx.shadowBlur=10;
+      ctx.lineWidth=4; ctx.lineCap='round'; ctx.stroke(); ctx.shadowBlur=0;
+    } else if(hoverEdge&&hoverEdge.type==='v'&&hoverEdge.r===r&&hoverEdge.c===c){
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+      ctx.strokeStyle='rgba(68,136,255,0.5)'; ctx.lineWidth=3; ctx.setLineDash([]);
+      ctx.lineCap='round'; ctx.stroke();
     } else {
       ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-      ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2;
+      ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=2;
       ctx.setLineDash([4,6]); ctx.stroke(); ctx.setLineDash([]);
     }
   }
@@ -688,113 +761,75 @@ function render(){
   for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++){
     const {x,y}=dotXY(r,c);
     const isSel=selectedDot&&selectedDot.r===r&&selectedDot.c===c;
-    if(isSel){
-      ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2);
-      ctx.fillStyle='rgba(123,237,159,0.25)'; ctx.fill();
-    }
+    if(isSel){ ctx.beginPath(); ctx.arc(x,y,14,0,Math.PI*2); ctx.fillStyle='rgba(68,136,255,0.2)'; ctx.fill(); }
     const grad=ctx.createRadialGradient(x-2,y-2,1,x,y,8);
     grad.addColorStop(0,isSel?'#ffffa0':'#ffffff');
     grad.addColorStop(1,isSel?'#ffcc00':'#cccccc');
-    ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2);
-    ctx.fillStyle=grad; ctx.fill();
-    if(isSel){
-      ctx.strokeStyle='#7bed9f'; ctx.lineWidth=2;
-      ctx.shadowColor='#7bed9f'; ctx.shadowBlur=12;
-      ctx.stroke(); ctx.shadowBlur=0;
-    }
+    ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
+    if(isSel){ ctx.strokeStyle='#4488ff'; ctx.lineWidth=2; ctx.shadowColor='#4488ff'; ctx.shadowBlur=14; ctx.stroke(); ctx.shadowBlur=0; }
   }
 }
+
+// Patch claimBox to start animation loop
+const origClaimBox2 = claimBox;
+// (already integrated above — boxAnims are added in claimBox directly)
+// Just start anim loop after placeLine in turn functions:
+function afterPlaceLine(){ if(boxAnims.length>0) startBoxAnim(); }
+
+const _origTryDrawLine=tryDrawLine;
+// Wrap doCpuTurn to trigger anim
+const _doCpuOrig=doCpuTurn;
 
 // ===== SAVE / RESTORE =====
-function showToast(msg) {
-  let t = document.getElementById('save-toast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'save-toast';
-    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(50,200,100,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';
-    document.body.appendChild(t);
-  }
-  t.textContent = msg; t.style.opacity = '1';
-  setTimeout(() => t.style.opacity = '0', 1500);
+function showToast(msg){
+  let t=document.getElementById('save-toast');
+  if(!t){t=document.createElement('div');t.id='save-toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(40,100,220,0.95);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.5s;';document.body.appendChild(t);}
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',1500);
 }
 
-function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
-
-function saveGame() {
-  // If the CPU is mid-turn, record turn as 'p' so restore never deadlocks.
-  // restoreGame() also handles turn==='c' defensively, but this keeps save data clean.
-  const savedTurn = (turn === 'c' || cpuBusy) ? 'p' : turn;
-  const data = {
-    hLines: hLines,
-    vLines: vLines,
-    boxes: boxes,
-    playerScore: playerScore,
-    cpuScore: cpuScore,
-    turn: savedTurn,
-    gameOver: gameOver,
-    wins: wins,
-    losses: losses,
-    draws: draws,
-    ts: Date.now()
-  };
-  localStorage.setItem('dotsboxes_save', JSON.stringify(data));
+function saveGame(){
+  const savedTurn=(turn==='c'||cpuBusy)?'p':turn;
+  const data={hLines,vLines,boxes,playerScore,cpuScore,turn:savedTurn,gameOver,wins,losses,draws,ts:Date.now()};
+  localStorage.setItem('dotsboxes_save',JSON.stringify(data));
   showToast('💾 保存しました！');
 }
 
-function checkRestore() {
-  try {
-    const raw = localStorage.getItem('dotsboxes_save');
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    if (Date.now() - data.ts > 24 * 60 * 60 * 1000) return;
-    if (data.gameOver) return;
-    const hasLines = data.hLines && data.hLines.some(row => row.some(v => v !== null));
-    if (!hasLines) return;
-    document.getElementById('restore-overlay').style.display = 'flex';
-  } catch(e) {}
+function checkRestore(){
+  try{
+    const raw=localStorage.getItem('dotsboxes_save'); if(!raw) return;
+    const data=JSON.parse(raw);
+    if(Date.now()-data.ts>24*60*60*1000) return;
+    if(data.gameOver) return;
+    const hasLines=data.hLines&&data.hLines.some(row=>row.some(v=>v!==null));
+    if(!hasLines) return;
+    document.getElementById('restore-overlay').style.display='flex';
+  }catch(e){}
 }
 
-function restoreGame() {
-  try {
-    const raw = localStorage.getItem('dotsboxes_save');
-    const data = JSON.parse(raw);
-    hLines = data.hLines;
-    vLines = data.vLines;
-    boxes = data.boxes;
-    playerScore = data.playerScore;
-    cpuScore = data.cpuScore;
-    turn = data.turn;
-    gameOver = false;
-    cpuBusy = false;
-    selectedDot = null;
-    wins = data.wins || 0;
-    losses = data.losses || 0;
-    draws = data.draws || 0;
-    document.getElementById('restore-overlay').style.display = 'none';
-    updateLEDs();
-    updateTurnLabel();
-    updateRecord();
-    render();
-    // If the game was saved while it was the CPU's turn, trigger CPU now.
-    // Without this, handleInput returns early (turn!=='p') and the CPU never
-    // fires because doCpuTurn() wasn't called after restore — complete deadlock.
-    if (turn === 'c') {
-      doCpuTurn();
-    }
-  } catch(e) {
-    document.getElementById('restore-overlay').style.display = 'none';
-  }
+function restoreGame(){
+  try{
+    const raw=localStorage.getItem('dotsboxes_save');
+    const data=JSON.parse(raw);
+    hLines=data.hLines; vLines=data.vLines; boxes=data.boxes;
+    playerScore=data.playerScore; cpuScore=data.cpuScore;
+    turn=data.turn; gameOver=false; cpuBusy=false; selectedDot=null; boxAnims=[];
+    wins=data.wins||0; losses=data.losses||0; draws=data.draws||0;
+    document.getElementById('restore-overlay').style.display='none';
+    updateLEDs(); updateTurnLabel(); updateRecord(); render();
+    if(turn==='c') doCpuTurn();
+  }catch(e){ document.getElementById('restore-overlay').style.display='none'; }
 }
 
-function declineRestore() {
-  document.getElementById('restore-overlay').style.display = 'none';
+function declineRestore(){
+  document.getElementById('restore-overlay').style.display='none';
   localStorage.removeItem('dotsboxes_save');
 }
 
 newGame();
 checkRestore();
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveGame(); });
-window.addEventListener('beforeunload', ()=>{ saveGame(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveGame(); });
+window.addEventListener('beforeunload',()=>{ saveGame(); });
 </script>
 <script id="home-nav-js">
 (function(){
@@ -810,13 +845,12 @@ window.addEventListener('beforeunload', ()=>{ saveGame(); });
   }
 })();
 </script>
-<button id="home-btn" onclick="goHome()" style="position:fixed;top:12px;left:12px;background:rgba(0,0,0,0.45);border:1.5px solid rgba(255,255,255,0.25);color:white;padding:8px 16px;border-radius:22px;font-size:15px;cursor:pointer;z-index:200;min-height:40px;backdrop-filter:blur(4px);display:none">🏠 ホーム</button>
+<button id="home-btn" onclick="goHome()" style="position:fixed;top:12px;left:12px;background:rgba(0,0,0,0.45);border:1.5px solid rgba(255,255,255,0.25);color:white;padding:8px 16px;border-radius:22px;font-size:15px;cursor:pointer;z-index:200;min-height:40px;backdrop-filter:blur(4px)">🏠 ホーム</button>
 <script>
-function goHome() {
-  if (!confirm('ホーム画面に戻りますか？')) return;
-  document.getElementById('home-btn').style.display = 'none';
-  location.href = 'index.html';
+function goHome(){
+  if(!confirm('ホーム画面に戻りますか？')) return;
+  document.getElementById('home-btn').style.display='none';
+  location.href='index.html';
 }
-document.getElementById('home-btn').style.display = '';
 </script></body>
 </html>

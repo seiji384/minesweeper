@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -60,6 +60,7 @@ body {
   letter-spacing: 0.5px;
 }
 .act-btn:active { transform: scale(0.94); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.act-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
 .modal-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.78); z-index: 10000;
@@ -125,11 +126,39 @@ body {
 .tile.t512  { background: #edc850; color: #f9f6f2; text-shadow: 0 0 14px rgba(237,200,80,0.7); font-size: clamp(13px,4vw,22px); box-shadow: 0 0 20px rgba(237,200,80,0.5); }
 .tile.t1024 { background: #edc53f; color: #f9f6f2; text-shadow: 0 0 16px rgba(237,197,63,0.8); font-size: clamp(11px,3.5vw,18px); box-shadow: 0 0 24px rgba(237,197,63,0.6); }
 .tile.t2048 { background: linear-gradient(135deg, #edc22e, #f4d03f); color: #1a0f00; font-size: clamp(11px,3.5vw,18px); box-shadow: 0 0 30px rgba(244,208,63,0.8), 0 0 60px rgba(244,208,63,0.4); text-shadow: none; }
+.tile.t4096 { background: linear-gradient(135deg, #ff4060, #cc0030); color: #fff; font-size: clamp(10px,3vw,16px); box-shadow: 0 0 30px rgba(255,64,96,0.7), 0 0 60px rgba(255,64,96,0.3); }
 .tile.thi   { background: linear-gradient(135deg, #ff4060, #cc0030); color: #fff; font-size: clamp(10px,3vw,16px); box-shadow: 0 0 20px rgba(255,64,96,0.6); }
 @keyframes pop { 0%{transform:scale(0.2);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
-@keyframes merge-anim { 0%{transform:scale(1)} 30%{transform:scale(1.22)} 70%{transform:scale(0.94)} 100%{transform:scale(1)} }
-.tile.pop { animation: pop 0.18s cubic-bezier(.17,.67,.47,1.3); }
-.tile.merged { animation: merge-anim 0.22s ease-out; }
+@keyframes tileMerge {
+  0%   { transform: scale(1);    }
+  25%  { transform: scale(1.38); }
+  55%  { transform: scale(0.86); }
+  75%  { transform: scale(1.12); }
+  100% { transform: scale(1);    }
+}
+.tile.pop    { animation: pop 0.18s cubic-bezier(.17,.67,.47,1.3); }
+.tile.merged { animation: tileMerge 0.30s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* Slide animations for move direction */
+@keyframes slideLeft  { from { transform: translateX(12px);  } to { transform: translateX(0); } }
+@keyframes slideRight { from { transform: translateX(-12px); } to { transform: translateX(0); } }
+@keyframes slideUp    { from { transform: translateY(12px);  } to { transform: translateY(0); } }
+@keyframes slideDown  { from { transform: translateY(-12px); } to { transform: translateY(0); } }
+.grid-container.slide-l .tile { animation: slideLeft  0.13s ease-out; }
+.grid-container.slide-r .tile { animation: slideRight 0.13s ease-out; }
+.grid-container.slide-u .tile { animation: slideUp    0.13s ease-out; }
+.grid-container.slide-d .tile { animation: slideDown  0.13s ease-out; }
+
+/* Rainbow celebration for 2048 achievement */
+@keyframes rainbowWin {
+  0%   { background: linear-gradient(135deg,#ff4444,#ff8800); box-shadow: 0 0 40px #ff4444, 0 0 80px rgba(255,68,68,0.5); color:#fff; }
+  20%  { background: linear-gradient(135deg,#ffcc00,#88ff00); box-shadow: 0 0 40px #ffcc00, 0 0 80px rgba(255,204,0,0.5);  color:#222; }
+  40%  { background: linear-gradient(135deg,#00ffaa,#00eeff); box-shadow: 0 0 40px #00eeff, 0 0 80px rgba(0,238,255,0.5);  color:#000; }
+  60%  { background: linear-gradient(135deg,#4488ff,#8800ff); box-shadow: 0 0 40px #8800ff, 0 0 80px rgba(136,0,255,0.5);  color:#fff; }
+  80%  { background: linear-gradient(135deg,#ff00cc,#ff4444); box-shadow: 0 0 40px #ff00cc, 0 0 80px rgba(255,0,204,0.5);  color:#fff; }
+  100% { background: linear-gradient(135deg,#edc22e,#f4d03f); box-shadow: 0 0 30px rgba(244,208,63,0.8), 0 0 60px rgba(244,208,63,0.4); color:#1a0f00; }
+}
+.tile.rainbow-win { animation: rainbowWin 2s ease-in-out forwards; z-index: 2; position: relative; }
 
 /* Overlays */
 .overlay {
@@ -218,15 +247,15 @@ body{padding-top:44px!important;}
       <div class="overlay" id="over-gameover">
         <h2 style="color:#ff44aa;text-shadow:0 0 20px #ff44aa">ゲームオーバー</h2>
         <p>スコア: <span id="go-score">0</span></p>
-        <button class="o-btn" onclick="newGame()">もう一度プレイ</button>
+        <button class="o-btn" onclick="showSizeSelect()">もう一度プレイ</button>
       </div>
 
       <div class="overlay" id="over-win">
-        <h2 style="color:#f5c842;text-shadow:0 0 20px #f5c842">🎉 2048達成！</h2>
+        <h2 id="win-title" style="color:#f5c842;text-shadow:0 0 20px #f5c842">🎉 2048達成！</h2>
         <p>おめでとうございます！<br>続けることもできます。</p>
         <div class="btn-row">
           <button class="o-btn" onclick="continueGame()">続ける</button>
-          <button class="o-btn2" onclick="newGame()">新ゲーム</button>
+          <button class="o-btn2" onclick="showSizeSelect()">新ゲーム</button>
         </div>
       </div>
 
@@ -237,13 +266,24 @@ body{padding-top:44px!important;}
           <button class="o-btn2" onclick="declineResume()">いいえ</button>
         </div>
       </div>
+
+      <div class="overlay" id="over-size">
+        <h2 style="color:#f5c842;text-shadow:0 0 20px #f5c842">2048</h2>
+        <p>グリッドサイズを選択</p>
+        <div class="btn-row" style="flex-direction:column;gap:10px;margin-top:8px">
+          <button class="o-btn" onclick="selectSize(3)">3×3 &nbsp;目標: 512</button>
+          <button class="o-btn" onclick="selectSize(4)">4×4 &nbsp;目標: 2048</button>
+          <button class="o-btn" onclick="selectSize(5)">5×5 &nbsp;目標: 4096</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('rules')">📖 ルール</button>
-  <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" onclick="showSizeSelect()">🔄 新しいゲーム</button>
+  <button class="act-btn" id="undo-btn" onclick="undo()" disabled>↩ 元に戻す</button>
   <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
   <button class="act-btn" onclick="showModal('highscore')">🏆 ハイスコア</button>
 </div>
@@ -260,7 +300,7 @@ body{padding-top:44px!important;}
       <br>
       <p>同じ数字のタイルがぶつかると<strong style="color:#60ff90">合体して2倍</strong>になります。</p>
       <br>
-      <p><strong style="color:#f5c842">2048のタイルを作ったら勝利！</strong></p>
+      <p><strong style="color:#f5c842">目標タイルを作ったら勝利！</strong></p>
       <br>
       <p>動かせる場所がなくなると<strong style="color:#ff6060">ゲームオーバー</strong>です。</p>
       <br>
@@ -324,16 +364,79 @@ function startConfetti(){
   anim();
 }
 
+// ── Sound Effects ─────────────────────────────────────────────────────────────
+function playMove() {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.frequency.value = 180; o.type = 'sine';
+    g.gain.setValueAtTime(0.06, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.06);
+    o.start(); o.stop(ac.currentTime + 0.06);
+  } catch(e) {}
+}
+function playMerge(val) {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const freq = Math.min(900, 320 + Math.log2(val||2) * 42);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.frequency.value = freq; o.type = 'triangle';
+    g.gain.setValueAtTime(0.13, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.18);
+    o.start(); o.stop(ac.currentTime + 0.18);
+  } catch(e) {}
+}
+function playWin() {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    [[523,0],[659,0.13],[784,0.26],[1047,0.39],[1319,0.52]].forEach(([freq,t]) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.frequency.value = freq; o.type = 'sine';
+      const s = ac.currentTime + t;
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(0.18, s + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, s + 0.35);
+      o.start(s); o.stop(s + 0.35);
+    });
+  } catch(e) {}
+}
+function playGameOver() {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    [[400,0],[300,0.16],[250,0.32],[180,0.48]].forEach(([freq,t]) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.frequency.value = freq; o.type = 'sawtooth';
+      const s = ac.currentTime + t;
+      g.gain.setValueAtTime(0.09, s);
+      g.gain.exponentialRampToValueAtTime(0.001, s + 0.22);
+      o.start(s); o.stop(s + 0.22);
+    });
+  } catch(e) {}
+}
+
 // ── Game State ────────────────────────────────────────────────────────────────
 let board, score, bestScore, wonShown, isGameOver, newTilePos, mergedSet;
+let SIZE = 4, WIN_TILE = 2048;
+let prevBoard = null, prevScore = 0;
 
 const TILE_CLASSES = {
   2:'t2', 4:'t4', 8:'t8', 16:'t16', 32:'t32', 64:'t64',
-  128:'t128', 256:'t256', 512:'t512', 1024:'t1024', 2048:'t2048'
+  128:'t128', 256:'t256', 512:'t512', 1024:'t1024', 2048:'t2048', 4096:'t4096'
 };
 function getTileClass(v) {
   if (!v) return '';
   return TILE_CLASSES[v] || 'thi';
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('undo-btn');
+  if (!btn) return;
+  const avail = prevBoard !== null && !isGameOver;
+  btn.disabled = !avail;
 }
 
 function loadBest() {
@@ -350,7 +453,7 @@ function saveBest() {
 function saveGame() {
   if (isGameOver) { localStorage.removeItem('2048_save'); return; }
   localStorage.setItem('2048_save', JSON.stringify({
-    board: board, score: score, bestScore: bestScore, wonShown: wonShown, savedAt: Date.now()
+    board, score, bestScore, wonShown, SIZE, WIN_TILE, savedAt: Date.now()
   }));
 }
 
@@ -369,41 +472,63 @@ function tryLoadSave() {
 function resumeGame() {
   const s = window._pendingSave2048;
   if (!s) { declineResume(); return; }
+  SIZE = s.SIZE || 4;
+  WIN_TILE = s.WIN_TILE || 2048;
   board = s.board; score = s.score; bestScore = s.bestScore || bestScore;
   wonShown = s.wonShown || false; isGameOver = false;
   newTilePos = null; mergedSet = new Set();
+  prevBoard = null; prevScore = 0;
   document.getElementById('over-resume').classList.remove('visible');
   render();
+  updateUndoBtn();
 }
 
 function declineResume() {
   localStorage.removeItem('2048_save');
   document.getElementById('over-resume').classList.remove('visible');
+  showSizeSelect();
+}
+
+function showSizeSelect() {
+  document.getElementById('over-gameover').classList.remove('visible');
+  document.getElementById('over-win').classList.remove('visible');
+  document.getElementById('over-resume').classList.remove('visible');
+  document.getElementById('over-size').classList.add('visible');
+  closeAllModals();
+}
+
+function selectSize(s) {
+  SIZE = s;
+  WIN_TILE = {3: 512, 4: 2048, 5: 4096}[s] || 2048;
+  document.getElementById('over-size').classList.remove('visible');
   newGame();
 }
 
 function newGame() {
   localStorage.removeItem('2048_save');
-  board = Array.from({length:4}, () => Array(4).fill(0));
+  board = Array.from({length:SIZE}, () => Array(SIZE).fill(0));
   score = 0;
   wonShown = false; isGameOver = false;
   newTilePos = null; mergedSet = new Set();
+  prevBoard = null; prevScore = 0;
   loadBest();
   document.getElementById('over-gameover').classList.remove('visible');
   document.getElementById('over-win').classList.remove('visible');
+  document.getElementById('over-size').classList.remove('visible');
   closeAllModals();
   spawnTile();
   spawnTile();
   render();
+  updateUndoBtn();
 }
 
 function spawnTile() {
   const empty = [];
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (!board[r][c]) empty.push([r, c]);
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!board[r][c]) empty.push([r, c]);
   if (!empty.length) return;
   const [r, c] = empty[Math.floor(Math.random() * empty.length)];
   board[r][c] = Math.random() < 0.9 ? 2 : 4;
-  newTilePos = r * 4 + c;
+  newTilePos = r * SIZE + c;
 }
 
 function slide(row) {
@@ -424,58 +549,86 @@ function slide(row) {
       i++;
     }
   }
-  while (result.length < 4) result.push(0);
+  while (result.length < SIZE) result.push(0);
   return { row: result, score: sc, mergedAt };
+}
+
+function undo() {
+  if (!prevBoard || isGameOver) return;
+  board = prevBoard;
+  score = prevScore;
+  prevBoard = null;
+  prevScore = 0;
+  mergedSet = new Set();
+  newTilePos = null;
+  render();
+  updateUndoBtn();
 }
 
 function move(dir) {
   if (isGameOver) return;
+  // Save state for undo (one level only)
+  prevBoard = board.map(r => r.slice());
+  prevScore = score;
+
   const old = board.map(r => r.slice());
   let totalScore = 0;
   mergedSet = new Set();
 
   if (dir === 'left') {
-    for (let r = 0; r < 4; r++) {
+    for (let r = 0; r < SIZE; r++) {
       const { row, score: s, mergedAt } = slide(board[r]);
       board[r] = row; totalScore += s;
-      mergedAt.forEach(c => mergedSet.add(r * 4 + c));
+      mergedAt.forEach(c => mergedSet.add(r * SIZE + c));
     }
   } else if (dir === 'right') {
-    for (let r = 0; r < 4; r++) {
+    for (let r = 0; r < SIZE; r++) {
       const { row, score: s, mergedAt } = slide([...board[r]].reverse());
       board[r] = row.reverse(); totalScore += s;
-      mergedAt.forEach(mc => mergedSet.add(r * 4 + (3 - mc)));
+      mergedAt.forEach(mc => mergedSet.add(r * SIZE + (SIZE - 1 - mc)));
     }
   } else if (dir === 'up') {
-    for (let c = 0; c < 4; c++) {
-      const col = [0,1,2,3].map(r => board[r][c]);
+    for (let c = 0; c < SIZE; c++) {
+      const col = Array.from({length:SIZE}, (_, r) => board[r][c]);
       const { row, score: s, mergedAt } = slide(col);
-      for (let r = 0; r < 4; r++) board[r][c] = row[r];
+      for (let r = 0; r < SIZE; r++) board[r][c] = row[r];
       totalScore += s;
-      mergedAt.forEach(mr => mergedSet.add(mr * 4 + c));
+      mergedAt.forEach(mr => mergedSet.add(mr * SIZE + c));
     }
   } else if (dir === 'down') {
-    for (let c = 0; c < 4; c++) {
-      const col = [3,2,1,0].map(r => board[r][c]);
+    for (let c = 0; c < SIZE; c++) {
+      const col = Array.from({length:SIZE}, (_, i) => board[SIZE-1-i][c]);
       const { row, score: s, mergedAt } = slide(col);
-      for (let r = 0; r < 4; r++) board[3 - r][c] = row[r];
+      for (let r = 0; r < SIZE; r++) board[SIZE-1-r][c] = row[r];
       totalScore += s;
-      mergedAt.forEach(mr => mergedSet.add((3 - mr) * 4 + c));
+      mergedAt.forEach(mr => mergedSet.add((SIZE-1-mr) * SIZE + c));
     }
   }
 
   const changed = board.some((row, r) => row.some((v, c) => v !== old[r][c]));
-  if (!changed) return;
+  if (!changed) {
+    // No move happened, discard undo state
+    prevBoard = null; prevScore = 0;
+    return;
+  }
+
+  // Trigger slide animation before re-render
+  const slideClass = {left:'slide-l', right:'slide-r', up:'slide-u', down:'slide-d'}[dir];
+  const gridEl3 = document.getElementById('grid');
+  gridEl3.classList.add(slideClass);
+  setTimeout(() => gridEl3.classList.remove(slideClass), 140);
 
   score += totalScore;
   if (totalScore > 0) {
-    const merged = Math.log2(totalScore || 2);
-    playBeep(440 + merged * 40, 0.08, 'sine');
+    playMerge(totalScore);
+  } else {
+    playMove();
   }
   saveBest();
   newTilePos = null;
   spawnTile();
   render();
+  updateUndoBtn();
   checkWin();
   checkGameOver();
   saveGame();
@@ -483,11 +636,20 @@ function move(dir) {
 
 function checkWin() {
   if (wonShown) return;
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-    if (board[r][c] === 2048) {
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    if (board[r][c] === WIN_TILE) {
       wonShown = true;
-      document.getElementById('over-win').classList.add('visible');
-      startConfetti();
+      document.getElementById('win-title').textContent = `🎉 ${WIN_TILE}達成！`;
+      // Rainbow animation on the winning tile
+      const tiles = document.querySelectorAll('#grid .tile');
+      const idx = r * SIZE + c;
+      if (tiles[idx]) tiles[idx].classList.add('rainbow-win');
+      // Delayed celebration to let rainbow play first
+      setTimeout(() => {
+        startConfetti();
+        playWin();
+        document.getElementById('over-win').classList.add('visible');
+      }, 900);
       return;
     }
   }
@@ -498,14 +660,17 @@ function continueGame() {
 }
 
 function checkGameOver() {
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
     if (!board[r][c]) return;
-    if (c < 3 && board[r][c] === board[r][c+1]) return;
-    if (r < 3 && board[r][c] === board[r+1][c]) return;
+    if (c < SIZE-1 && board[r][c] === board[r][c+1]) return;
+    if (r < SIZE-1 && board[r][c] === board[r+1][c]) return;
   }
   isGameOver = true;
+  prevBoard = null; prevScore = 0;
   document.getElementById('go-score').textContent = score.toLocaleString();
   document.getElementById('over-gameover').classList.add('visible');
+  playGameOver();
+  updateUndoBtn();
 }
 
 function render() {
@@ -515,13 +680,20 @@ function render() {
   const tb = document.getElementById('title-best2048');
   if (tb) tb.textContent = bestScore.toLocaleString();
 
+  // Update grid columns for current size
+  grid.style.gridTemplateColumns = `repeat(${SIZE}, 1fr)`;
+
+  // Adjust tile font size for larger grids
+  const baseFontSize = SIZE <= 3 ? 'clamp(20px,7vw,36px)' : SIZE === 4 ? 'clamp(18px,6vw,32px)' : 'clamp(13px,4vw,22px)';
+
   grid.innerHTML = '';
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
       const v = board[r][c];
-      const idx = r * 4 + c;
+      const idx = r * SIZE + c;
       const div = document.createElement('div');
       div.className = 'tile' + (v ? ' ' + getTileClass(v) : '');
+      div.style.fontSize = baseFontSize;
       if (v) {
         div.textContent = v.toLocaleString();
         if (idx === newTilePos) {
@@ -621,19 +793,6 @@ window.addEventListener('beforeunload', ()=>{ if(!isGameOver) saveGame(); });
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden&&!isGameOver) saveGame(); });
 setInterval(()=>{ if(!isGameOver) saveGame(); }, 30000);
 
-// Web Audio
-function playBeep(freq=600, dur=0.07, type='sine') {
-  try {
-    const ac = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.frequency.value = freq; o.type = type;
-    g.gain.setValueAtTime(0.1, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
-    o.start(); o.stop(ac.currentTime + dur);
-  } catch(e) {}
-}
-
 function goHome() {
   if (!confirm('新しいゲームを始めますか？（現在の進行状況は終了します）')) return;
   newGame();
@@ -641,7 +800,7 @@ function goHome() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadBest();
-if (!tryLoadSave()) newGame();
+if (!tryLoadSave()) showSizeSelect();
 document.getElementById('home-btn').style.display = 'block';
 </script>
 <button id="home-btn" onclick="goHome()" style="position:fixed;top:12px;left:12px;background:rgba(0,0,0,0.45);border:1.5px solid rgba(255,255,255,0.25);color:white;padding:8px 16px;border-radius:22px;font-size:15px;cursor:pointer;z-index:200;min-height:40px;backdrop-filter:blur(4px);display:none">🏠 ホーム</button>

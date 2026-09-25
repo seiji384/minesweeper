@@ -134,6 +134,13 @@ body {
   box-shadow: 0 0 8px rgba(100,200,50,0.5);
 }
 
+/* Timer LED */
+.led-timer { font-size: 14px; }
+/* Star icon in level selector */
+.lvl-btn.cleared { position: relative; }
+.lvl-btn.cleared::after { content: '★'; position: absolute; top: -5px; right: -4px; font-size: 7px; color: #ffd700; text-shadow: 0 0 4px rgba(255,215,0,0.8); }
+/* Min moves hint */
+.min-hint { font-size: 10px; color: #6050a0; text-align: center; padding: 2px 8px; margin: 0 8px 4px; }
 /* D-pad */
 .dpad-container {
   display: flex; justify-content: center; align-items: center;
@@ -219,10 +226,15 @@ body{padding-top:44px!important;}
       <span class="led-label">手数</span>
     </div>
     <div class="led-group">
+      <span class="led led-timer" id="led-timer">0:00</span>
+      <span class="led-label">タイム</span>
+    </div>
+    <div class="led-group">
       <span class="led" id="led-best">---</span>
       <span class="led-label">ベスト</span>
     </div>
   </div>
+  <div class="min-hint" id="min-hint"></div>
 
   <div class="level-selector" id="level-selector"></div>
 
@@ -231,11 +243,11 @@ body{padding-top:44px!important;}
       <div id="game-grid"></div>
       <div id="win-overlay">
         <div class="win-box">
-          <div class="win-title">クリア！</div>
-          <div class="win-sub">クリア手数</div>
-          <div class="win-moves" id="win-moves-num">000</div>
+          <div class="win-title">🎉 クリア！</div>
+          <div class="win-sub">手数: <span id="win-moves-num" style="color:#ff44aa;font-family:'Courier New',monospace;font-weight:bold;">000</span> / 押し: <span id="win-push-num" style="color:#ff44aa;font-family:'Courier New',monospace;font-weight:bold;">000</span></div>
+          <div class="win-sub" style="margin-top:4px;">タイム: <span id="win-time-num" style="color:#7bed9f;font-family:'Courier New',monospace;font-weight:bold;">0:00</span></div>
           <div class="win-best" id="win-best-txt"></div>
-          <button class="win-btn" id="btn-next-win">次のレベル ▶</button>
+          <button class="win-btn" id="btn-next-win">次のレベルへ ▶</button>
         </div>
       </div>
     </div>
@@ -404,13 +416,20 @@ const LEVELS = [
    "###########"]
 ];
 
+// ===== MINIMUM MOVES HINTS (approximate optimal solutions) =====
+const MIN_MOVES = [3, 8, 14, 10, 16, 12, 22, 18, 24, 20, 28, 35, 26, 42, 50];
+
 // ===== GAME STATE =====
 let currentLevel = 0;
 let grid = [];
 let playerPos = {x:0, y:0};
 let moveCount = 0;
+let pushCount = 0;
 let history = [];
 let won = false;
+let timerStart = 0;
+let timerElapsed = 0;
+let timerInterval = null;
 
 // Cell types
 const WALL = '#';
@@ -442,20 +461,49 @@ function loadLevel(idx) {
   won = false;
   history = [];
   moveCount = 0;
+  pushCount = 0;
   const parsed = parseLevel(LEVELS[idx]);
   grid = parsed.grid.map(row => [...row]);
   playerPos = {x: parsed.px, y: parsed.py};
   document.getElementById('win-overlay').classList.remove('visible');
+  startLevelTimer();
   updateLEDs();
   renderGrid();
   updateLevelSelector();
+  updateMinHint();
+}
+
+function startLevelTimer() {
+  clearInterval(timerInterval);
+  timerElapsed = 0;
+  timerStart = Date.now();
+  timerInterval = setInterval(() => {
+    if (!won) {
+      timerElapsed = Math.floor((Date.now() - timerStart) / 1000);
+      const m = Math.floor(timerElapsed / 60);
+      const s = timerElapsed % 60;
+      document.getElementById('led-timer').textContent = m + ':' + String(s).padStart(2, '0');
+    }
+  }, 500);
+}
+
+function updateMinHint() {
+  const el = document.getElementById('min-hint');
+  if (!el) return;
+  const min = MIN_MOVES[currentLevel];
+  if (min !== undefined) {
+    el.textContent = '💡 最小手数の目安: ' + min + ' 手';
+  } else {
+    el.textContent = '';
+  }
 }
 
 function cloneState() {
   return {
     grid: grid.map(row => [...row]),
     playerPos: {...playerPos},
-    moveCount
+    moveCount,
+    pushCount
   };
 }
 
@@ -463,6 +511,7 @@ function restoreState(state) {
   grid = state.grid.map(row => [...row]);
   playerPos = {...state.playerPos};
   moveCount = state.moveCount;
+  pushCount = state.pushCount || 0;
 }
 
 function move(dir) {
@@ -476,6 +525,7 @@ function move(dir) {
   if (nCell === WALL) return;
 
   const savedState = cloneState();
+  let pushed = false, boxOnGoal = false;
 
   if (nCell === BOX || nCell === BOX_ON_GOAL) {
     // Try to push box
@@ -484,8 +534,10 @@ function move(dir) {
     const bCell = grid[by][bx];
     if (bCell === WALL || bCell === BOX || bCell === BOX_ON_GOAL) return;
     // Move box
-    grid[by][bx] = (bCell === GOAL) ? BOX_ON_GOAL : BOX;
+    boxOnGoal = (bCell === GOAL);
+    grid[by][bx] = boxOnGoal ? BOX_ON_GOAL : BOX;
     grid[ny][nx] = (nCell === BOX_ON_GOAL) ? GOAL : FLOOR;
+    pushed = true;
   } else if (nCell !== FLOOR && nCell !== GOAL) {
     return;
   }
@@ -496,9 +548,15 @@ function move(dir) {
   grid[ny][nx] = (grid[ny][nx] === GOAL) ? PLAYER_ON_GOAL : PLAYER;
   playerPos = {x: nx, y: ny};
   moveCount++;
+  if (pushed) pushCount++;
 
-  if (history.length >= 50) history.shift();
+  if (history.length >= 100) history.shift();
   history.push(savedState);
+
+  // Sound effects
+  if (boxOnGoal) playSound('goal');
+  else if (pushed) playSound('push');
+  else playSound('step');
 
   updateLEDs();
   renderGrid();
@@ -524,6 +582,8 @@ function checkWin() {
   }
   // All boxes on goals
   won = true;
+  clearInterval(timerInterval);
+  playSound('clear');
   startConfetti();
   const bestKey = 'sk_best_L' + currentLevel;
   const prevBest = localStorage.getItem(bestKey);
@@ -532,7 +592,18 @@ function checkWin() {
     localStorage.setItem(bestKey, moveCount);
     isNew = true;
   }
+  // Save best time
+  const bestTimeKey = 'sk_best_time_L' + currentLevel;
+  const prevBestTime = localStorage.getItem(bestTimeKey);
+  let isNewTime = false;
+  if (prevBestTime === null || timerElapsed < parseInt(prevBestTime)) {
+    localStorage.setItem(bestTimeKey, timerElapsed);
+    isNewTime = true;
+  }
+  const winM = Math.floor(timerElapsed / 60), winS = timerElapsed % 60;
   document.getElementById('win-moves-num').textContent = String(moveCount).padStart(3, '0');
+  document.getElementById('win-push-num').textContent = String(pushCount).padStart(3, '0');
+  document.getElementById('win-time-num').textContent = winM + ':' + String(winS).padStart(2, '0');
   const best = localStorage.getItem(bestKey);
   document.getElementById('win-best-txt').textContent = isNew ? '🏆 新記録！' : 'ベスト: ' + best + ' 手';
   document.getElementById('win-overlay').classList.add('visible');
@@ -558,6 +629,7 @@ function getBest(idx) {
 function updateLEDs() {
   document.getElementById('led-level').textContent = String(currentLevel + 1).padStart(2, '0');
   document.getElementById('led-moves').textContent = String(moveCount).padStart(3, '0');
+  document.getElementById('led-push').textContent = String(pushCount).padStart(3, '0');
   const best = getBest(currentLevel);
   document.getElementById('led-best').textContent = best !== null ? String(best).padStart(3, '0') : '---';
 }
@@ -567,12 +639,19 @@ function updateLevelSelector() {
   const sel = document.getElementById('level-selector');
   sel.innerHTML = '';
   for (let i = 0; i < LEVELS.length; i++) {
+    const isCleared = cleared.includes(i);
     const btn = document.createElement('button');
     btn.className = 'lvl-btn' +
       (i === currentLevel ? ' current' : '') +
-      (cleared.includes(i) ? ' cleared' : '');
-    btn.textContent = cleared.includes(i) ? '✓' : (i + 1);
-    btn.title = 'レベル ' + (i + 1);
+      (isCleared ? ' cleared' : '');
+    const best = getBest(i);
+    if (isCleared) {
+      btn.innerHTML = '<span style="font-size:9px">★</span>';
+      btn.title = 'レベル ' + (i + 1) + ' ★クリア済 ベスト:' + (best !== null ? best + '手' : '--');
+    } else {
+      btn.textContent = i + 1;
+      btn.title = 'レベル ' + (i + 1);
+    }
     btn.dataset.idx = i;
     btn.addEventListener('click', () => loadLevel(i));
     sel.appendChild(btn);
@@ -754,6 +833,44 @@ function showToast(msg){let t=document.getElementById('save-toast');if(!t){t=doc
 function showSaveToast(){const t=document.createElement('div');t.textContent='✅ 保存しました';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,160,80,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:99999;pointer-events:none;transition:opacity 0.5s';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),500);},1500);}
 function saveGame(){ autoSave(); }
 
+// ===== SOUND =====
+function playSound(type){
+  try{
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    const g=ac.createGain();g.connect(ac.destination);
+    if(type==='step'){
+      const o=ac.createOscillator();o.connect(g);
+      o.frequency.value=200;o.type='sine';
+      g.gain.setValueAtTime(0.06,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.07);
+      o.start();o.stop(ac.currentTime+0.07);
+    }else if(type==='push'){
+      const o=ac.createOscillator();o.connect(g);
+      o.frequency.setValueAtTime(130,ac.currentTime);
+      o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+0.13);
+      o.type='sawtooth';
+      g.gain.setValueAtTime(0.1,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.13);
+      o.start();o.stop(ac.currentTime+0.13);
+    }else if(type==='goal'){
+      [660,880,1100].forEach((f,i)=>{
+        const o=ac.createOscillator();o.connect(g);o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(0.08,ac.currentTime+i*0.07);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.07+0.1);
+        o.start(ac.currentTime+i*0.07);o.stop(ac.currentTime+i*0.07+0.1);
+      });
+    }else if(type==='clear'){
+      [523,659,784,1047].forEach((f,i)=>{
+        const o=ac.createOscillator();o.connect(g);o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(0.12,ac.currentTime+i*0.13);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.13+0.2);
+        o.start(ac.currentTime+i*0.13);o.stop(ac.currentTime+i*0.13+0.2);
+      });
+    }
+    setTimeout(()=>{ try{ac.close();}catch(e){} },1200);
+  }catch(e){}
+}
+
 // ===== SAVE / LOAD =====
 function autoSave(){
   if(won) return;
@@ -762,6 +879,7 @@ function autoSave(){
     grid:grid.map(row=>row.join('')),
     playerPos:{...playerPos},
     moveCount,
+    pushCount,
     ts:Date.now()
   };
   localStorage.setItem('sokoban_save',JSON.stringify(data));
@@ -778,12 +896,15 @@ function tryLoadSave(){
     grid=data.grid.map(row=>row.split(''));
     playerPos={...data.playerPos};
     moveCount=data.moveCount;
+    pushCount=data.pushCount||0;
     won=false;
     history=[];
     document.getElementById('win-overlay').classList.remove('visible');
+    startLevelTimer();
     updateLEDs();
     renderGrid();
     updateLevelSelector();
+    updateMinHint();
     return true;
   }catch(e){return false;}
 }
