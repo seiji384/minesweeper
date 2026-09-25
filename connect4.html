@@ -167,6 +167,7 @@ body{padding-top:44px!important;}
   </select>
   <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
+  <button class="act-btn" id="powerBtn" onclick="togglePowerMode()">⚡ パワーモード</button>
 </div>
 
 <div id="restore-overlay" style="display:none;position:fixed;inset:0;z-index:15000;background:rgba(0,0,0,0.78);justify-content:center;align-items:center;padding:16px;">
@@ -249,6 +250,11 @@ let hintCol = -1;        // column highlighted by hint button
 let hintTimer = null;
 let threatCols = [];     // { col, color } — columns that are 1-move wins
 
+// ===== POWER MODE =====
+let powerMode = false;
+let powerUps = []; // [{col, row, type}]  type: 'extra'|'bomb'|'star'
+let pendingDoubleScore = false;
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 
@@ -262,6 +268,80 @@ function initCanvas() {
 
 function cellSize() { return canvas.width / COLS; }
 function topOffset() { return Math.floor(cellSize() * 0.8); } // preview area height
+
+// ===== POWER MODE FUNCTIONS =====
+function placePowerUps() {
+  powerUps = [];
+  if (!powerMode) return;
+  const count = 3 + Math.floor(Math.random() * 3); // 3-5
+  const types = ['extra', 'bomb', 'star'];
+  const placed = new Set();
+  let attempts = 0;
+  while (powerUps.length < count && attempts < 100) {
+    attempts++;
+    const col = Math.floor(Math.random() * COLS);
+    const row = 1 + Math.floor(Math.random() * (ROWS - 1)); // avoid top row
+    const key = row * COLS + col;
+    if (!placed.has(key)) {
+      placed.add(key);
+      powerUps.push({ col, row, type: types[Math.floor(Math.random() * types.length)] });
+    }
+  }
+}
+
+function showPowerFlash(text, color) {
+  let el = document.getElementById('power-flash');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'power-flash';
+    el.style.cssText = 'position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);z-index:9200;pointer-events:none;font-size:32px;font-weight:900;text-align:center;letter-spacing:2px;text-shadow:0 0 20px currentColor;opacity:0;';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.color = color;
+  el.style.opacity = '1';
+  el.style.transition = 'none';
+  el.style.transform = 'translate(-50%,-50%) scale(1.3)';
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.7s ease-out, transform 0.7s ease-out';
+    el.style.opacity = '0';
+    el.style.transform = 'translate(-50%,-50%) scale(0.8)';
+  }, 900);
+}
+
+function applyBomb(col) {
+  // Remove the bottom-most piece in the column
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (board[r][col] !== EMPTY) {
+      board[r][col] = EMPTY;
+      return;
+    }
+  }
+}
+
+function checkPowerUp(col, row) {
+  const idx = powerUps.findIndex(p => p.col === col && p.row === row);
+  if (idx < 0) return null;
+  const pu = powerUps.splice(idx, 1)[0];
+  const msgs = { extra: '⚡ もう一手！', bomb: '💣 消去！', star: '⭐ 2点ボーナス！' };
+  const colors = { extra: '#ffcc00', bomb: '#ff6644', star: '#ffffaa' };
+  showPowerFlash(msgs[pu.type], colors[pu.type]);
+  if (pu.type === 'bomb') applyBomb(col);
+  return pu.type;
+}
+
+function togglePowerMode() {
+  powerMode = !powerMode;
+  const btn = document.getElementById('powerBtn');
+  if (btn) {
+    btn.textContent = powerMode ? '⚡ パワーON' : '⚡ パワーモード';
+    btn.style.background = powerMode ? 'linear-gradient(160deg,#5a3500 0%,#3a2000 100%)' : '';
+    btn.style.color = powerMode ? '#ffcc00' : '';
+    btn.style.borderColor = powerMode ? '#aa8800' : '';
+    btn.style.boxShadow = powerMode ? '0 0 10px rgba(255,200,0,0.5)' : '';
+  }
+  initBoard();
+}
 
 // ===== DRAW =====
 function drawBoard() {
@@ -374,6 +454,20 @@ function drawBoard() {
       ctx.beginPath();
       ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
       ctx.stroke();
+
+      // Power-up icon if cell is empty and has a power-up
+      if (board[r][c] === EMPTY && powerMode) {
+        const pu = powerUps.find(p => p.col === c && p.row === r);
+        if (pu) {
+          const puIcons = { extra: '⚡', bomb: '💣', star: '⭐' };
+          ctx.font = `bold ${Math.floor(radius * 0.95)}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.globalAlpha = 0.88;
+          ctx.fillText(puIcons[pu.type], cx, cy);
+          ctx.globalAlpha = 1;
+        }
+      }
 
       // Disc if present
       const cell = board[r][c];
@@ -772,6 +866,8 @@ function initBoard() {
   threatCols = [];
   if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
   moveHistory = [];
+  pendingDoubleScore = false;
+  placePowerUps();
   updateStatus();
   drawBoard();
   document.getElementById('home-btn').style.display = 'block';
@@ -801,17 +897,29 @@ function handleColumnDrop(col) {
 
   hintCol = -1; // clear hint on move
   animateDrop(col, row, PLAYER, () => {
+    // Check power-up on landing cell
+    let extraTurn = false;
+    if (powerMode) {
+      const puType = checkPowerUp(col, row);
+      if (puType === 'extra') extraTurn = true;
+      if (puType === 'star') pendingDoubleScore = true;
+      drawBoard(); // redraw to remove consumed icon
+    }
+
     const win = checkWin(board);
     if (win) {
       winCells = win.cells;
       gameOver = true;
-      playerWinsTotal++;
+      const wasDouble = pendingDoubleScore;
+      playerWinsTotal += (wasDouble ? 2 : 1);
+      pendingDoubleScore = false;
       cpuThinking = false;
       threatCols = [];
       updateStatus();
       startWinPulse();
       startConfetti();
-      setTimeout(() => showResult('🎉 あなたの勝ち！', '4つ並べました！', '#ffe870'), 400);
+      const winMsg = wasDouble ? '🎉 あなたの勝ち！ ⭐×2' : '🎉 あなたの勝ち！';
+      setTimeout(() => showResult(winMsg, '4つ並べました！', '#ffe870'), 400);
       return;
     }
 
@@ -819,8 +927,18 @@ function handleColumnDrop(col) {
       gameOver = true;
       cpuThinking = false;
       threatCols = [];
+      pendingDoubleScore = false;
       updateStatus(); drawBoard();
       showResult('🤝 引き分け', 'ボードが埋まりました', '#c0b0e8');
+      return;
+    }
+
+    // Extra turn: player goes again
+    if (extraTurn) {
+      currentTurn = PLAYER;
+      cpuThinking = false;
+      updateThreats();
+      updateStatus(); drawBoard();
       return;
     }
 
@@ -833,14 +951,25 @@ function handleColumnDrop(col) {
       const cpuRow = getDropRow(board, cpuCol);
       board[cpuRow][cpuCol] = CPU;
 
+      // Check CPU power-up
+      let cpuExtraTurn = false;
+      let cpuDoubleScore = false;
+      if (powerMode) {
+        const cpuPuType = checkPowerUp(cpuCol, cpuRow);
+        if (cpuPuType === 'extra') cpuExtraTurn = true;
+        if (cpuPuType === 'star') cpuDoubleScore = true;
+      }
+
       animateDrop(cpuCol, cpuRow, CPU, () => {
+        if (powerMode) drawBoard();
         const cpuWin = checkWin(board);
         if (cpuWin) {
           winCells = cpuWin.cells;
           gameOver = true;
-          cpuWinsTotal++;
+          cpuWinsTotal += (cpuDoubleScore ? 2 : 1);
           cpuThinking = false;
           threatCols = [];
+          pendingDoubleScore = false;
           updateStatus();
           startWinPulse();
           setTimeout(() => showResult('💀 CPUの勝ち', 'またチャレンジしてね！', '#c0b0e8'), 400);
@@ -851,6 +980,7 @@ function handleColumnDrop(col) {
           gameOver = true;
           cpuThinking = false;
           threatCols = [];
+          pendingDoubleScore = false;
           updateStatus(); drawBoard();
           showResult('🤝 引き分け', 'ボードが埋まりました', '#c0b0e8');
           return;

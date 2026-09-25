@@ -148,12 +148,30 @@ body{
 .card.play-anim{animation:playOut 0.3s ease-in both;}
 
 /* Joker card in field */
+@keyframes jokerRainbowGlow {
+  0%   { box-shadow: 0 0 18px 4px #ff0080, 0 0 36px 8px rgba(255,0,128,0.4); }
+  16%  { box-shadow: 0 0 18px 4px #ff8000, 0 0 36px 8px rgba(255,128,0,0.4); }
+  33%  { box-shadow: 0 0 18px 4px #ffff00, 0 0 36px 8px rgba(255,255,0,0.4); }
+  50%  { box-shadow: 0 0 18px 4px #00ff80, 0 0 36px 8px rgba(0,255,128,0.4); }
+  66%  { box-shadow: 0 0 18px 4px #0080ff, 0 0 36px 8px rgba(0,128,255,0.4); }
+  83%  { box-shadow: 0 0 18px 4px #8000ff, 0 0 36px 8px rgba(128,0,255,0.4); }
+  100% { box-shadow: 0 0 18px 4px #ff0080, 0 0 36px 8px rgba(255,0,128,0.4); }
+}
+@keyframes jokerAppear {
+  from { opacity:0; transform: scale(0.3) rotate(-15deg); }
+  60%  { transform: scale(1.15) rotate(5deg); }
+  to   { opacity:1; transform: scale(1) rotate(0deg); }
+}
 .joker-field{
   width:54px;height:76px;border-radius:7px;
   background:linear-gradient(135deg,#ff0080,#ff8000,#ffff00,#00ff80,#0080ff,#8000ff);
   border:2px solid #fff;display:flex;align-items:center;justify-content:center;
   font-size:28px;box-shadow:2px 4px 8px rgba(0,0,0,0.5);
   flex-shrink:0;
+  animation: jokerRainbowGlow 1.5s linear infinite;
+}
+.joker-field.field-new {
+  animation: jokerAppear 0.45s ease-out, jokerRainbowGlow 1.5s linear 0.45s infinite;
 }
 
 /* Effect overlay */
@@ -1043,6 +1061,12 @@ function processSpecialEffects(p,cards,finished){
   const jokers=cards.filter(c=>c.isJoker);
   const vals=normals.map(c=>c.value);
   const count=cards.length;
+
+  // ジョーカー演出 — rainbow flash when joker is played
+  if(jokers.length>0){
+    const jokerMsg=jokers.length===count?'🃏 ジョーカー！':'🃏';
+    showEffect(jokerMsg,'#ff80ff',1600);
+  }
 
   // 砂嵐: 3枚の3
   if(RULES.sunaArashi&&count===3&&normals.length===3&&normals.every(c=>c.value==='3')){

@@ -475,9 +475,9 @@ body {
   <!-- Difficulty tabs -->
   <div class="diff-wrap">
     <div class="diff-tabs">
-      <button class="diff-tab" data-key="easy" onclick="setDiff('easy')">かんたん<small>4色 4枠</small></button>
-      <button class="diff-tab active" data-key="normal" onclick="setDiff('normal')">ふつう<small>6色 4枠</small></button>
-      <button class="diff-tab" data-key="hard" onclick="setDiff('hard')">むずかしい<small>8色 5枠</small></button>
+      <button class="diff-tab" data-key="easy" onclick="setDiff('easy')">かんたん<small>4色 4桁 10回</small></button>
+      <button class="diff-tab active" data-key="normal" onclick="setDiff('normal')">ふつう<small>5色 5桁 10回</small></button>
+      <button class="diff-tab" data-key="hard" onclick="setDiff('hard')">むずかしい<small>6色 6桁 8回</small></button>
     </div>
   </div>
 
@@ -512,8 +512,27 @@ body {
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('rulesModal')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" id="hint-btn" onclick="useHint()">💡 ヒント</button>
   <button class="act-btn" onclick="showHSModal()">🏆 ハイスコア</button>
   <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
+</div>
+
+<!-- Pre-game Difficulty Select Modal -->
+<div class="modal-overlay" id="diffSelectModal">
+  <div class="modal-box">
+    <div class="modal-title"><span>🎮 難易度選択</span></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;padding:18px">
+      <button onclick="startWithDiff('easy')" style="padding:16px;border-radius:14px;border:2px solid rgba(68,220,100,0.5);background:linear-gradient(135deg,rgba(30,120,50,0.3),rgba(10,60,20,0.4));color:#44dd64;font-size:15px;font-weight:900;cursor:pointer;letter-spacing:1px;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <span>⭐ かんたん</span><span style="font-size:12px;opacity:0.75;font-weight:normal">4色 4桁 10回</span>
+      </button>
+      <button onclick="startWithDiff('normal')" style="padding:16px;border-radius:14px;border:2px solid rgba(168,85,247,0.6);background:linear-gradient(135deg,rgba(80,20,150,0.35),rgba(40,10,80,0.45));color:#c090ff;font-size:15px;font-weight:900;cursor:pointer;letter-spacing:1px;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <span>⭐⭐ ふつう</span><span style="font-size:12px;opacity:0.75;font-weight:normal">5色 5桁 10回 ← おすすめ</span>
+      </button>
+      <button onclick="startWithDiff('hard')" style="padding:16px;border-radius:14px;border:2px solid rgba(220,60,60,0.5);background:linear-gradient(135deg,rgba(120,20,20,0.35),rgba(60,10,10,0.45));color:#ff8888;font-size:15px;font-weight:900;cursor:pointer;letter-spacing:1px;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <span>⭐⭐⭐ むずかしい</span><span style="font-size:12px;opacity:0.75;font-weight:normal">6色 6桁 8回</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Rules Modal -->
@@ -631,15 +650,16 @@ const COLORS = [
 ];
 
 const DIFFS = {
-  easy:   { slots:4, colors:4, maxGuesses:12, repeats:false, label:'かんたん' },
-  normal: { slots:4, colors:6, maxGuesses:10, repeats:false, label:'ふつう' },
-  hard:   { slots:5, colors:8, maxGuesses:8,  repeats:true,  label:'むずかしい' },
+  easy:   { slots:4, colors:4, maxGuesses:10, repeats:false, label:'かんたん' },
+  normal: { slots:5, colors:5, maxGuesses:10, repeats:false, label:'ふつう' },
+  hard:   { slots:6, colors:6, maxGuesses:8,  repeats:false, label:'むずかしい' },
 };
 
 let currentDiffKey='normal';
-let slots=4, colorsAvail=6, maxGuesses=10, repeatsAllowed=false;
+let slots=5, colorsAvail=5, maxGuesses=10, repeatsAllowed=false;
 let secret=[], currentGuess=[], activeSlot=0, selectedColor=-1;
 let guessCount=0, gameOver=false, history=[];
+let hintUsed=false;
 
 function getHSKey(){ return `mm_color_${currentDiffKey}`; }
 function getBestScore(){
@@ -683,7 +703,13 @@ function setDiff(key){
   document.querySelectorAll('.diff-tab').forEach(t=>t.classList.toggle('active',t.dataset.key===key));
   const cfg=DIFFS[key];
   slots=cfg.slots; colorsAvail=cfg.colors; maxGuesses=cfg.maxGuesses; repeatsAllowed=cfg.repeats;
-  newGame();
+  startNewGame();
+}
+
+/* Show pre-game difficulty modal then start */
+function startWithDiff(key){
+  hideModal('diffSelectModal');
+  setDiff(key);
 }
 
 function genSecret(){
@@ -814,6 +840,7 @@ function submitGuess(){
     banner.innerHTML=`🎉 正解！ <strong>${guessCount}手</strong>で当てた！<br><span style="font-size:13px;color:#c0ff80">${rating}</span><span style="font-size:11px;color:#a0a0a0;display:block;margin-top:2px">⏱ ${timeStr}</span>`;
     document.getElementById('input-area').style.opacity='0.4';
     document.getElementById('input-area').style.pointerEvents='none';
+    const hBtn=document.getElementById('hint-btn');hBtn.disabled=true;hBtn.style.opacity='0.35';
     // Reveal secret
     showSecret();
     return;
@@ -830,6 +857,7 @@ function submitGuess(){
     showSecret();
     document.getElementById('input-area').style.opacity='0.4';
     document.getElementById('input-area').style.pointerEvents='none';
+    const hBtn2=document.getElementById('hint-btn');hBtn2.disabled=true;hBtn2.style.opacity='0.35';
     return;
   }
 
@@ -936,7 +964,13 @@ function getElapsedStr(){
   return `${m}:${String(ss).padStart(2,'0')}`;
 }
 
+/* newGame: show difficulty selection modal before starting */
 function newGame(){
+  showModal('diffSelectModal');
+}
+
+/* startNewGame: actually initialise a fresh game with currentDiffKey */
+function startNewGame(){
   localStorage.removeItem('mastermind_save');
   stopTimer();
   const cfg=DIFFS[currentDiffKey];
@@ -944,7 +978,10 @@ function newGame(){
   secret=genSecret();
   currentGuess=Array(slots).fill(-1);
   activeSlot=0; selectedColor=-1; guessCount=0; gameOver=false; history=[];
+  hintUsed=false;
 
+  const hBtn=document.getElementById('hint-btn');
+  hBtn.disabled=false; hBtn.style.opacity='1';
   document.getElementById('result-banner').className='result-banner';
   document.getElementById('hint-banner').style.display='none';
   document.getElementById('input-area').style.opacity='1';
@@ -958,6 +995,22 @@ function newGame(){
   document.getElementById('submit-btn').disabled=true;
   updateLEDs();
   document.getElementById('home-btn').style.display='block';
+}
+
+/* useHint: reveal one correct color+position (once per game) */
+function useHint(){
+  if(hintUsed||gameOver) return;
+  hintUsed=true;
+  const hBtn=document.getElementById('hint-btn');
+  hBtn.disabled=true; hBtn.style.opacity='0.35';
+  // Pick a random slot to reveal
+  const pos=Math.floor(Math.random()*slots);
+  const c=secret[pos];
+  const banner=document.getElementById('hint-banner');
+  banner.style.display='block';
+  banner.innerHTML=`💡 ヒント: 位置${pos+1}番は `
+    +`<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${COLORS[c].hex};vertical-align:middle;margin:0 3px;border:2px solid rgba(255,255,255,0.5)"></span>`
+    +`<strong>${COLORS[c].name}</strong> です！`;
 }
 
 function showHSModal(){
@@ -994,15 +1047,13 @@ function saveGame(){
 }
 
 function tryLoadSave(){
-  newGame();
   try{
     const raw=localStorage.getItem('mastermind_save');
-    if(!raw)return;
+    if(!raw){ showModal('diffSelectModal'); return; }
     const s=JSON.parse(raw);
-    if(!s||!s.savedAt||Date.now()-s.savedAt>7*24*60*60*1000){localStorage.removeItem('mastermind_save');return;}
-    if(s.gameOver){localStorage.removeItem('mastermind_save');return;}
-    // Check it's color-mode save
-    if(!s.currentDiffKey||!DIFFS[s.currentDiffKey]){localStorage.removeItem('mastermind_save');return;}
+    if(!s||!s.savedAt||Date.now()-s.savedAt>7*24*60*60*1000){localStorage.removeItem('mastermind_save');showModal('diffSelectModal');return;}
+    if(s.gameOver){localStorage.removeItem('mastermind_save');showModal('diffSelectModal');return;}
+    if(!s.currentDiffKey||!DIFFS[s.currentDiffKey]){localStorage.removeItem('mastermind_save');showModal('diffSelectModal');return;}
     document.getElementById('resume-overlay').classList.add('visible');
     document.getElementById('resume-yes').onclick=function(){
       document.getElementById('resume-overlay').classList.remove('visible');
@@ -1011,6 +1062,9 @@ function tryLoadSave(){
       document.querySelectorAll('.diff-tab').forEach(t=>t.classList.toggle('active',t.dataset.key===currentDiffKey));
       secret=s.secret; history=s.history||[]; currentGuess=s.currentGuess||Array(slots).fill(-1);
       activeSlot=s.activeSlot||0; guessCount=s.guessCount||0; gameOver=false;
+      hintUsed=false;
+      const hBtn=document.getElementById('hint-btn');
+      hBtn.disabled=false; hBtn.style.opacity='1';
       document.getElementById('result-banner').className='result-banner';
       document.getElementById('hint-banner').style.display='none';
       document.getElementById('input-area').style.opacity='1';
@@ -1026,8 +1080,9 @@ function tryLoadSave(){
     document.getElementById('resume-no').onclick=function(){
       document.getElementById('resume-overlay').classList.remove('visible');
       localStorage.removeItem('mastermind_save');
+      showModal('diffSelectModal');
     };
-  }catch(e){}
+  }catch(e){ showModal('diffSelectModal'); }
 }
 
 tryLoadSave();

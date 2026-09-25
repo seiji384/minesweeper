@@ -178,6 +178,10 @@ body{padding-top:44px!important;}
       <span class="led" id="pipes-led">0</span>
       <span class="led-label">パイプ数</span>
     </div>
+    <div class="led-group" id="speed-group" style="display:none">
+      <span class="led" id="speed-led" style="font-size:20px;color:#ff9900;text-shadow:0 0 16px rgba(255,153,0,0.8)">1.00×</span>
+      <span class="led-label">スピード</span>
+    </div>
   </div>
 
   <div id="theme-selector" class="theme-selector">
@@ -187,6 +191,10 @@ body{padding-top:44px!important;}
     <button class="theme-btn" data-theme="pixel" onclick="setTheme('pixel')">👾 ピクセル</button>
   </div>
 
+  <div id="mode-selector" class="theme-selector" style="border-top:1px solid rgba(255,153,0,0.2);padding-top:4px;padding-bottom:4px;">
+    <button class="theme-btn" id="challenge-btn" onclick="toggleChallengeMode()">🏆 チャレンジ</button>
+    <span style="font-size:10px;color:var(--text-sub);align-self:center;margin-left:4px;">10パイプごとにスピード+5%</span>
+  </div>
   <div class="content">
     <canvas id="gameCanvas"></canvas>
   </div>
@@ -384,6 +392,16 @@ function setTheme(t) {
   if (gameState === 'idle' || gameState === 'over') draw();
 }
 
+function toggleChallengeMode() {
+  if (gameState === 'running') return;
+  isChallengeMode = !isChallengeMode;
+  const btn = document.getElementById('challenge-btn');
+  if (btn) btn.classList.toggle('active', isChallengeMode);
+  const speedGroup = document.getElementById('speed-group');
+  if (speedGroup) speedGroup.style.display = isChallengeMode ? '' : 'none';
+  if (gameState === 'idle' || gameState === 'over') draw();
+}
+
 function getThemeSky(passedCount) {
   const tc = THEME_CFG[currentTheme];
   if (!tc || tc.useDayNight) return getSkyColors(passedCount);
@@ -394,10 +412,14 @@ function getThemeSky(passedCount) {
 function showThemeSelector() {
   const el = document.getElementById('theme-selector');
   if (el) el.style.display = 'flex';
+  const ms = document.getElementById('mode-selector');
+  if (ms) ms.style.display = 'flex';
 }
 function hideThemeSelector() {
   const el = document.getElementById('theme-selector');
   if (el) el.style.display = 'none';
+  const ms = document.getElementById('mode-selector');
+  if (ms) ms.style.display = 'none';
 }
 
 // ─── Game constants ────────────────────────────────────────────────────────
@@ -451,6 +473,11 @@ let bgStars = [];
 let animFrame;
 let isNewRecord = false;
 let newRecordFlashStart = 0;
+let isChallengeMode = false;
+let challengeSpeedMultiplier = 1.0;
+let speedUpFlashTime = 0;
+let challengeBest = 0;
+let prevSpeedTier = 0;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -485,6 +512,10 @@ function resetGame() {
   pipeSpeed = 2.5;
   isNewRecord = false;
   best = parseInt(localStorage.getItem('flappy_best') || '0');
+  challengeBest = parseInt(localStorage.getItem('fb_challenge_best') || '0');
+  challengeSpeedMultiplier = 1.0;
+  prevSpeedTier = 0;
+  speedUpFlashTime = 0;
   updateLEDs();
 }
 
@@ -495,6 +526,10 @@ function initGame() {
   gameState = 'idle';
   showThemeSelector();
   document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === currentTheme));
+  const challengeBtn = document.getElementById('challenge-btn');
+  if (challengeBtn) challengeBtn.classList.toggle('active', isChallengeMode);
+  const speedGroup = document.getElementById('speed-group');
+  if (speedGroup) speedGroup.style.display = isChallengeMode ? '' : 'none';
   draw();
 }
 
@@ -519,11 +554,13 @@ function flap() {
 
 function updateLEDs() {
   document.getElementById('score-led').textContent = score;
-  const bestVal = Math.max(best, score);
+  const bestVal = isChallengeMode ? Math.max(challengeBest, score) : Math.max(best, score);
   document.getElementById('best-led').textContent = bestVal;
   document.getElementById('pipes-led').textContent = pipes.filter(p=>p.passed).length;
   const tb = document.getElementById('title-best-fb');
   if (tb) tb.textContent = bestVal;
+  const speedLed = document.getElementById('speed-led');
+  if (speedLed && isChallengeMode) speedLed.textContent = challengeSpeedMultiplier.toFixed(2) + '×';
 }
 
 function getRandomGapY(gapSize) {
@@ -570,7 +607,17 @@ function update() {
   if (frameCount % pipeInterval === 0) spawnPipe();
 
   const passed = pipes.filter(p=>p.passed).length;
-  pipeSpeed = 2.5 + Math.floor(passed / 10) * 0.2;
+  if (isChallengeMode) {
+    const tier = Math.floor(passed / 10);
+    if (tier > prevSpeedTier) {
+      prevSpeedTier = tier;
+      challengeSpeedMultiplier = Math.pow(1.05, tier);
+      speedUpFlashTime = Date.now();
+    }
+    pipeSpeed = 2.5 * challengeSpeedMultiplier;
+  } else {
+    pipeSpeed = 2.5 + Math.floor(passed / 10) * 0.2;
+  }
 
   pipes.forEach(p => { p.x -= pipeSpeed; });
 
@@ -614,13 +661,20 @@ function endGame() {
   document.getElementById('home-btn').style.display = 'none';
   showThemeSelector();
 
-  const prevBest = best;
-  best = Math.max(best, score);
-  isNewRecord = score > 0 && score > prevBest;
+  if (isChallengeMode) {
+    const prevCBest = challengeBest;
+    challengeBest = Math.max(challengeBest, score);
+    isNewRecord = score > 0 && score > prevCBest;
+    localStorage.setItem('fb_challenge_best', challengeBest);
+    saveHiRec('fb_challenge', score);
+  } else {
+    const prevBest = best;
+    best = Math.max(best, score);
+    isNewRecord = score > 0 && score > prevBest;
+    localStorage.setItem('flappy_best', best);
+    saveHiRec('flappy', score);
+  }
   if (isNewRecord) newRecordFlashStart = Date.now();
-
-  localStorage.setItem('flappy_best', best);
-  saveHiRec('flappy', score);
   updateLEDs();
   playDie();
   draw();
@@ -789,10 +843,46 @@ function draw() {
     ctx.restore();
   }
 
+  // Challenge mode HUD: speed display on canvas
+  if (isChallengeMode && (gameState === 'running' || gameState === 'over')) {
+    ctx.save();
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.font = `bold ${Math.round(W * 0.038)}px 'Helvetica Neue', Arial`;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillText(`Speed: ${challengeSpeedMultiplier.toFixed(2)}×`, W - 7, 23);
+    ctx.shadowColor = '#ff9900'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillText(`Speed: ${challengeSpeedMultiplier.toFixed(2)}×`, W - 8, 22);
+    ctx.restore();
+  }
+
+  // SPEED UP flash (challenge mode only)
+  if (speedUpFlashTime > 0 && gameState === 'running') {
+    const elapsed = Date.now() - speedUpFlashTime;
+    if (elapsed < 1000) {
+      const alpha = 1 - elapsed / 1000;
+      const scale = 1 + 0.15 * Math.max(0, 1 - elapsed / 200); // pop-in scale
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(W / 2, (H - GROUND_H) * 0.38);
+      ctx.scale(scale, scale);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const flashSize = Math.round(W * 0.085);
+      ctx.font = `900 ${flashSize}px 'Helvetica Neue', Arial`;
+      ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 28;
+      ctx.fillStyle = '#ffdd00';
+      ctx.fillText('SPEED UP!', 0, 0);
+      ctx.restore();
+    }
+  }
+
   // Overlays
   if (gameState === 'idle') {
     const themeNames = {normal:'☀️通常',night:'🌙夜間',space:'🚀宇宙',pixel:'👾ピクセル'};
-    drawOverlay('フラッピーバード', `テーマ: ${themeNames[currentTheme]||''} ／ タップでスタート`, null, null, false);
+    const modeSub = isChallengeMode
+      ? '🏆 チャレンジモード ／ タップでスタート'
+      : `テーマ: ${themeNames[currentTheme]||''} ／ タップでスタート`;
+    drawOverlay('フラッピーバード', modeSub, null, null, false);
   } else if (gameState === 'over') {
     drawOverlay('ゲームオーバー', 'タップで再スタート', score, getMedal(score), isNewRecord);
   }
@@ -891,7 +981,9 @@ function roundRect(ctx, x, y, w, h, r) {
 function showHiScore() {
   document.getElementById('hiscore-body').innerHTML =
     `<p style="text-align:center;margin-bottom:12px;color:#ffe870;font-weight:bold;">🏆 フラッピーバード ハイスコア</p>` +
-    renderHiRec('flappy', '点');
+    renderHiRec('flappy', '点') +
+    `<p style="text-align:center;margin:14px 0 8px;color:#ffaa00;font-weight:bold;">🏆 チャレンジモード ハイスコア</p>` +
+    renderHiRec('fb_challenge', '点');
   openModal('hiscore-modal');
 }
 

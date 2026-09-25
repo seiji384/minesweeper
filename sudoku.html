@@ -135,6 +135,7 @@ body {
 .sudoku-cell.is-given  { color: #f5c842; font-weight: 900; }
 .sudoku-cell.is-player { color: #60b8ff; font-weight: bold; }
 .sudoku-cell.is-error  { color: #ff6060 !important; text-shadow: 0 0 8px #ff6060; }
+.sudoku-cell.is-solution-error { color: #f87171 !important; text-shadow: 0 0 8px rgba(248,113,113,0.7); }
 .sudoku-cell.is-selected { background: rgba(112,90,255,0.38) !important; outline: 2px solid #9070ff; outline-offset: -2px; }
 .sudoku-cell.is-same-num { background: rgba(90,60,200,0.22); }
 .sudoku-cell.is-same-box { background: rgba(40,28,100,0.28); }
@@ -242,8 +243,9 @@ body{padding-top:44px!important;}
 .sudoku-cell.is-given { color: #ffffff !important; font-weight: 900 !important; text-shadow: 0 0 6px rgba(255,255,255,0.4) !important; }
 .sudoku-cell.is-player { color: #c084fc !important; font-weight: 700 !important; text-shadow: 0 0 8px rgba(168,85,247,0.6) !important; }
 .sudoku-cell.is-error { color: #ff4444 !important; text-shadow: 0 0 10px rgba(255,68,68,0.8) !important; }
+.sudoku-cell.is-solution-error { color: #f87171 !important; text-shadow: 0 0 10px rgba(248,113,113,0.7) !important; }
 .sudoku-cell.is-selected { background: rgba(168,85,247,0.45) !important; outline: 2.5px solid #a855f7 !important; outline-offset: -2px !important; box-shadow: inset 0 0 12px rgba(168,85,247,0.3) !important; }
-.sudoku-cell.is-same-num { background: rgba(168,85,247,0.2) !important; }
+.sudoku-cell.is-same-num { background: rgba(100,150,255,0.2) !important; }
 .sudoku-cell.is-same-box { background: rgba(100,40,180,0.2) !important; }
 .sudoku-grid { border-color: #a855f7 !important; box-shadow: 0 0 20px rgba(168,85,247,0.3) !important; }
 .sudoku-cell:nth-child(3n) { border-right: 2.5px solid #7830d0 !important; }
@@ -281,7 +283,10 @@ body{padding-top:44px!important;}
 
   <div class="status-panel">
     <div class="led-group">
-      <span class="led" id="timer-led">00:00</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="led" id="timer-led">00:00</span>
+        <button id="timer-pause-btn" onclick="toggleTimerPause()" title="タイマー一時停止" style="background:none;border:1px solid #6020a0;border-radius:6px;color:#a855f7;font-size:16px;cursor:pointer;padding:2px 7px;line-height:1;touch-action:manipulation;flex-shrink:0;">⏸</button>
+      </div>
       <span class="led-label">タイム</span>
     </div>
     <div class="led-group">
@@ -338,6 +343,7 @@ body{padding-top:44px!important;}
   <button class="act-btn" onclick="showAllCandidates()">✏️ 候補を表示</button>
   <button class="act-btn" onclick="showModal('highscore')">🏆 ハイスコア</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
+  <button class="act-btn" id="error-toggle-btn" onclick="toggleErrorDisplay()">エラー表示 OFF</button>
 </div>
 
 <div class="save-toast" id="save-toast"></div>
@@ -455,6 +461,8 @@ const DIFF_GIVENS = { easy: 35, normal: 27, hard: 22 };
 let puzzle, solution, player, selectedCell, hintsLeft, timerSecs, timerInterval, difficulty, solved;
 let pencilMarks, pencilMode = false;
 let undoStack = [];
+let errorDisplayOn = false;
+let timerPaused = false;
 
 function setDiff(d) {
   difficulty = d;
@@ -476,6 +484,12 @@ function newPuzzle() {
   hintsLeft = 3;
   solved = false;
   pencilMode = false;
+  timerPaused = false;
+  errorDisplayOn = false;
+  const pauseBtn = document.getElementById('timer-pause-btn');
+  if (pauseBtn) pauseBtn.textContent = '⏸';
+  const errBtn = document.getElementById('error-toggle-btn');
+  if (errBtn) errBtn.textContent = 'エラー表示 OFF';
   updatePencilBtn();
   stopTimer(); timerSecs = 0; startTimer();
   document.getElementById('hint-led').textContent = hintsLeft;
@@ -489,7 +503,7 @@ function newPuzzle() {
 // ── Timer ─────────────────────────────────────────────────────────────────────
 function startTimer() {
   timerInterval = setInterval(() => {
-    if (!solved) { timerSecs++; updateTimer(); }
+    if (!solved && !timerPaused) { timerSecs++; updateTimer(); }
   }, 1000);
 }
 function stopTimer() {
@@ -623,6 +637,22 @@ function updatePencilBtn() {
   if (btn) btn.classList.toggle('active', pencilMode);
 }
 
+// ── Error Display Toggle ───────────────────────────────────────────────────────
+function toggleErrorDisplay() {
+  errorDisplayOn = !errorDisplayOn;
+  const btn = document.getElementById('error-toggle-btn');
+  if (btn) btn.textContent = 'エラー表示 ' + (errorDisplayOn ? 'ON' : 'OFF');
+  renderGrid();
+}
+
+// ── Timer Pause Toggle ────────────────────────────────────────────────────────
+function toggleTimerPause() {
+  if (solved || !puzzle) return;
+  timerPaused = !timerPaused;
+  const btn = document.getElementById('timer-pause-btn');
+  if (btn) btn.textContent = timerPaused ? '▶' : '⏸';
+}
+
 // ── Error Detection ────────────────────────────────────────────────────────────
 function getErrors() {
   const errors = new Set();
@@ -690,12 +720,14 @@ function renderGrid() {
       const sameNum = selNum && effective === selNum && !isSelected;
       const sameBox = selBox && Math.floor(r/3)===selBox[0] && Math.floor(c/3)===selBox[1] && !isSelected;
       const hasError = errors.has(idx);
+      const hasSolutionError = errorDisplayOn && !puzzle[r][c] && player[r][c] && player[r][c] !== solution[r][c];
 
       const cell = document.createElement('div');
       cell.className = 'sudoku-cell';
       if (given) cell.classList.add('is-given');
       else if (pval) cell.classList.add('is-player');
-      if (hasError) cell.classList.add('is-error');
+      if (hasSolutionError) cell.classList.add('is-solution-error');
+      else if (hasError) cell.classList.add('is-error');
       if (isSelected) cell.classList.add('is-selected');
       else if (sameNum) cell.classList.add('is-same-num');
       else if (sameBox) cell.classList.add('is-same-box');

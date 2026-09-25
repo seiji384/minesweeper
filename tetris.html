@@ -1011,19 +1011,15 @@ canvas.addEventListener('touchend',e=>{
   const adx=Math.abs(dx), ady=Math.abs(dy);
 
   if(!touchMoved){
-    // Tap: left third=move left, right third=move right, center=rotate
-    const rect=canvas.getBoundingClientRect();
-    const rx=t.clientX-rect.left;
-    if(rx<rect.width*0.35) move(-1);
-    else if(rx>rect.width*0.65) move(1);
-    else rotate(1);
+    // タップ → 回転
+    rotate(1);
   } else if(adx>ady){
-    // Horizontal swipe
+    // 左右スワイプ → 移動（閾値20px）
     if(adx>20) move(dx>0?1:-1);
   } else {
-    // Vertical swipe
-    if(dy<-25) rotate(1);
-    else if(dy>25) hardDrop();
+    // 上下スワイプ: 上 → ハードドロップ、下 → ソフトドロップ（閾値20px）
+    if(dy<-20) hardDrop();
+    else if(dy>20) softDrop();
   }
 },{passive:false});
 

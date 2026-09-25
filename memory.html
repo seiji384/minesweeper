@@ -147,6 +147,29 @@ body {
   0%, 100% { box-shadow: 0 0 10px rgba(123,237,159,0.5), 0 0 20px rgba(123,237,159,0.2); }
   50% { box-shadow: 0 0 20px rgba(123,237,159,0.9), 0 0 40px rgba(123,237,159,0.5); }
 }
+/* 2P matched cards */
+.card.matched-p1 .card-back {
+  background: radial-gradient(circle, #081828 0%, #040c14 100%) !important;
+  border-color: #4488ff !important;
+  animation: matchGlowP1 1.6s ease-in-out infinite !important;
+}
+@keyframes matchGlowP1 {
+  0%, 100% { box-shadow: 0 0 10px rgba(68,136,255,0.5), 0 0 20px rgba(68,136,255,0.2); }
+  50% { box-shadow: 0 0 20px rgba(68,136,255,0.9), 0 0 40px rgba(68,136,255,0.5); }
+}
+.card.matched-p2 .card-back {
+  background: radial-gradient(circle, #1a0808 0%, #0e0404 100%) !important;
+  border-color: #ff4466 !important;
+  animation: matchGlowP2 1.6s ease-in-out infinite !important;
+}
+@keyframes matchGlowP2 {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,68,102,0.5), 0 0 20px rgba(255,68,102,0.2); }
+  50% { box-shadow: 0 0 20px rgba(255,68,102,0.9), 0 0 40px rgba(255,68,102,0.5); }
+}
+/* 2P panel */
+#twop-panel { margin: 0 8px 4px; padding: 8px 12px; background: rgba(10,5,30,0.85); border: 1px solid rgba(100,80,200,0.3); border-radius: 10px; }
+.twop-player { text-align: center; padding: 6px 10px; border-radius: 8px; border: 2px solid transparent; transition: box-shadow 0.3s; }
+.twop-player.active { box-shadow: 0 0 14px currentColor; }
 
 /* Win message */
 .win-msg {
@@ -255,6 +278,21 @@ body{padding-top:44px!important;}
     </div>
   </div>
 
+  <!-- 2P対戦パネル -->
+  <div id="twop-panel" style="display:none">
+    <div style="display:flex;justify-content:space-around;align-items:center;gap:8px">
+      <div class="twop-player" id="p1-display" style="border-color:#4488ff;background:rgba(68,136,255,0.1);flex:1">
+        <div style="color:#4488ff;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:2px">PLAYER 1</div>
+        <div style="color:#4488ff;font-size:26px;font-weight:900" id="p1-score">0</div>
+      </div>
+      <div id="turn-indicator" style="color:#f5c842;font-size:13px;font-weight:900;text-align:center;min-width:50px">P1<br>の番</div>
+      <div class="twop-player" id="p2-display" style="border-color:#ff4466;background:rgba(255,68,102,0.1);flex:1">
+        <div style="color:#ff4466;font-size:10px;font-weight:bold;letter-spacing:1px;margin-bottom:2px">PLAYER 2</div>
+        <div style="color:#ff4466;font-size:26px;font-weight:900" id="p2-score">0</div>
+      </div>
+    </div>
+  </div>
+
   <div class="content">
     <div class="win-msg" id="win-msg">🎉 クリア！</div>
     <div id="combo-display"></div>
@@ -266,6 +304,7 @@ body{padding-top:44px!important;}
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
   <button class="act-btn" onclick="newGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" id="twop-btn" onclick="toggle2PMode()">👥 2P対戦</button>
   <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
   <button class="act-btn" onclick="showGlobalRanking()">🌍 世界ランキング</button>
   <button class="act-btn" onclick="saveGame();showSaveToast()">💾 保存</button>
@@ -423,6 +462,11 @@ let locked = false;
 let timerInterval = null;
 let startTime = null;
 let elapsed = 0;
+// 2P対戦モード
+let twoPlayerMode = false;
+let currentPlayer = 1;
+let p1Score = 0;
+let p2Score = 0;
 
 function setDifficulty(d) {
   currentDiff = d;
@@ -476,6 +520,7 @@ function newGame() {
   localStorage.removeItem('memory_save');
   clearInterval(timerInterval);
   elapsed = 0; matched = 0; attempts = 0; score = 0; combo = 0; flipped = []; locked = false;
+  if (twoPlayerMode) { currentPlayer = 1; p1Score = 0; p2Score = 0; update2PDisplay(); }
   updateLEDs();
   document.getElementById('win-msg').style.display = 'none';
   document.getElementById('combo-display').textContent = '';
@@ -493,7 +538,7 @@ function buildGrid() {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
-  cards = deck.map((emoji, idx) => ({ emoji, id: idx, matched: false }));
+  cards = deck.map((emoji, idx) => ({ emoji, id: idx, matched: false, matchedBy: 0 }));
 
   const grid = document.getElementById('card-grid');
   grid.style.gridTemplateColumns = `repeat(${cfg.cols}, minmax(58px, 1fr))`;
@@ -537,19 +582,33 @@ function onCardClick(idx, el) {
     const els = document.getElementById('card-grid').children;
     if (cards[a].emoji === cards[b].emoji) {
       // Match
-      combo++;
-      score += 100;
-      updateLEDs();
-      if (combo >= 2) {
-        const cd = document.getElementById('combo-display');
-        cd.textContent = `🔥 ${combo}連続！`;
-        clearTimeout(cd._t);
-        cd._t = setTimeout(() => { cd.textContent = ''; }, 1500);
+      if (twoPlayerMode) {
+        if (currentPlayer === 1) p1Score++;
+        else p2Score++;
+        update2PDisplay();
+      } else {
+        combo++;
+        score += 100;
+        updateLEDs();
+        if (combo >= 2) {
+          const cd = document.getElementById('combo-display');
+          cd.textContent = `🔥 ${combo}連続！`;
+          clearTimeout(cd._t);
+          cd._t = setTimeout(() => { cd.textContent = ''; }, 1500);
+        }
       }
       playSound('match');
       setTimeout(() => {
-        els[a].classList.add('matched');
-        els[b].classList.add('matched');
+        if (twoPlayerMode) {
+          const pClass = currentPlayer === 1 ? 'matched-p1' : 'matched-p2';
+          els[a].classList.add('matched', pClass);
+          els[b].classList.add('matched', pClass);
+          cards[a].matchedBy = currentPlayer;
+          cards[b].matchedBy = currentPlayer;
+        } else {
+          els[a].classList.add('matched');
+          els[b].classList.add('matched');
+        }
         cards[a].matched = true;
         cards[b].matched = true;
         matched++;
@@ -563,9 +622,14 @@ function onCardClick(idx, el) {
       }, 400);
     } else {
       // No match
-      combo = 0;
-      score = Math.max(0, score - 5);
-      updateLEDs();
+      if (twoPlayerMode) {
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        update2PDisplay();
+      } else {
+        combo = 0;
+        score = Math.max(0, score - 5);
+        updateLEDs();
+      }
       playSound('nomatch');
       setTimeout(() => {
         els[a].classList.remove('flipped');
@@ -597,6 +661,23 @@ function onWin() {
   localStorage.removeItem('memory_save');
   playSound('win');
   startConfetti();
+  // 2P対戦の勝者発表
+  if (twoPlayerMode) {
+    let winnerHtml;
+    if (p1Score > p2Score) {
+      winnerHtml = `<p style="font-size:20px;color:#4488ff;text-align:center;font-weight:900;margin-bottom:12px">🏆 Player 1 の勝ち！</p>`;
+    } else if (p2Score > p1Score) {
+      winnerHtml = `<p style="font-size:20px;color:#ff4466;text-align:center;font-weight:900;margin-bottom:12px">🏆 Player 2 の勝ち！</p>`;
+    } else {
+      winnerHtml = `<p style="font-size:20px;color:#f5c842;text-align:center;font-weight:900;margin-bottom:12px">🤝 引き分け！</p>`;
+    }
+    document.getElementById('win-body').innerHTML = winnerHtml +
+      `<p style="margin:8px 0"><span style="color:#4488ff;font-weight:bold">● Player 1</span>: <strong style="color:#4488ff">${p1Score} ペア</strong></p>` +
+      `<p style="margin:8px 0"><span style="color:#ff4466;font-weight:bold">● Player 2</span>: <strong style="color:#ff4466">${p2Score} ペア</strong></p>` +
+      `<br><button class="act-btn" style="width:100%;padding:10px" onclick="newGame();closeModal('win-modal')">🔄 もう一度</button>`;
+    showModal('win-modal');
+    return;
+  }
   saveHiRecLow('memory_'+currentDiff, attempts);
   const timeBonus = elapsed < 60 ? (60 - elapsed) * 50 : 0;
   const finalScore = score + timeBonus;
@@ -619,6 +700,40 @@ function onWin() {
     <button class="act-btn" style="width:100%;padding:8px" onclick="closeModal('win-modal');showGlobalRanking()">🌍 世界ランキングを見る</button>
   `;
   showModal('win-modal');
+}
+
+function toggle2PMode() {
+  twoPlayerMode = !twoPlayerMode;
+  const btn = document.getElementById('twop-btn');
+  const panel = document.getElementById('twop-panel');
+  if (btn) {
+    btn.textContent = twoPlayerMode ? '👥 2Pモード中' : '👥 2P対戦';
+    btn.style.background = twoPlayerMode ? 'linear-gradient(160deg,#0a2060 0%,#061040 100%)' : '';
+    btn.style.color = twoPlayerMode ? '#88aaff' : '';
+    btn.style.borderColor = twoPlayerMode ? '#3366aa' : '';
+  }
+  if (panel) panel.style.display = twoPlayerMode ? 'block' : 'none';
+  newGame();
+}
+
+function update2PDisplay() {
+  document.getElementById('p1-score').textContent = p1Score;
+  document.getElementById('p2-score').textContent = p2Score;
+  const indicator = document.getElementById('turn-indicator');
+  const p1El = document.getElementById('p1-display');
+  const p2El = document.getElementById('p2-display');
+  if (!indicator) return;
+  if (currentPlayer === 1) {
+    indicator.innerHTML = '← P1<br>の番';
+    indicator.style.color = '#4488ff';
+    if (p1El) p1El.style.boxShadow = '0 0 14px rgba(68,136,255,0.6)';
+    if (p2El) p2El.style.boxShadow = 'none';
+  } else {
+    indicator.innerHTML = 'P2<br>の番 →';
+    indicator.style.color = '#ff4466';
+    if (p1El) p1El.style.boxShadow = 'none';
+    if (p2El) p2El.style.boxShadow = '0 0 14px rgba(255,68,102,0.6)';
+  }
 }
 
 function showHighScore() {
@@ -653,7 +768,7 @@ function saveGame(){
 
 function rebuildGridFromSave(emojiArr,matchedArr){
   const cfg=DIFF[currentDiff];
-  cards=emojiArr.map((emoji,idx)=>({emoji,id:idx,matched:matchedArr[idx]||false}));
+  cards=emojiArr.map((emoji,idx)=>({emoji,id:idx,matched:matchedArr[idx]||false,matchedBy:0}));
   const grid=document.getElementById('card-grid');
   grid.style.gridTemplateColumns=`repeat(${cfg.cols},minmax(58px,1fr))`;
   const contentEl2=document.querySelector('.content');

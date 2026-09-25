@@ -224,6 +224,7 @@ body{padding-top:44px!important;}
       <button class="diff-btn" id="db-easy" onclick="selectDiff('easy')">🟢 かんたん</button>
       <button class="diff-btn selected" id="db-normal" onclick="selectDiff('normal')">🟡 ふつう</button>
       <button class="diff-btn" id="db-hard" onclick="selectDiff('hard')">🔴 むずかしい</button>
+      <button class="diff-btn" id="db-practice" onclick="togglePractice()" style="border-color:#a0ffa0;color:#80ee80;">練習 0.5×</button>
     </div>
     <div class="game-cards">
       <div class="game-card" onclick="startGame(0)">
@@ -315,6 +316,10 @@ body{padding-top:44px!important;}
     </div>
     <div class="tap-zone" id="tap-zone" onmousedown="handleTap(event)">
       ▼ タップ ▼
+    </div>
+    <!-- Practice mode badge -->
+    <div id="practice-badge" style="display:none;text-align:center;padding:4px 0;background:rgba(0,180,80,0.18);border-top:1px solid rgba(0,220,100,0.3);">
+      <span style="font-size:11px;font-weight:bold;color:#44ff88;letter-spacing:1px;">🟢 練習中 0.5× — スコアはランキングに含まれません</span>
     </div>
     <!-- Piano key buttons (shown only for piano game) -->
     <div id="piano-keys-ui" style="gap:4px;padding:6px 8px;justify-content:center;display:none">
@@ -512,11 +517,28 @@ function selectDiff(d){
   if(el)el.classList.add('selected');
 }
 
+// ─── Practice Mode ────────────────────────────────────────────────────────────
+let practiceMode=false;
+let PM=1; // practice multiplier: 1=normal, 2=practice (0.5× speed)
+function togglePractice(){
+  practiceMode=!practiceMode;
+  PM=practiceMode?2:1;
+  const btn=document.getElementById('db-practice');
+  if(btn){
+    btn.classList.toggle('selected',practiceMode);
+    btn.textContent=practiceMode?'練習中 0.5×':'練習 0.5×';
+  }
+  // Update practice badge visibility
+  const badge=document.getElementById('practice-badge');
+  if(badge)badge.style.display=practiceMode?'block':'none';
+}
+
 // ─── Score Ranking ────────────────────────────────────────────────────────────
 const SCORE_KEY='rhythm_scores_v2';
 const GAME_NAMES=['🥁 タンバリン','🐸 カエル','⚔️ サムライ','🏀 ドリブル','🎹 ピアノ','🐤 ひよこ','🎤 歌手'];
 function loadScores(){try{return JSON.parse(localStorage.getItem(SCORE_KEY))||{};}catch(e){return {};}}
 function saveScore(idx,pts,rank){
+  if(practiceMode)return; // 練習モードはランキングに含めない
   const s=loadScores();
   const key=(allStages?'all':idx)+'_'+currentDiff;
   if(!s[key])s[key]=[];
@@ -577,8 +599,8 @@ function buildHSBody(){
 // ─── Judge ────────────────────────────────────────────────────────────────────
 function judge(deltaMs){
   const [perf,good]=DIFF_WINDOWS[currentDiff]||DIFF_WINDOWS.normal;
-  if(deltaMs<perf)return'perfect';
-  if(deltaMs<good)return'good';
+  if(deltaMs<perf*PM)return'perfect';
+  if(deltaMs<good*PM)return'good';
   return'miss';
 }
 // Helper: get judgment window in pixels for a given px/s speed
@@ -684,6 +706,9 @@ function launchGame(idx){
   const pui=document.getElementById('piano-keys-ui');
   if(pui){pui.style.display=idx===4?'flex':'none';}
   document.getElementById('tap-zone').style.display=idx===4?'none':'flex';
+  // Practice badge
+  const pb=document.getElementById('practice-badge');
+  if(pb)pb.style.display=practiceMode?'block':'none';
   const a=getAudio();
   // resume() is async — wait for 'running' before reading currentTime or scheduling audio
   function _go(){
@@ -802,7 +827,7 @@ function showEndScreen(rank,emoji){
   const total=perfects+goods+misses;
   document.getElementById('end-stats').innerHTML=`
     <div class="end-stat-row"><span>ゲーム</span><span>${(GAME_NAMES[currentGame]||GAME_NAMES[0]).split(' ')[0]}</span></div>
-    <div class="end-stat-row"><span>難易度</span><span style="color:#88ccff">${DIFF_LABELS[currentDiff]}</span></div>
+    <div class="end-stat-row"><span>難易度</span><span style="color:#88ccff">${DIFF_LABELS[currentDiff]}${practiceMode?' 🟢練習0.5×':''}</span></div>
     <div class="end-stat-row"><span>スコア</span><span style="color:#ff44aa">${score}</span></div>
     <div class="end-stat-row"><span>✨ パーフェクト</span><span style="color:#ffe870">${perfects}</span></div>
     <div class="end-stat-row"><span>👍 グッド</span><span style="color:#44ffaa">${goods}</span></div>
@@ -965,7 +990,7 @@ function initTambourine(){
   tambEvents=[];tambTapEvents=[];tambGameDone=false;
   tambConductorAngle=0;tambConductorSwing=0;
   tambCharBounce=0;tambFlash=0;tambSad=0;
-  const BPS=0.5; // beat period in seconds
+  const BPS=0.5*PM; // beat period in seconds (doubled in practice mode)
   // 4 repeats of the 7-beat pattern
   for(let r=0;r<4;r++){
     const base=r*7*BPS;
@@ -1224,7 +1249,7 @@ const FLOWER_SPEED=140;  // px/s from right to left
 function initFrog(){
   frogEvents=[];frogGameDone=false;
   frogY=0;frogJumping=false;frogSad=0;frogFlower=0;frogSparkles=[];
-  const BPS=0.5;
+  const BPS=0.5*PM;
   // 16 flowers, rhythm mix
   const beats=[1,3,5,7,9,11,12.5,14,16,18,20,21.5,23,25,27,28.5];
   beats.forEach((b,i)=>{
@@ -1436,7 +1461,7 @@ function initSamurai(){
   samEvents=[];samGameDone=false;
   samSlash=0;samSlashAngle=0;samObjSplit=[];samBg=0;
   samWordDisplay='';samWordAlpha=0;
-  const BPS=0.5;
+  const BPS=0.5*PM;
   // Patterns: 2-slash and 3-slash groups
   const groups=[
     {start:1,words:['セイ！','ヤー！']},
@@ -1903,8 +1928,9 @@ function startEndless(){
 
 // ─── Game 3: ドリブル ─────────────────────────────────────────────────────────
 let dEvents=[],dEventIdx=0,dBallY=0,dBallVY=0,dPad=0,dWidth=0,dFlash=0,dDone=false;
-const DRIB_BPM=120, DRIB_BEAT=60/DRIB_BPM;
+let DRIB_BPM=120, DRIB_BEAT=60/DRIB_BPM;
 function initDribble(){
+  DRIB_BPM=120/PM; DRIB_BEAT=60/DRIB_BPM; // apply practice multiplier
   dDone=false; dEventIdx=0; dFlash=0;
   dEvents=[];
   // pattern: beat 0,1,2,4,5,6,8,9,10,12,13,14,16,18,19,20,22,23,24,25
@@ -2029,16 +2055,16 @@ function initPiano(){
   pianoRound=0;
   // 3 rounds of sequences: 4,5,6 notes
   const lens=[4,5,6];
-  let t=1.0; // start after 1 second
+  let t=1.0*PM; // start after 1 second (scaled by PM)
   for(let r=0;r<3;r++){
     const len=lens[r];
     const seq=Array.from({length:len},()=>Math.floor(Math.random()*4));
     // computer plays each note
-    for(let i=0;i<len;i++){pianoEvents.push({type:'play',key:seq[i],time:t,done:false});t+=0.5;}
-    t+=0.3;
+    for(let i=0;i<len;i++){pianoEvents.push({type:'play',key:seq[i],time:t,done:false});t+=0.5*PM;}
+    t+=0.3*PM;
     // player repeats
-    for(let i=0;i<len;i++){pianoEvents.push({type:'tap',key:seq[i],time:t,done:false,judged:false});t+=0.6;}
-    t+=0.5;
+    for(let i=0;i<len;i++){pianoEvents.push({type:'tap',key:seq[i],time:t,done:false,judged:false});t+=0.6*PM;}
+    t+=0.5*PM;
   }
   schedulePianoAudio();
 }
@@ -2110,7 +2136,7 @@ function updatePiano(elapsed,audioNow){
     ctx2.fillStyle='#f5c842';ctx2.fillText('あなたの番！',W/2,H/2-20);
     // highlight expected key
     const next=tapEvs[0];
-    if(audioNow>=next.time-0.3){
+    if(audioNow>=next.time-0.3*PM){
       const k=next.key;
       ctx2.font='bold 28px Arial';ctx2.fillStyle=kcolors[k];ctx2.fillText('▼',k*kw+kw/2,ky-20);
     }
@@ -2118,7 +2144,7 @@ function updatePiano(elapsed,audioNow){
   // mark played events
   pianoEvents.forEach(ev=>{
     if(ev.type==='play'&&!ev.done&&audioNow>=ev.time){ev.done=true;pianoKeyFlash=[ev.key,8];}
-    if(ev.type==='tap'&&!ev.judged&&audioNow>ev.time+0.5){ev.judged=true;misses++;combo=0;addJudgment('MISS','#ff4466',W/2,H/2);updateLEDs();}
+    if(ev.type==='tap'&&!ev.judged&&audioNow>ev.time+0.5*PM){ev.judged=true;misses++;combo=0;addJudgment('MISS','#ff4466',W/2,H/2);updateLEDs();}
   });
   drawJudgments();
   if(!pianoDone&&pianoEvents.every(e=>e.done||e.judged)){pianoDone=true;setTimeout(onGameEnd,600);}
@@ -2135,7 +2161,7 @@ function pianoTap(audioNow,key){
   g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
   o.start(t);o.stop(t+0.35);
   pianoKeyFlash=[key,10];
-  if(key===next.key&&Math.abs(audioNow-next.time)<0.3){
+  if(key===next.key&&Math.abs(audioNow-next.time)<0.3*PM){
     next.judged=true;
     const delta=Math.abs(audioNow-next.time)*1000;
     const j=judge(delta);
@@ -2153,8 +2179,9 @@ function pianoTap(audioNow,key){
 
 // ─── Game 5: ひよこ行進 ───────────────────────────────────────────────────────
 let chickEvents=[],chickEvIdx=0,chickDone=false,chickFlash=0,chickJump=0,chickDir=1;
-const CHICK_BPM=120,CHICK_BEAT=60/CHICK_BPM;
+let CHICK_BPM=120,CHICK_BEAT=60/CHICK_BPM;
 function initChick(){
+  CHICK_BPM=120/PM; CHICK_BEAT=60/CHICK_BPM; // apply practice multiplier
   chickDone=false;chickEvIdx=0;chickFlash=0;chickJump=0;chickDir=1;
   chickEvents=[];
   const pattern=[2,4,6,8,10,12,13,15,17,19,21,23,24,26,28,30];
@@ -2277,8 +2304,9 @@ function chickTap(audioNow){
 // ─── Game 6: 歌手 ────────────────────────────────────────────────────────────
 let singerEvents=[],singerDone=false,singerFlash=0,singerBounce=0;
 const SYLLABLES=['ウッ！','ハッ！','ヘイ！','ホッ！','イェ！','ヤッ！'];
-const SINGER_BPM=120,SINGER_BEAT=60/SINGER_BPM;
+let SINGER_BPM=120,SINGER_BEAT=60/SINGER_BPM;
 function initSinger(){
+  SINGER_BPM=120/PM; SINGER_BEAT=60/SINGER_BPM; // apply practice multiplier
   singerDone=false;singerFlash=0;singerBounce=0;singerEvents=[];
   const beats=[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23,25,26];
   beats.forEach((b,i)=>singerEvents.push({

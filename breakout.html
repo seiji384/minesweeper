@@ -523,6 +523,7 @@ let balls = [], paddle = {}, bricks = [], powerups = [], activePU = {};
 let animId = null;
 let stageClearTimeout = null;
 let ballTrails = []; // { x, y, alpha }
+let boss = null; // boss stage: { x, y, w, h, hp, maxHp, dir }
 
 // Web Audio System
 let _ac = null;
@@ -586,6 +587,7 @@ function playLevelClear(){
 }
 
 function lerp(a,b,t){ return a+(b-a)*t; }
+function isBossStage(){ return stage % 5 === 0; }
 
 function getStageCfg(){ return STAGES[Math.min(stage-1, STAGES.length-1)]; }
 function getBaseSpeed(){
@@ -613,6 +615,15 @@ function mkPaddle(){
 
 function mkBricks(){
   bricks = [];
+  boss = null;
+
+  if(isBossStage()){
+    const bossW=180, bossH=35, bossHp=stage*3;
+    boss = { x:(W-bossW)/2, y:BRICK_TOP, w:bossW, h:bossH,
+             hp:bossHp, maxHp:bossHp, dir:1 };
+    return;
+  }
+
   const push = (r,c,brickW,rows,hp,indestructible,moving)=>{
     const bx=10+c*brickW, by=BRICK_TOP+r*BRICK_H;
     bricks.push({ r,c, x:bx, y:by, w:brickW-BRICK_PAD, h:BRICK_H-BRICK_PAD,
@@ -800,6 +811,13 @@ function update(dt){
     if(b.moving){ b.movePhase+=b.moveSpeed*dt*0.04; b.x=b.origX+Math.sin(b.movePhase)*b.moveRange; }
   });
 
+  // Move boss
+  if(boss){
+    boss.x += 1.5 * boss.dir * dt;
+    if(boss.x <= 0){ boss.x = 0; boss.dir = 1; }
+    if(boss.x + boss.w >= W){ boss.x = W - boss.w; boss.dir = -1; }
+  }
+
   // Ball trails
   balls.forEach(ball=>{ if(!ball.stuck) ballTrails.push({x:ball.x,y:ball.y,alpha:1}); });
   ballTrails=ballTrails.filter(t=>{ t.alpha-=0.08; return t.alpha>0; });
@@ -870,13 +888,38 @@ function update(dt){
       }
     }
 
+    // Boss collision
+    if(boss && ball.x+BALL_R>boss.x && ball.x-BALL_R<boss.x+boss.w &&
+       ball.y+BALL_R>boss.y && ball.y-BALL_R<boss.y+boss.h){
+      const oL=ball.x+BALL_R-boss.x, oR=boss.x+boss.w-(ball.x-BALL_R);
+      const oT=ball.y+BALL_R-boss.y, oB=boss.y+boss.h-(ball.y-BALL_R);
+      const mH=Math.min(oL,oR), mV=Math.min(oT,oB);
+      if(mH<mV) ball.vx=-ball.vx; else ball.vy=-ball.vy;
+      playBrickHit(0);
+      boss.hp--;
+      if(boss.hp<=0){
+        const bonus=stage*500*(activePU.x2?2:1);
+        score+=bonus; updateHUD();
+        boss=null;
+        state='stageclear';
+        spawnConfetti(); playLevelClear();
+        showOverlay('💀 BOSS DEFEATED! 💀',`ボーナス +${bonus}pts 🎉`,score);
+        document.getElementById('pauseBtn').disabled=true;
+        clearTimeout(stageClearTimeout);
+        stageClearTimeout=setTimeout(()=>{
+          nextStage();
+          document.getElementById('pauseBtn').disabled=false;
+        },2400);
+      }
+    }
+
     if(ball.y-BALL_R<=H) aliveBalls.push(ball);
   }
   balls=aliveBalls;
   if(balls.length===0){ loseLife(); return; }
 
   // Level clear
-  if(bricks.filter(b=>!b.indestructible).length===0){
+  if(!isBossStage() && bricks.filter(b=>!b.indestructible).length===0){
     state='stageclear';
     spawnConfetti();
     playLevelClear();
@@ -960,6 +1003,33 @@ function draw(){
 
   // Bricks
   bricks.forEach(drawBrick);
+
+  // Boss
+  if(boss){
+    // HP bar above boss
+    const barW=boss.w-8, barH=10, barX=boss.x+4, barY=boss.y-16;
+    ctx.fillStyle='rgba(0,0,0,0.72)';
+    ctx.beginPath(); ctx.roundRect(barX,barY,barW,barH,5); ctx.fill();
+    const hpR=Math.max(0,boss.hp/boss.maxHp);
+    const hpCol=hpR>0.5?'#40ff40':hpR>0.25?'#ffdd00':'#ff4040';
+    ctx.fillStyle=hpCol; ctx.shadowColor=hpCol; ctx.shadowBlur=8;
+    if(hpR>0){ ctx.beginPath(); ctx.roundRect(barX,barY,barW*hpR,barH,5); ctx.fill(); }
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.font='bold 8px monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`HP ${boss.hp}/${boss.maxHp}`,barX+barW/2,barY+barH/2);
+    // Boss body
+    const bossGrad=ctx.createLinearGradient(boss.x,boss.y,boss.x,boss.y+boss.h);
+    bossGrad.addColorStop(0,'#ff8060'); bossGrad.addColorStop(0.5,'#cc2020'); bossGrad.addColorStop(1,'#880000');
+    ctx.fillStyle=bossGrad; ctx.shadowColor='#ff2020'; ctx.shadowBlur=20;
+    ctx.beginPath(); ctx.roundRect(boss.x,boss.y,boss.w,boss.h,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,180,150,0.9)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#fff'; ctx.font='bold 13px monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('👾 BOSS', boss.x+boss.w/2, boss.y+boss.h/2);
+    ctx.globalAlpha=1;
+  }
 
   // Powerups
   powerups.forEach(pu=>{

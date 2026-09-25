@@ -263,6 +263,7 @@ body {
   <button class="act-btn" onclick="showModal('modal-rules')">📖 ルール</button>
   <button class="act-btn" onclick="restartLevel()">🔄 リスタート</button>
   <button class="act-btn" id="hintBtn" onclick="showHint()">💡 ヒント</button>
+  <button class="act-btn" onclick="generateRandomPuzzle()">🎲 ランダム</button>
   <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="showModal('modal-hi')">🏆 ハイスコア</button>
   <button class="act-btn" onclick="manualSave()">💾 保存</button>
@@ -424,17 +425,20 @@ let currentLevel=1;
 let optimalMoves=0;
 let levelBests={};
 let currentSolution=null;
+let isRandomPuzzle=false;
 
 function loadLevelBests(){
   try{const raw=localStorage.getItem('lo_level_bests');if(raw)levelBests=JSON.parse(raw)||{};}catch(e){}
 }
 
 function saveLevelBest(){
+  if(isRandomPuzzle)return;
   const prev=levelBests[currentLevel]!==undefined?levelBests[currentLevel]:Infinity;
   if(moves<prev){levelBests[currentLevel]=moves;localStorage.setItem('lo_level_bests',JSON.stringify(levelBests));}
 }
 
 function loadLevel(lvl){
+  isRandomPuzzle=false;
   currentLevel=Math.max(1,Math.min(30,lvl));
   grid=[...LEVELS[currentLevel-1]];
   moves=0;gameOver=false;moveHistory=[];
@@ -454,7 +458,7 @@ function updateStatusUI(){
   document.getElementById('led-opt').textContent=optimalMoves||'?';
   const best=levelBests[currentLevel];
   document.getElementById('led-best').textContent=best!==undefined?best:'—';
-  document.getElementById('level-label').textContent='レベル '+currentLevel+' / 30';
+  document.getElementById('level-label').textContent=isRandomPuzzle?'🎲 ランダムパズル':'レベル '+currentLevel+' / 30';
   const pb=document.getElementById('btn-prev-level');
   const nb=document.getElementById('btn-next-level');
   if(pb)pb.disabled=currentLevel<=1;
@@ -519,12 +523,13 @@ const RIPPLE_ORDER=[12,7,11,13,17,2,6,8,10,14,16,18,22,1,3,5,9,15,19,21,23,0,4,2
 function winAnimation(){
   const cells=document.querySelectorAll('.cell');
   const stars=moves<=optimalMoves?'⭐⭐⭐':moves<=optimalMoves+2?'⭐⭐':'⭐';
+  const prefix=isRandomPuzzle?'🎲 ':'🎉 ';
   let i=0;
   function nextRipple(){
     if(i>=RIPPLE_ORDER.length){
       setTimeout(()=>{
         cells.forEach(c=>c.classList.remove('flash-win','on'));
-        flash('🎉 クリア！ '+moves+'手 '+stars,'#ffe870');
+        flash(prefix+'クリア！ '+moves+'手 '+stars,'#ffe870');
         startConfetti();
         updateStatusUI();
       },400);
@@ -551,6 +556,29 @@ function showHint(){
   const cells=document.querySelectorAll('.cell');
   cells[hintIdx].classList.add('hint-flash');
   setTimeout(()=>cells[hintIdx].classList.remove('hint-flash'),1000);
+}
+
+function generateRandomPuzzle(){
+  if(gameOver)return;
+  let effectiveCells,attempts=0;
+  do{
+    attempts++;
+    const numPresses=10+Math.floor(Math.random()*11);
+    const pressCounts={};
+    for(let i=0;i<numPresses;i++){const idx=Math.floor(Math.random()*25);pressCounts[idx]=(pressCounts[idx]||0)+1;}
+    effectiveCells=Object.keys(pressCounts).filter(idx=>pressCounts[idx]%2===1).map(Number);
+  }while(effectiveCells.length===0&&attempts<20);
+  if(!effectiveCells.length)return;
+  const newGrid=makeLevelFromSolution(effectiveCells);
+  const sol=solveLightsOut(newGrid);
+  if(!sol){generateRandomPuzzle();return;}
+  grid=newGrid;
+  moves=0;gameOver=false;moveHistory=[];
+  optimalMoves=sol.reduce((s,v)=>s+v,0);
+  currentSolution=sol;
+  isRandomPuzzle=true;
+  flash('🎲 ランダム！ 最適 '+optimalMoves+'手','#44ddff');
+  renderGrid();updateStatusUI();updateUndoBtn();autoSave();
 }
 
 function flash(msg,color='#ffe870'){

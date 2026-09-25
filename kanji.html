@@ -120,6 +120,11 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
 
 /* Back btn */
 .back-btn { position:fixed; top:12px; left:12px; z-index:100; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; }
+/* Grade select */
+.grade-btn { background:rgba(255,255,255,0.08); border:2px solid rgba(255,204,0,0.25); color:#fff; border-radius:14px; padding:18px 10px; font-size:18px; font-weight:900; cursor:pointer; text-align:center; transition:transform 0.15s cubic-bezier(0.34,1.56,0.64,1),background 0.15s; }
+.grade-btn:active { transform:scale(0.93); }
+.grade-btn.selected { border-color:#ffcc00; background:rgba(255,204,0,0.18); color:#ffcc00; }
+.grade-all-btn { background:linear-gradient(135deg,rgba(255,102,0,0.2),rgba(255,204,0,0.2)); border-color:#ffaa00; font-size:15px; padding:14px 10px; }
 /* History modal */
 #hist-modal { position:fixed; inset:0; z-index:300; background:rgba(0,0,20,0.96); display:none; flex-direction:column; padding:16px; overflow-y:auto; }
 #hist-modal.open { display:flex; }
@@ -148,13 +153,30 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
   <a class="home-btn" href="index.html">🏠 ホーム</a>
   <div class="title-logo">漢字でGO！</div>
   <div class="title-sub">漢字読みゲーム</div>
-  <button class="start-btn" onclick="showDiffSelect()">スタート</button>
+  <button class="start-btn" onclick="showScreen('grade-screen');updateGradeUI()">スタート</button>
   <div style="margin-top:24px;font-size:12px;opacity:0.4">3ミスでゲームオーバー　スキップ2回まで</div>
+</div>
+
+<!-- GRADE SELECT -->
+<div id="grade-screen" class="screen">
+  <button class="back-btn" onclick="showScreen('title-screen')">← 戻る</button>
+  <div class="screen-title" style="margin-bottom:8px">学年を選んでね</div>
+  <div id="grade-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;width:100%;max-width:360px;padding:4px">
+    <div onclick="selectGrade('1')" class="grade-btn" data-g="1">小1</div>
+    <div onclick="selectGrade('2')" class="grade-btn" data-g="2">小2</div>
+    <div onclick="selectGrade('3')" class="grade-btn" data-g="3">小3</div>
+    <div onclick="selectGrade('4')" class="grade-btn" data-g="4">小4</div>
+    <div onclick="selectGrade('5')" class="grade-btn" data-g="5">小5</div>
+    <div onclick="selectGrade('6')" class="grade-btn" data-g="6">小6</div>
+    <div onclick="selectGrade('7')" class="grade-btn" data-g="7" style="grid-column:1/3">中学</div>
+    <div onclick="selectGrade('all')" class="grade-btn grade-all-btn" data-g="all" style="grid-column:1/-1">🎯 全学年（難易度選択へ）</div>
+  </div>
+  <p style="font-size:11px;opacity:0.45;margin-top:12px;text-align:center">選んだ学年レベルの漢字だけ出題されます</p>
 </div>
 
 <!-- DIFFICULTY SELECT -->
 <div id="diff-screen" class="screen">
-  <button class="back-btn" onclick="showScreen('title-screen')">← 戻る</button>
+  <button class="back-btn" onclick="showScreen('grade-screen');updateGradeUI()">← 戻る</button>
   <div class="screen-title">難易度を選んでね</div>
   <div class="diff-grid">
     <div class="diff-col diff-beginner" onclick="selectDiff('beginner')">
@@ -204,7 +226,7 @@ body { background:#1a1a2e; color:#fff; font-family:'Hiragino Sans','Yu Gothic',s
 
 <!-- GENRE SELECT -->
 <div id="genre-screen" class="screen">
-  <button class="back-btn" onclick="showScreen('diff-screen')">← 戻る</button>
+  <button class="back-btn" onclick="goBackFromGenre()">← 戻る</button>
   <div class="screen-title">ジャンルを選んでね</div>
   <div class="genre-grid">
     <div class="genre-btn genre-all" onclick="selectGenre('all')">
@@ -685,6 +707,89 @@ const DB = [
   {w:'呉牛喘月',r:'ごぎゅうぜんげつ',g:'yoji',d:'geki'},{w:'杞憂',r:'きゆう',g:'general',d:'geki',hint:'取り越し苦労'},
 ];
 
+// ===== GRADE SYSTEM =====
+// grade 1-6 = elementary, 7 = middle school, 'all' = no grade filter
+const GRADE_MAP = {
+  // Grade 1 — basic single-kanji
+  '山':1,'川':1,'雨':1,'雪':1,'太陽':1,'月':1,'星':1,
+  '犬':1,'猫':1,'花':1,'木':1,'草':1,'葉':1,'海':1,
+  '池':1,'牛':1,'羊':1,'鶏':1,'兎':1,'豚':1,'鳥':1,
+  '魚':1,'虫':1,'父':1,'母':1,'水':1,'米':1,'麦':1,
+  '馬':1,'蛇':1,'蛙':1,'鹿':1,'猿':1,'熊':1,'狼':1,
+  '狐':1,'狸':1,'林':1,'根':1,'種':1,'森':1,'橋':1,
+  // Grade 2 — simple compounds
+  '学校':2,'友達':2,'家族':2,'桜':2,'梅':2,'松':2,'竹':2,
+  '菊':2,'電話':2,'食事':2,'兄弟':2,'姉妹':2,'葡萄':2,
+  '苺':2,'西瓜':2,'南瓜':2,'茄子':2,'胡瓜':2,'大根':2,
+  '人参':2,'玉葱':2,'桃':2,'柿':2,'栗':2,'梨':2,
+  '林檎':2,'蜜柑':2,'豆腐':2,'納豆':2,'卵':2,'醤油':2,
+  '味噌':2,'梅干':2,'漬物':2,'豚肉':2,'牛肉':2,'鶏肉':2,
+  '祖父':2,'祖母':2,'言葉':2,'手紙':2,'牛乳':2,'砂糖':2,'塩':2,
+  // Grade 3 — everyday life words
+  '音楽':3,'映画':3,'病院':3,'図書館':3,'電車':3,'旅行':3,
+  '時計':3,'新聞':3,'公園':3,'道路':3,'部屋':3,'台所':3,
+  '風呂':3,'玄関':3,'屋根':3,'窓':3,'机':3,'椅子':3,
+  '黒板':3,'教室':3,'先生':3,'生徒':3,'日本語':3,'象':3,
+  '鷹':3,'亀':3,'駅':3,'朝食':3,'夕食':3,'昼食':3,
+  '自転車':3,'自動車':3,'図書':3,
+  // Grade 4 — compound words and geography
+  '飛行機':4,'空港':4,'港':4,
+  '東京':4,'大阪':4,'京都':4,'神奈川':4,'埼玉':4,'千葉':4,
+  '福岡':4,'広島':4,'仙台':4,'名古屋':4,'横浜':4,'沖縄':4,
+  '鹿児島':4,'北海道':4,'寿司':4,'天婦羅':4,'味噌汁':4,'蕎麦':4,
+  '杉':4,'象':4,
+  // Grade 5 — history and yoji
+  '織田信長':5,'徳川家康':5,'豊臣秀吉':5,'源頼朝':5,'伊達政宗':5,
+  '明智光秀':5,'石田三成':5,'武田信玄':5,
+  '一石二鳥':5,'七転八起':5,'十人十色':5,'一期一会':5,
+  '四苦八苦':5,'八方美人':5,'二人三脚':5,'三寒四温':5,
+  '五里霧中':5,'大器晩成':5,'自業自得':5,'以心伝心':5,
+  '無我夢中':5,'喜怒哀楽':5,
+  // Grade 6 — complex beginner
+  '幽霊':6,'拘束':6,'一刀両断':6,'快刀乱麻':6,'千変万化':6,
+  '温故知新':6,'因果応報':6,'一期一会':6,
+};
+
+function getWordGrade(entry){
+  if(GRADE_MAP[entry.w]!==undefined) return GRADE_MAP[entry.w];
+  if(entry.d==='beginner') return 4; // unclassified beginner → grade 4
+  return 7; // inter and above → middle school
+}
+
+function filterByGrade(gradeStr){
+  if(gradeStr==='all') return null; // null = use normal difficulty filtering
+  const maxG=parseInt(gradeStr);
+  return DB.filter(q=>getWordGrade(q)<=maxG);
+}
+
+function updateGradeUI(){
+  document.querySelectorAll('.grade-btn').forEach(btn=>{
+    btn.classList.toggle('selected', btn.dataset.g===G.grade);
+  });
+}
+
+function selectGrade(g){
+  G.grade=g;
+  try{ localStorage.setItem('kanji_grade',g); }catch(e){}
+  updateGradeUI();
+  if(g==='all'){
+    showDiffSelect(); // proceed to existing difficulty selection
+  } else {
+    // Skip difficulty screen; difficulty is implied by grade
+    G.diff = (parseInt(g)<=6) ? 'beginner' : 'inter';
+    showScreen('genre-screen');
+  }
+}
+
+function goBackFromGenre(){
+  if(G.grade !== 'all'){
+    showScreen('grade-screen');
+    updateGradeUI();
+  } else {
+    showScreen('diff-screen');
+  }
+}
+
 // ===== HISTORY & STATS =====
 const HIST_KEY = 'kanji_history_v1';
 const STATS_KEY = 'kanji_stats_v1';
@@ -758,10 +863,12 @@ function updateStatsDisplay() {
 
 // ===== GAME STATE =====
 const G = {
-  diff:'beginner', genre:'all', questions:[], qi:0,
+  diff:'beginner', genre:'all', grade:'all', questions:[], qi:0,
   score:0, wrongs:0, skips:2, combo:0, maxCombo:0,
   timer:null, timeLeft:10, skipUsed:0
 };
+// Restore last grade selection
+try{ G.grade=localStorage.getItem('kanji_grade')||'all'; }catch(e){}
 
 const DIFF_LABELS = {beginner:'初級',inter:'中級',adv:'上級',ultra:'ULTRA',geki:'激ムズ💀'};
 const DIFF_TIMES = {beginner:15, inter:12, adv:10, ultra:8, geki:7};
@@ -773,17 +880,27 @@ function showScreen(id) {
 }
 
 function showDiffSelect() { showScreen('diff-screen'); updateDiffBests(); }
-function selectDiff(d) { G.diff=d; showScreen('genre-screen'); }
+function selectDiff(d) { G.diff=d; G.grade='all'; showScreen('genre-screen'); }
 function selectGenre(g) { G.genre=g; startGame(); }
 
 // ===== GAME LOGIC =====
+const GRADE_LABELS = {'1':'小1','2':'小2','3':'小3','4':'小4','5':'小5','6':'小6','7':'中学','all':''};
+
 function startGame() {
   // Reset session tracking
   if(!isReviewMode) { sessionHistory = []; reviewQueue = []; }
   isReviewMode = false;
-  // Filter questions
-  let pool = DB.filter(q => q.d === G.diff && (G.genre==='all' || q.g===G.genre));
-  if (pool.length < 5) pool = DB.filter(q => q.d === G.diff); // fallback
+  // Filter questions by grade or difficulty
+  let pool;
+  if(G.grade !== 'all'){
+    const gradePool = filterByGrade(G.grade);
+    pool = gradePool.filter(q => G.genre==='all' || q.g===G.genre);
+    if(pool.length < 5) pool = gradePool; // fallback: ignore genre if not enough
+    if(pool.length < 3) pool = filterByGrade(G.grade); // last resort
+  } else {
+    pool = DB.filter(q => q.d === G.diff && (G.genre==='all' || q.g===G.genre));
+    if(pool.length < 5) pool = DB.filter(q => q.d === G.diff);
+  }
   // Shuffle and take 10
   pool = pool.sort(()=>Math.random()-0.5).slice(0,10);
   G.questions = pool;
@@ -792,7 +909,10 @@ function startGame() {
   updateLives();
   document.getElementById('skip-count').textContent = '×'+G.skips;
   document.getElementById('skip-btn').disabled = false;
-  document.getElementById('mode-badge').textContent = DIFF_LABELS[G.diff]+' / '+(G.genre==='all'?'全ジャンル':document.querySelector(`[onclick="selectGenre('${G.genre}')"] div:last-child`)?.textContent||'');
+  const gradeLabel = G.grade !== 'all' ? (GRADE_LABELS[G.grade]+' / ') : '';
+  const genreEl = document.querySelector(`[onclick="selectGenre('${G.genre}')"] div:last-child`);
+  const genreLabel = G.genre==='all' ? '全ジャンル' : (genreEl?.textContent||'');
+  document.getElementById('mode-badge').textContent = gradeLabel + (G.grade==='all'?DIFF_LABELS[G.diff]+' / ':'') + genreLabel;
 
   showScreen('game-screen');
   showQuestion();

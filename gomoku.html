@@ -101,6 +101,16 @@ select.act-btn { -webkit-appearance: none; appearance: none; text-align: center;
   pointer-events: none; opacity: 0; transition: opacity 0.3s;
 }
 .msg-toast.show { opacity: 1; }
+@keyframes timerBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.timer-critical {
+  animation: timerBlink 0.5s ease-in-out infinite !important;
+  color: #ff1111 !important;
+  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000 !important;
+  border-color: #ff2222 !important;
+}
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -158,6 +168,10 @@ body{padding-top:44px!important;}
       <span class="led" id="winCount">0-0</span>
       <span class="led-label">勝-敗</span>
     </div>
+    <div class="led-group" id="timerGroup" style="display:none">
+      <span class="led" id="timerLed" style="color:#ff8844;text-shadow:0 0 10px #ff6622">--</span>
+      <span class="led-label">残り秒</span>
+    </div>
   </div>
   <div class="content" style="position:relative;">
     <canvas id="board"></canvas>
@@ -177,6 +191,8 @@ body{padding-top:44px!important;}
   <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
   <button class="act-btn" id="forbiddenBtn" onclick="toggleForbidden()">🚫 禁じ手 OFF</button>
+  <button class="act-btn" id="timerBtn" onclick="toggleTimer()">⏱ 時間制</button>
+  <button class="act-btn" id="timerDurBtn" onclick="toggleTimerDuration()" style="display:none">30s</button>
 </div>
 
 <div id="restore-overlay" style="display:none;position:fixed;inset:0;z-index:15000;background:rgba(0,0,0,0.78);justify-content:center;align-items:center;padding:16px;">
@@ -257,6 +273,12 @@ let forbiddenMode = false;
 let forbiddenCells = []; // {r, c, reason} for 禁じ手 overlay
 let dropAnim = null; // { r, c, progress } — stone drop animation
 let threatCells = []; // [{r, c, color}] — 1-move-to-win threats
+
+// ===== TIMER STATE =====
+let timerEnabled = false;
+let timerDuration = 30;
+let timerRemaining = 0;
+let timerInterval = null;
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -520,6 +542,80 @@ function drawStone(r, c, color, isLast) {
   }
 }
 
+// ===== TIMER FUNCTIONS =====
+function startTurnTimer() {
+  if (!timerEnabled || gameOver || currentTurn !== PLAYER || cpuThinking) return;
+  stopTurnTimer();
+  timerRemaining = timerDuration;
+  updateTimerUI();
+  document.getElementById('timerGroup').style.display = 'flex';
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerUI();
+    if (timerRemaining <= 0) {
+      stopTurnTimer();
+      timerTimeOut();
+    }
+  }, 1000);
+}
+
+function stopTurnTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updateTimerUI() {
+  const led = document.getElementById('timerLed');
+  if (!led) return;
+  led.textContent = Math.max(0, timerRemaining);
+  if (timerRemaining > 0 && timerRemaining <= 10) {
+    led.classList.add('timer-critical');
+  } else {
+    led.classList.remove('timer-critical');
+  }
+}
+
+function timerTimeOut() {
+  if (gameOver || currentTurn !== PLAYER || cpuThinking || animating) return;
+  const empties = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (board[r][c] === EMPTY && !(forbiddenMode && isForbidden(board, r, c)))
+        empties.push({r, c});
+  if (!empties.length) return;
+  const move = empties[Math.floor(Math.random() * empties.length)];
+  showToast('⏱ 時間切れ！自動着手');
+  placeStone(move.r, move.c);
+}
+
+function toggleTimer() {
+  timerEnabled = !timerEnabled;
+  const btn = document.getElementById('timerBtn');
+  const durBtn = document.getElementById('timerDurBtn');
+  const tg = document.getElementById('timerGroup');
+  if (btn) {
+    btn.textContent = timerEnabled ? '⏱ 時間制 ON' : '⏱ 時間制';
+    btn.style.background = timerEnabled ? 'linear-gradient(160deg,#1a5a0a 0%,#0a3005 100%)' : '';
+    btn.style.color = timerEnabled ? '#50ff80' : '';
+    btn.style.borderColor = timerEnabled ? '#30cc60' : '';
+  }
+  if (durBtn) durBtn.style.display = timerEnabled ? 'inline-block' : 'none';
+  if (!timerEnabled) {
+    stopTurnTimer();
+    if (tg) tg.style.display = 'none';
+  } else if (!gameOver && currentTurn === PLAYER && !cpuThinking) {
+    startTurnTimer();
+  }
+}
+
+function toggleTimerDuration() {
+  timerDuration = timerDuration === 30 ? 60 : 30;
+  const btn = document.getElementById('timerDurBtn');
+  if (btn) btn.textContent = timerDuration + 's';
+  if (timerEnabled && !gameOver && currentTurn === PLAYER && !cpuThinking) {
+    startTurnTimer();
+  }
+}
+
 // ===== FORBIDDEN MOVES (禁じ手 — 黒番のみ) =====
 function isForbidden(board, r, c) {
   // Temporarily place BLACK stone and analyse
@@ -615,10 +711,17 @@ function initBoard() {
   threatCells = [];
   moveHistory = [];
   forbiddenCells = [];
+  stopTurnTimer();
+  timerRemaining = 0;
+  const tg = document.getElementById('timerGroup');
+  if (tg) tg.style.display = timerEnabled ? 'flex' : 'none';
+  const tl = document.getElementById('timerLed');
+  if (tl) { tl.classList.remove('timer-critical'); tl.textContent = '--'; }
   updateForbiddenCells();
   updateStatus();
   drawBoard();
   document.getElementById('home-btn').style.display = 'block';
+  if (timerEnabled) startTurnTimer();
 }
 
 function updateStatus() {
@@ -634,6 +737,8 @@ function updateStatus() {
 function placeStone(r, c) {
   if (gameOver || board[r][c] !== EMPTY || currentTurn !== PLAYER || cpuThinking || animating) return;
   if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return;
+
+  stopTurnTimer(); // stop player timer on stone placement
 
   // Check forbidden move (禁じ手チェック)
   if (forbiddenMode) {
@@ -681,6 +786,7 @@ function placeStone(r, c) {
       if (win) {
         winCells = win;
         gameOver = true;
+        stopTurnTimer();
         playerWins++;
         threatCells = [];
         updateStatus(); drawBoard();
@@ -736,6 +842,7 @@ function doCpuMove() {
   currentTurn = PLAYER;
   updateForbiddenCells();
   updateStatus(); drawBoard();
+  startTurnTimer();
 }
 
 function checkWin(board, r, c, color) {
@@ -917,6 +1024,7 @@ function undoMove() {
   updateForbiddenCells();
   updateStatus();
   drawBoard();
+  startTurnTimer();
 }
 
 // ===== UI =====

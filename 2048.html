@@ -238,6 +238,10 @@ body{padding-top:44px!important;}
       <span class="led" id="best-led">0</span>
       <span class="led-label">ベスト</span>
     </div>
+    <div class="led-group">
+      <span class="led" id="maxtile-led" style="font-size:22px">--</span>
+      <span class="led-label">最大タイル</span>
+    </div>
   </div>
 
   <div class="content">
@@ -422,6 +426,7 @@ function playGameOver() {
 let board, score, bestScore, wonShown, isGameOver, newTilePos, mergedSet;
 let SIZE = 4, WIN_TILE = 2048;
 let prevBoard = null, prevScore = 0;
+let maxTile = 0, bestMaxTile = 0;
 
 const TILE_CLASSES = {
   2:'t2', 4:'t4', 8:'t8', 16:'t16', 32:'t32', 64:'t64',
@@ -441,6 +446,7 @@ function updateUndoBtn() {
 
 function loadBest() {
   bestScore = parseInt(localStorage.getItem('2048_best') || '0');
+  bestMaxTile = parseInt(localStorage.getItem('2048_best_tile') || '0');
 }
 function saveBest() {
   if (score > bestScore) {
@@ -449,11 +455,18 @@ function saveBest() {
     saveHiRec('g2048', bestScore);
   }
 }
+function saveBestMaxTile() {
+  if (maxTile > bestMaxTile) {
+    bestMaxTile = maxTile;
+    localStorage.setItem('2048_best_tile', String(bestMaxTile));
+    saveHiRec('g2048_tile', bestMaxTile);
+  }
+}
 
 function saveGame() {
   if (isGameOver) { localStorage.removeItem('2048_save'); return; }
   localStorage.setItem('2048_save', JSON.stringify({
-    board, score, bestScore, wonShown, SIZE, WIN_TILE, savedAt: Date.now()
+    board, score, bestScore, wonShown, SIZE, WIN_TILE, maxTile, savedAt: Date.now()
   }));
 }
 
@@ -478,6 +491,7 @@ function resumeGame() {
   wonShown = s.wonShown || false; isGameOver = false;
   newTilePos = null; mergedSet = new Set();
   prevBoard = null; prevScore = 0;
+  maxTile = s.maxTile || 0;
   document.getElementById('over-resume').classList.remove('visible');
   render();
   updateUndoBtn();
@@ -511,6 +525,7 @@ function newGame() {
   wonShown = false; isGameOver = false;
   newTilePos = null; mergedSet = new Set();
   prevBoard = null; prevScore = 0;
+  maxTile = 0;
   loadBest();
   document.getElementById('over-gameover').classList.remove('visible');
   document.getElementById('over-win').classList.remove('visible');
@@ -680,6 +695,13 @@ function render() {
   const tb = document.getElementById('title-best2048');
   if (tb) tb.textContent = bestScore.toLocaleString();
 
+  // 最大タイル追跡
+  let mx = 0;
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (board[r][c] > mx) mx = board[r][c];
+  if (mx > maxTile) { maxTile = mx; saveBestMaxTile(); }
+  const mtEl = document.getElementById('maxtile-led');
+  if (mtEl) mtEl.textContent = maxTile > 0 ? maxTile.toLocaleString() : '--';
+
   // Update grid columns for current size
   grid.style.gridTemplateColumns = `repeat(${SIZE}, 1fr)`;
 
@@ -734,7 +756,11 @@ gridEl.addEventListener('touchend', e => {
 // ── Modals ────────────────────────────────────────────────────────────────────
 function showModal(type) {
   if (type === 'highscore') {
-    document.getElementById('hs-body').innerHTML = renderHiRec('g2048','点');
+    document.getElementById('hs-body').innerHTML =
+      '<div style="margin-bottom:12px"><div style="color:#f5c842;font-size:11px;font-weight:900;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #4030a0">📊 ベストスコア</div>' +
+      renderHiRec('g2048','点') + '</div>' +
+      '<div><div style="color:#f5c842;font-size:11px;font-weight:900;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #4030a0">🏆 最大タイル記録</div>' +
+      renderHiRec('g2048_tile','') + '</div>';
   }
   document.getElementById(type + '-modal').classList.add('visible');
 }

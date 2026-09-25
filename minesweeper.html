@@ -351,7 +351,7 @@ body{padding-top:44px!important;}
     </div>
     <div class="modal-body" style="font-size:14px;line-height:2">
       <p>👆 <strong style="color:#60b8ff">左クリック/タップ</strong>: マスを開く</p>
-      <p>🖱 <strong style="color:#ffa040">右クリック/長押し</strong>: 旗を立てる</p>
+      <p>🖱 <strong style="color:#ffa040">右クリック/長押し</strong>: なし→🚩→❓→なし でサイクル</p>
       <p>🔢 <strong style="color:#f5c842">数字</strong> = 周囲の地雷数</p>
       <p>🎯 全ての地雷に旗を立てるか<br>　 安全マスをクリアでゴール！</p>
       <br>
@@ -375,7 +375,7 @@ body{padding-top:44px!important;}
       <div class="modal-section">
         <h3>👆 操作方法</h3>
         <div class="rule-row"><span class="rule-icon">☝️</span><span><strong style="color:#60b8ff">タップ</strong>でマスを開く</span></div>
-        <div class="rule-row"><span class="rule-icon">✋</span><span><strong style="color:#ffa040">長押し（0.5秒）</strong>で旗🚩を立てる／外す</span></div>
+        <div class="rule-row"><span class="rule-icon">✋</span><span><strong style="color:#ffa040">長押し（0.5秒）</strong>: なし→🚩旗→❓疑問 の順に切替（❓は地雷カウンター対象外）</span></div>
         <div class="rule-row"><span class="rule-icon">🚩</span><span><strong style="color:#ff8030">旗モードON</strong>のとき：タップで旗を立てる／外す（長押しは無効）</span></div>
         <div class="rule-row"><span class="rule-icon">💣</span><span>地雷を踏んでも <strong style="color:#60ff90">5回チャレンジ可能</strong>！</span></div>
       </div>
@@ -577,7 +577,7 @@ body{padding-top:44px!important;}
     if (diff!==undefined) currentDiff=diff;
     board    = Array.from({length:ROWS},()=>Array(COLS).fill(0));
     revealed = Array.from({length:ROWS},()=>Array(COLS).fill(false));
-    flagged  = Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    flagged  = Array.from({length:ROWS},()=>Array(COLS).fill(0));
     state='ready'; firstClick=true; secs=0; flagCount=0; hitR=-1; hitC=-1;
     chancesLeft=BOMB_CHANCES; pendingBombR=-1; pendingBombC=-1;
     replayMode=false;
@@ -617,7 +617,7 @@ body{padding-top:44px!important;}
     const q=[[sr,sc]],vis=new Set([sr*COLS+sc]);
     while(q.length) {
       const [r,c]=q.shift();
-      if(flagged[r][c]) continue;
+      if(flagged[r][c]===1) continue;
       revealed[r][c]=true;
       if(board[r][c]===0) {
         for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
@@ -650,7 +650,7 @@ body{padding-top:44px!important;}
 
   function handleWin() {
     state='won'; clearInterval(timerID); updateSmiley('win');
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]===-1) flagged[r][c]=true;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]===-1) flagged[r][c]=1;
     flagCount=MINES; ledM.textContent=p3(0); ledM.style.color=''; ledM.style.textShadow='';
     const isNewRecord = saveHS();
     replayBtn.style.display='inline-flex';
@@ -673,7 +673,7 @@ body{padding-top:44px!important;}
 
   function doReveal(r,c) {
     if(state==='lost'||state==='won') return;
-    if(flagged[r][c]||revealed[r][c]) return;
+    if(flagged[r][c]===1||revealed[r][c]) return;
     if(firstClick) {
       firstClick=false; placeMines(r,c); state='playing';
       timerID=setInterval(()=>{secs++;ledT.textContent=fmtTime(secs);},1000);
@@ -701,8 +701,10 @@ body{padding-top:44px!important;}
 
   function doFlag(r,c) {
     if(state==='lost'||state==='won'||revealed[r][c]) return;
-    flagged[r][c]=!flagged[r][c];
-    flagCount+=flagged[r][c]?1:-1;
+    const prev = flagged[r][c];
+    flagged[r][c] = (flagged[r][c] + 1) % 3; // 0=なし→1=🚩→2=❓→0
+    if(prev===1) flagCount--;          // 旗から変わったらカウント減
+    if(flagged[r][c]===1) flagCount++; // 旗になったらカウント増
     const remaining = MINES - flagCount;
     ledM.textContent = p3(remaining);
     ledM.style.color = remaining < 0 ? '#ff4444' : '#fb8500';
@@ -718,7 +720,7 @@ body{padding-top:44px!important;}
       if (dr === 0 && dc === 0) continue;
       const nr = r+dr, nc = c+dc;
       if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-        if (flagged[nr][nc]) adjFlags++;
+        if (flagged[nr][nc]===1) adjFlags++;
         else if (!revealed[nr][nc]) unrevealed.push([nr, nc]);
       }
     }
@@ -737,7 +739,7 @@ body{padding-top:44px!important;}
   // 爆弾チャンス
   document.getElementById('chance-challenge-btn').addEventListener('click',()=>{
     chancesLeft--;
-    flagged[pendingBombR][pendingBombC]=true; flagCount++;
+    flagged[pendingBombR][pendingBombC]=1; flagCount++;
     pendingBombR=-1; pendingBombC=-1;
     document.getElementById('bomb-popup').classList.remove('visible');
     state='playing';
@@ -753,7 +755,7 @@ body{padding-top:44px!important;}
     revealed[pendingBombR][pendingBombC]=true;
     hitR=pendingBombR; hitC=pendingBombC;
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
-      if(board[r][c]===-1&&!flagged[r][c]) revealed[r][c]=true;
+      if(board[r][c]===-1&&flagged[r][c]!==1) revealed[r][c]=true;
     pendingBombR=-1; pendingBombC=-1;
     document.getElementById('bomb-popup').classList.remove('visible');
     updateSmiley('lose');
@@ -784,10 +786,13 @@ body{padding-top:44px!important;}
         } else if(board[r][c]>0) {
           el.textContent=board[r][c]; el.classList.add('n'+board[r][c]);
         }
-      } else if(flagged[r][c]) {
+      } else if(flagged[r][c]===1) {
         el.textContent=(state==='lost'&&board[r][c]!==-1)?'❌':'🚩';
         el.style.fontSize=es+'px';
         if(replayMode&&board[r][c]===-1) el.classList.add('replay-hl');
+      } else if(flagged[r][c]===2) {
+        el.textContent='❓';
+        el.style.fontSize=es+'px';
       } else if(replayMode&&board[r][c]===-1) {
         el.textContent='💣'; el.style.fontSize=es+'px'; el.classList.add('replay-hl');
       }
@@ -888,7 +893,7 @@ body{padding-top:44px!important;}
     if(state!=='playing') return;
     const cands=[];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
-      if(!revealed[r][c]&&!flagged[r][c]&&board[r][c]!==-1) cands.push([r,c]);
+      if(!revealed[r][c]&&flagged[r][c]!==1&&board[r][c]!==-1) cands.push([r,c]);
     if(!cands.length) return;
     const [r,c]=cands[Math.floor(Math.random()*cands.length)];
     const el=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
@@ -1150,7 +1155,7 @@ body{padding-top:44px!important;}
     currentDiff = data.currentDiff;
     board     = data.board.map(row => row.slice());
     revealed  = data.revealed.map(row => row.slice());
-    flagged   = data.flagged.map(row => row.slice());
+    flagged   = data.flagged.map(row => row.map(v => typeof v === 'boolean' ? (v ? 1 : 0) : (v || 0)));
     state     = data.state;
     firstClick= data.firstClick;
     secs      = data.secs;

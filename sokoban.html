@@ -413,11 +413,88 @@ const LEVELS = [
    "#   $ $   #",
    "# ##  ##  #",
    "#  XXXX   #",
-   "###########"]
+   "###########"],
+  // Level 16 - 4 boxes in a row, push down to offset goal row
+  ["#########",
+   "#@      #",
+   "# $$$$  #",
+   "#       #",
+   "## XXXX #",
+   "#########"],
+  // Level 17 - 4 boxes spread across two rows
+  ["##########",
+   "#@       #",
+   "# $  $   #",
+   "#        #",
+   "# $  $   #",
+   "## XXXX  #",
+   "##########"],
+  // Level 18 - 4 boxes staggered, goals in bottom row
+  ["########",
+   "#@     #",
+   "# $$   #",
+   "#      #",
+   "#  $$  #",
+   "# XXXX #",
+   "########"],
+  // Level 19 - 5 boxes in a row
+  ["###########",
+   "#@        #",
+   "# $$$$$   #",
+   "#         #",
+   "## XXXXX  #",
+   "###########"],
+  // Level 20 - 5 boxes, two rows staggered
+  ["###########",
+   "#@        #",
+   "# $ $ $   #",
+   "#   $ $   #",
+   "#         #",
+   "## XXXXX  #",
+   "###########"],
+  // Level 21 - 5 boxes, diagonal arrangement
+  ["###########",
+   "#@        #",
+   "#  $  $   #",
+   "# $ $ $   #",
+   "#         #",
+   "## XXXXX  #",
+   "###########"],
+  // Level 22 - 6 boxes in a row
+  ["############",
+   "#@         #",
+   "# $$$$$$   #",
+   "#          #",
+   "## XXXXXX  #",
+   "############"],
+  // Level 23 - 6 boxes, two rows of three
+  ["############",
+   "#@         #",
+   "# $ $ $    #",
+   "#          #",
+   "# $ $ $    #",
+   "## XXXXXX  #",
+   "############"],
+  // Level 24 - 6 boxes, two clusters
+  ["############",
+   "#@         #",
+   "# $$ $$    #",
+   "#    $$    #",
+   "#          #",
+   "## XXXXXX  #",
+   "############"],
+  // Level 25 - 6 boxes, alternating rows
+  ["############",
+   "#@         #",
+   "# $ $ $    #",
+   "#  $ $ $   #",
+   "#          #",
+   "## XXXXXX  #",
+   "############"]
 ];
 
 // ===== MINIMUM MOVES HINTS (approximate optimal solutions) =====
-const MIN_MOVES = [3, 8, 14, 10, 16, 12, 22, 18, 24, 20, 28, 35, 26, 42, 50];
+const MIN_MOVES = [3, 8, 14, 10, 16, 12, 22, 18, 24, 20, 28, 35, 26, 42, 50, 30, 40, 35, 45, 50, 55, 65, 70, 75, 80];
 
 // ===== GAME STATE =====
 let currentLevel = 0;

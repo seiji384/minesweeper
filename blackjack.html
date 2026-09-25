@@ -247,7 +247,12 @@ body {
 .hit-btn    { background: linear-gradient(160deg, #1a4a20, #0d2810); color: #7bed9f; border-color: #2a7a30; }
 .stand-btn  { background: linear-gradient(160deg, #5a1a1a, #2a0d0d); color: #ff9977; border-color: #cc3333; }
 .double-btn { background: linear-gradient(160deg, #5a4010, #2a2000); color: #f4d03f; border-color: #c08020; box-shadow: 0 0 12px rgba(244,208,63,0.3); }
-.split-btn  { background: linear-gradient(160deg, #381868, #1c0c38); color: #cc88ff; border-color: #7040c0; }
+.split-btn     { background: linear-gradient(160deg, #381868, #1c0c38); color: #cc88ff; border-color: #7040c0; }
+.surrender-btn { background: linear-gradient(160deg, #3a0a3a, #1a0520); color: #ff88ff; border-color: #9040c0; }
+.hint-btn      { background: linear-gradient(160deg, #0a2a3a, #051520); color: #88ddff; border-color: #2080c0; padding: 12px 14px; font-size: 16px; }
+#hint-msg { display:none; background:rgba(8,40,60,0.95); border:1px solid #2080c0; border-radius:10px;
+  color:#88ddff; font-size:13px; font-weight:bold; text-align:center; padding:8px 12px; margin: 4px 8px 0;
+  box-shadow: 0 0 12px rgba(32,128,192,0.4); }
 
 /* ── Result buttons ─────────────────────────────────────── */
 .result-actions { display: flex; gap: 10px; justify-content: center; padding: 8px 4px; flex-wrap: wrap; }
@@ -408,11 +413,14 @@ body{padding-top:44px!important;}
     <!-- PLAYING UI -->
     <div id="ui-playing" style="display:none;">
       <div class="play-buttons">
-        <button class="play-btn hit-btn"    id="btn-hit"    onclick="hit()">ヒット</button>
-        <button class="play-btn stand-btn"  id="btn-stand"  onclick="doStand()">スタンド</button>
-        <button class="play-btn double-btn" id="btn-double" onclick="doDouble()">ダブル</button>
-        <button class="play-btn split-btn"  id="btn-split"  onclick="doSplit()" style="display:none;">スプリット</button>
+        <button class="play-btn hit-btn"       id="btn-hit"       onclick="hit()">ヒット</button>
+        <button class="play-btn stand-btn"     id="btn-stand"     onclick="doStand()">スタンド</button>
+        <button class="play-btn double-btn"    id="btn-double"    onclick="doDouble()">ダブル</button>
+        <button class="play-btn split-btn"     id="btn-split"     onclick="doSplit()" style="display:none;">スプリット</button>
+        <button class="play-btn surrender-btn" id="btn-surrender" onclick="doSurrender()" style="display:none;">サレンダー</button>
+        <button class="play-btn hint-btn"      id="btn-hint"      onclick="showHint()">💡</button>
       </div>
+      <div id="hint-msg"></div>
     </div>
 
     <!-- RESULT UI -->
@@ -733,10 +741,14 @@ function updatePlayBtns() {
                     chips >= hBets[activeH] &&
                     pHands.length < 4;
 
+  const canSurrender = isFirst && pHands.length === 1 && !hFromSplit[activeH];
+
   document.getElementById('btn-hit').disabled    = v >= 21;
   document.getElementById('btn-stand').disabled  = false;
   document.getElementById('btn-double').disabled = !canDouble;
-  document.getElementById('btn-split').style.display = canSplit ? '' : 'none';
+  document.getElementById('btn-split').style.display     = canSplit      ? '' : 'none';
+  document.getElementById('btn-surrender').style.display = canSurrender  ? '' : 'none';
+  document.getElementById('hint-msg').style.display = 'none';
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1312,6 +1324,88 @@ function playBlackjackSound() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   SURRENDER
+═══════════════════════════════════════════════════════ */
+function doSurrender() {
+  if (phase !== 'PLAYING') return;
+  const hand = pHands[activeH];
+  if (hand.length !== 2 || hDoubled[activeH] || hFromSplit[activeH]) return;
+  const halfBet = Math.floor(hBets[activeH] / 2);
+  chips += halfBet;
+  countCard(dCards[1]);
+  renderDealer(true);
+  updateCountHint();
+  updateLEDs();
+  setMsg('サレンダー (-' + halfBet + ')', 'lose');
+  playLoseSound();
+  recordBJResult('lose');
+  phase = 'RESULT';
+  saveGame();
+  showPhase('RESULT');
+}
+
+/* ═══════════════════════════════════════════════════════
+   BASIC STRATEGY HINT
+═══════════════════════════════════════════════════════ */
+function getBasicStrategy(hand, pv, dv) {
+  const canDouble = hand.length === 2 && chips >= hBets[activeH];
+  const canSplit  = hand.length === 2 && rankPip(hand[0].r) === rankPip(hand[1].r)
+                    && chips >= hBets[activeH] && pHands.length < 4;
+
+  // Pair splitting
+  if (canSplit) {
+    const pv2 = rankPip(hand[0].r);
+    if (pv2 === 11 || pv2 === 1)                          return 'スプリット推奨 (A-A)';
+    if (pv2 === 8)                                         return 'スプリット推奨 (8-8)';
+    if (pv2 === 9 && dv !== 7 && dv < 10)                 return 'スプリット推奨 (9-9)';
+    if (pv2 === 7 && dv <= 7)                              return 'スプリット推奨 (7-7)';
+    if (pv2 === 6 && dv <= 6)                              return 'スプリット推奨 (6-6)';
+    if (pv2 === 4 && (dv === 5 || dv === 6))              return 'スプリット推奨 (4-4)';
+    if (pv2 === 3 && dv <= 7)                              return 'スプリット推奨 (3-3)';
+    if (pv2 === 2 && dv <= 7)                              return 'スプリット推奨 (2-2)';
+  }
+
+  // Soft hand detection: has an Ace counted as 11
+  const rawTotal = hand.reduce((s, c) => s + (c.r === 'A' ? 1 : rankPip(c.r)), 0);
+  const isSoft = hand.some(c => c.r === 'A') && rawTotal + 10 === pv && pv <= 21;
+
+  if (isSoft) {
+    if (pv >= 19) return 'スタンド推奨';
+    if (pv === 18) {
+      if (dv >= 9 || dv === 11) return 'ヒット推奨';
+      if (dv <= 6)  return canDouble ? 'ダブルダウン推奨' : 'スタンド推奨';
+      return 'スタンド推奨';
+    }
+    if (pv === 17) return (dv >= 3 && dv <= 6) ? (canDouble ? 'ダブルダウン推奨' : 'ヒット推奨') : 'ヒット推奨';
+    if (pv === 16 || pv === 15) return (dv >= 4 && dv <= 6) ? (canDouble ? 'ダブルダウン推奨' : 'ヒット推奨') : 'ヒット推奨';
+    if (pv === 14 || pv === 13) return (dv >= 5 && dv <= 6) ? (canDouble ? 'ダブルダウン推奨' : 'ヒット推奨') : 'ヒット推奨';
+    return 'ヒット推奨';
+  }
+
+  // Hard hands
+  if (pv >= 17) return 'スタンド推奨';
+  if (pv >= 13) return (dv >= 2 && dv <= 6) ? 'スタンド推奨' : 'ヒット推奨';
+  if (pv === 12) return (dv >= 4 && dv <= 6) ? 'スタンド推奨' : 'ヒット推奨';
+  if (pv === 11) return canDouble ? 'ダブルダウン推奨' : 'ヒット推奨';
+  if (pv === 10) return (dv <= 9) ? (canDouble ? 'ダブルダウン推奨' : 'ヒット推奨') : 'ヒット推奨';
+  if (pv === 9)  return (dv >= 3 && dv <= 6) ? (canDouble ? 'ダブルダウン推奨' : 'ヒット推奨') : 'ヒット推奨';
+  return 'ヒット推奨';
+}
+
+function showHint() {
+  if (phase !== 'PLAYING') return;
+  const hand = pHands[activeH];
+  const pv   = handValue(hand);
+  const dv   = dCards[0].r === 'A' ? 11 : rankPip(dCards[0].r);
+  const hint = getBasicStrategy(hand, pv, dv);
+  const el   = document.getElementById('hint-msg');
+  el.textContent = '💡 ' + hint;
+  el.style.display = '';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+/* ═══════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════ */
 deck = shuffle(
@@ -1394,10 +1488,12 @@ function addTouchFix(el, action) {
   }, {passive: false});
 }
 
-addTouchFix(document.getElementById('btn-hit'),    hit);
-addTouchFix(document.getElementById('btn-stand'),  doStand);
-addTouchFix(document.getElementById('btn-double'), doDouble);
-addTouchFix(document.getElementById('btn-split'),  doSplit);
+addTouchFix(document.getElementById('btn-hit'),       hit);
+addTouchFix(document.getElementById('btn-stand'),     doStand);
+addTouchFix(document.getElementById('btn-double'),    doDouble);
+addTouchFix(document.getElementById('btn-split'),     doSplit);
+addTouchFix(document.getElementById('btn-surrender'), doSurrender);
+addTouchFix(document.getElementById('btn-hint'),      showHint);
 addTouchFix(document.querySelector('.next-btn'),   newRound);
 addTouchFix(document.querySelector('.clear-btn'),  clearBet);
 addTouchFix(document.querySelector('.deal-btn'),   deal);

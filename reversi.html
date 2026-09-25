@@ -130,6 +130,9 @@ body{padding-top:44px!important;}
 .hist-moves { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; align-items: center; }
 .hist-chip { background: rgba(76,201,240,0.1); border: 1px solid rgba(76,201,240,0.2); color: #70c8e8; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-family: monospace; }
 .hist-chip:last-child { background: rgba(76,201,240,0.22); border-color: rgba(76,201,240,0.4); color: #b8f0ff; }
+@keyframes timerBlink { 0%,100%{opacity:1}50%{opacity:0.2} }
+.timer-active { font-weight: bold; }
+.timer-urgent { animation: timerBlink 0.5s infinite; color: #ff4444 !important; }
 </style>
 <!-- pwa-meta -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -154,6 +157,7 @@ body{padding-top:44px!important;}
     <div class="led-group">
       <span class="led" id="blackCount" style="font-size:28px;min-width:64px;">2</span>
       <span class="led-label" style="font-size:11px;font-weight:bold;">⚫ あなた</span>
+      <span id="blackTimerBadge" style="display:none;font-size:10px;font-family:monospace;color:#4cc9f0;margin-top:2px;">⏱ <span id="blackTimer">30</span>s</span>
     </div>
     <div class="led-group">
       <span class="turn-text" id="turnDisplay">あなた ⚫</span>
@@ -162,6 +166,7 @@ body{padding-top:44px!important;}
     <div class="led-group">
       <span class="led" id="whiteCount" style="font-size:28px;min-width:64px;color:#ffffff !important;text-shadow:0 0 10px #aaccff, 0 0 20px #88aaff !important;">2</span>
       <span class="led-label" style="font-size:11px;font-weight:bold;">⚪ CPU</span>
+      <span id="whiteTimerBadge" style="display:none;font-size:10px;font-family:monospace;color:#4cc9f0;margin-top:2px;">⏱ <span id="whiteTimer">30</span>s</span>
     </div>
   </div>
   <div class="content">
@@ -183,6 +188,7 @@ body{padding-top:44px!important;}
     <option value="hard">つよい</option>
   </select>
   <button class="act-btn" id="undoBtn" onclick="undoMove()" disabled style="opacity:0.4">↩ 戻る</button>
+  <button class="act-btn" id="timerBtn" onclick="toggleTimer()">⏱ 時間制</button>
   <button class="act-btn" onclick="saveGame()">💾 保存</button>
 </div>
 
@@ -650,6 +656,8 @@ function initBoard() {
   const validMoves = getValidMoves(board, currentTurn);
   drawBoard(validMoves);
   document.getElementById('home-btn').style.display = 'block';
+  stopTimer();
+  if (timerMode) { blackTimeLeft = TIMER_SECONDS; whiteTimeLeft = TIMER_SECONDS; updateTimerDisplay(); startTimer(PLAYER); }
 }
 
 function updateStatus() {
@@ -679,6 +687,7 @@ async function doPlayerMove(r, c) {
   const validMoves = getValidMoves(board, PLAYER);
   const isValid = validMoves.some(m => m.r === r && m.c === c);
   if (!isValid) return;
+  stopTimer();
 
   moveHistory.push({ board: board.map(row => [...row]) });
   if (moveHistory.length > 10) moveHistory.shift();
@@ -704,15 +713,19 @@ async function doPlayerMove(r, c) {
 
   if (cpuMoves.length === 0) {
     currentTurn = PLAYER;
+    blackTimeLeft = TIMER_SECONDS;
     await showPass('CPUはパス！あなたの番です');
     updateStatus();
     drawBoard(getValidMoves(board, PLAYER));
+    if (timerMode && !gameOver) startTimer(PLAYER);
     return;
   }
 
   currentTurn = CPU;
+  whiteTimeLeft = TIMER_SECONDS;
   updateStatus();
   drawBoard([]);
+  if (timerMode && !gameOver) startTimer(CPU);
   cpuThinking = true;
 
   const delay = difficulty === 'easy' ? 350 : difficulty === 'normal' ? 550 : 750;
@@ -725,14 +738,17 @@ async function doPlayerMove(r, c) {
 
 async function doCpuMove() {
   const move = cpuBestMove(board);
+  stopTimer();
   if (!move) {
     // CPU has no move
     const playerMoves = getValidMoves(board, PLAYER);
     if (playerMoves.length === 0) { endGame(); return; }
     currentTurn = PLAYER;
+    blackTimeLeft = TIMER_SECONDS;
     await showPass('CPUはパス！あなたの番です');
     updateStatus();
     drawBoard(getValidMoves(board, PLAYER));
+    if (timerMode && !gameOver) startTimer(PLAYER);
     return;
   }
 
@@ -756,8 +772,10 @@ async function doCpuMove() {
 
   if (playerMoves.length === 0) {
     currentTurn = CPU;
+    whiteTimeLeft = TIMER_SECONDS;
     await showPass('あなたはパス！CPUの番です');
     updateStatus();
+    if (timerMode && !gameOver) startTimer(CPU);
     cpuThinking = true;
     setTimeout(async () => {
       await doCpuMove();
@@ -768,8 +786,10 @@ async function doCpuMove() {
   }
 
   currentTurn = PLAYER;
+  blackTimeLeft = TIMER_SECONDS;
   updateStatus();
   drawBoard(getValidMoves(board, PLAYER));
+  if (timerMode && !gameOver) startTimer(PLAYER);
 }
 
 function animateFlip(cells, fromColor, toColor) {
@@ -800,6 +820,7 @@ function animateFlip(cells, fromColor, toColor) {
 }
 
 function endGame() {
+  stopTimer();
   gameOver = true;
   const { black, white } = countDiscs(board);
   updateStatus();
@@ -850,6 +871,8 @@ function undoMove() {
   cpuThinking = false;
   animating = false;
   flashCells = [];
+  stopTimer();
+  if (timerMode) { blackTimeLeft = TIMER_SECONDS; updateTimerDisplay(); startTimer(PLAYER); }
   updateStatus();
   drawBoard(getValidMoves(board, PLAYER));
 }
@@ -961,6 +984,115 @@ function restoreGame() {
 function declineRestore() {
   document.getElementById('restore-overlay').style.display = 'none';
   localStorage.removeItem('reversi_save');
+}
+
+// ===== TIMER MODE =====
+const TIMER_SECONDS = 30;
+let timerMode = false;
+let timerInterval = null;
+let blackTimeLeft = TIMER_SECONDS;
+let whiteTimeLeft = TIMER_SECONDS;
+
+function toggleTimer() {
+  timerMode = !timerMode;
+  const btn = document.getElementById('timerBtn');
+  if (timerMode) {
+    btn.style.background = 'linear-gradient(160deg,#0a3a2a,#052018)';
+    btn.style.color = '#80ffcc';
+    btn.style.borderColor = '#2acc88';
+    const btB = document.getElementById('blackTimerBadge');
+    const wtB = document.getElementById('whiteTimerBadge');
+    if (btB) btB.style.display = 'block';
+    if (wtB) wtB.style.display = 'block';
+    blackTimeLeft = TIMER_SECONDS; whiteTimeLeft = TIMER_SECONDS;
+    updateTimerDisplay();
+    if (!gameOver && !cpuThinking && !animating) startTimer(currentTurn);
+  } else {
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    const btB = document.getElementById('blackTimerBadge');
+    const wtB = document.getElementById('whiteTimerBadge');
+    if (btB) btB.style.display = 'none';
+    if (wtB) wtB.style.display = 'none';
+    stopTimer();
+  }
+}
+
+function startTimer(color) {
+  stopTimer();
+  if (!timerMode || gameOver) return;
+  timerInterval = setInterval(() => {
+    if (color === PLAYER) blackTimeLeft = Math.max(0, blackTimeLeft - 1);
+    else whiteTimeLeft = Math.max(0, whiteTimeLeft - 1);
+    updateTimerDisplay();
+    const left = color === PLAYER ? blackTimeLeft : whiteTimeLeft;
+    if (left <= 0) { stopTimer(); onTimeout(color); }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updateTimerDisplay() {
+  const btEl = document.getElementById('blackTimer');
+  const wtEl = document.getElementById('whiteTimer');
+  const btB  = document.getElementById('blackTimerBadge');
+  const wtB  = document.getElementById('whiteTimerBadge');
+  if (!timerMode) return;
+  if (btEl) {
+    btEl.textContent = blackTimeLeft;
+    const urgent = blackTimeLeft <= 10 && !gameOver && currentTurn === PLAYER;
+    btEl.className = urgent ? 'timer-urgent' : 'timer-active';
+    if (btB) btB.style.color = urgent ? '#ff4444' : '#4cc9f0';
+  }
+  if (wtEl) {
+    wtEl.textContent = whiteTimeLeft;
+    const urgent = whiteTimeLeft <= 10 && !gameOver && currentTurn === CPU;
+    wtEl.className = urgent ? 'timer-urgent' : 'timer-active';
+    if (wtB) wtB.style.color = urgent ? '#ff4444' : '#4cc9f0';
+  }
+}
+
+async function onTimeout(color) {
+  if (gameOver) return;
+  if (color === PLAYER) {
+    blackTimeLeft = TIMER_SECONDS;
+    updateTimerDisplay();
+    const cpuMoves = getValidMoves(board, CPU);
+    const playerMoves = getValidMoves(board, PLAYER);
+    await showPass('⏱ 時間切れ！あなたはパス！');
+    if (cpuMoves.length === 0 && playerMoves.length === 0) { endGame(); return; }
+    if (cpuMoves.length === 0) {
+      currentTurn = PLAYER;
+      updateStatus(); drawBoard(getValidMoves(board, PLAYER));
+      if (timerMode && !gameOver) startTimer(PLAYER);
+      return;
+    }
+    currentTurn = CPU;
+    whiteTimeLeft = TIMER_SECONDS;
+    updateStatus(); drawBoard([]);
+    if (timerMode && !gameOver) startTimer(CPU);
+    cpuThinking = true;
+    const delay = difficulty === 'easy' ? 350 : 550;
+    setTimeout(async () => {
+      await doCpuMove();
+      cpuThinking = false;
+      updateStatus();
+    }, delay);
+  } else {
+    whiteTimeLeft = TIMER_SECONDS;
+    updateTimerDisplay();
+    const playerMoves = getValidMoves(board, PLAYER);
+    const cpuMoves2 = getValidMoves(board, CPU);
+    await showPass('⏱ 時間切れ！CPUはパス！');
+    if (playerMoves.length === 0 && cpuMoves2.length === 0) { endGame(); return; }
+    currentTurn = PLAYER;
+    blackTimeLeft = TIMER_SECONDS;
+    updateStatus(); drawBoard(getValidMoves(board, PLAYER));
+    if (timerMode && !gameOver) startTimer(PLAYER);
+  }
 }
 
 // ===== INIT =====

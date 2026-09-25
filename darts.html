@@ -117,6 +117,17 @@ body {
 .stat-item { display:flex; flex-direction:column; align-items:center; gap:1px; }
 .stat-val { color:#ffe870; font-size:13px; font-weight:900; }
 .stat-lbl { color:#5040a0; font-size:8px; }
+
+/* Checkout suggestion panel */
+#checkout-panel {
+  display:none; margin:0 8px 6px; padding:8px 10px;
+  background:linear-gradient(160deg,#0a1a00,#050d00);
+  border:1px solid #4a8020; border-radius:10px;
+  box-shadow: 0 0 14px rgba(100,200,50,0.2);
+}
+#checkout-header { font-size:10px; color:#80c040; font-weight:bold; letter-spacing:1px; margin-bottom:4px; }
+#checkout-hint { font-size:15px; font-weight:900; color:#b0ff60; text-shadow:0 0 10px rgba(100,255,50,0.6); letter-spacing:1px; }
+#checkout-sub { font-size:10px; color:#608030; margin-top:2px; }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -209,6 +220,13 @@ body{padding-top:44px!important;}
       <div class="stat-item"><span class="stat-val" id="stat-games">0</span><span class="stat-lbl">ゲーム数</span></div>
       <div class="stat-item"><span class="stat-val" id="stat-avg">--</span><span class="stat-lbl">平均/投</span></div>
       <div class="stat-item"><span class="stat-val" id="stat-best">--</span><span class="stat-lbl">ベスト</span></div>
+    </div>
+
+    <!-- Checkout suggestion panel -->
+    <div id="checkout-panel">
+      <div id="checkout-header">🎯 チェックアウト提案</div>
+      <div id="checkout-hint"></div>
+      <div id="checkout-sub"></div>
     </div>
   </div>
 </div>
@@ -555,7 +573,7 @@ function throwDart501(ax, ay){
   dartsLeft--;
   updateLEDs(); updateLog();
   if(newScore===0&&result.double){
-    playerScore=0; updateLEDs();
+    playerScore=0; updateLEDs(); updateCheckoutPanel();
     drawBoard(null,landedDarts); stopReticle(); gameOver=true;
     localStorage.removeItem('darts_save');
     flash('🎉 あなたの勝ち！','#ffe060'); startConfetti();
@@ -568,6 +586,7 @@ function throwDart501(ax, ay){
   if(newScore<0||newScore===1||(!result.double&&newScore===0)){
     flash('バスト！','#ff4466'); dartsLeft=0;
   } else { playerScore=newScore; }
+  updateCheckoutPanel();
   drawBoard(reticle,landedDarts);
   if(dartsLeft===0){ updateLEDs(); stopReticle(); setTimeout(endPlayerTurn501,800); }
   else if(!gameOver) startReticle();
@@ -575,7 +594,7 @@ function throwDart501(ax, ay){
 
 function endPlayerTurn501(){
   totalDarts+=3; dartsLeft=3; turnScores=[]; landedDarts=[];
-  playerTurn=false; updateLog(); updateLEDs();
+  playerTurn=false; updateLog(); updateLEDs(); updateCheckoutPanel();
   drawBoard(null,[]); setTimeout(cpuTurn501,600);
 }
 
@@ -606,7 +625,7 @@ function cpuTurn501(){
   }
   function cpuDone(){
     cpuThinking=false; landedDarts=[]; dartsLeft=3; turnScores=[]; playerTurn=true;
-    saveGame(); updateLog(); updateLEDs(); drawBoard(reticle,[]);
+    saveGame(); updateLog(); updateLEDs(); updateCheckoutPanel(); drawBoard(reticle,[]);
     if(!gameOver) startReticle();
   }
   throwOne();
@@ -905,6 +924,7 @@ function newGame(){
   totalDarts=0; gameOver=false; playerTurn=true; cpuThinking=false;
   powerLevel=0.5; powerDir=1;
   document.getElementById('throw-btn').disabled=false;
+  document.getElementById('checkout-panel').style.display='none';
   // Mode-specific init
   document.getElementById('cricket-board').style.display='none';
   document.getElementById('countup-board').style.display='none';
@@ -971,6 +991,62 @@ function tryLoadSave(){
   btn.addEventListener('touchmove',e=>{if(e.touches.length>1){txM=true;return;}const dx=e.touches[0].clientX-txX,dy=e.touches[0].clientY-txY;if(dx*dx+dy*dy>100)txM=true;},{passive:true});
   btn.addEventListener('touchend',e=>{e.preventDefault();if(!txM)throwDart();},{passive:false});
 })();
+// ── Checkout table ──
+const CHECKOUT_TABLE = {
+  170:'T20 T20 Bull', 167:'T20 T19 Bull', 164:'T20 T18 Bull', 161:'T20 T17 Bull',
+  160:'T20 T20 D20', 158:'T20 T20 D19', 157:'T19 T20 Bull', 156:'T20 T20 D18',
+  155:'T20 T19 D19', 154:'T18 T20 Bull', 153:'T19 T18 Bull', 152:'T20 T20 D16',
+  151:'T17 T20 Bull', 150:'T20 T18 D18', 149:'T19 T20 D16', 148:'T20 T16 Bull',
+  147:'T17 T18 Bull', 146:'T15 T19 Bull', 145:'T19 T20 D14', 144:'T20 T20 D12',
+  143:'T17 T18 D16',  142:'T14 T20 Bull', 141:'T20 T19 D12', 140:'T20 T20 D10',
+  139:'T19 T14 Bull', 138:'T20 T18 D12', 137:'T19 T16 D20', 136:'T20 T20 D8',
+  135:'T20 T17 D12',  134:'T20 T14 D16', 133:'T20 T19 D8',  132:'T20 T16 D12',
+  131:'T20 T13 D16',  130:'T20 T18 D8',  129:'T19 T16 D12', 128:'T20 T20 D4',
+  127:'T20 T17 D8',   126:'T19 T19 D6',  125:'T20 T15 D10', 124:'T20 T14 D11',
+  123:'T19 T16 D9',   122:'T18 T18 D7',  121:'T20 T11 D14', 120:'T20 S20 D20',
+  119:'T19 T12 D13',  118:'T20 S18 D20', 117:'T20 S17 D20', 116:'T20 S16 D20',
+  115:'T20 S15 D20',  114:'T20 S14 D20', 113:'T20 S13 D20', 112:'T20 S12 D20',
+  111:'T20 S11 D20',  110:'T20 S10 D20', 109:'T20 S9 D20',  108:'T20 S8 D20',
+  107:'T19 S10 D20',  106:'T20 S6 D20',  105:'T20 S5 D20',  104:'T20 S4 D20',
+  103:'T19 S6 D20',   102:'T20 S2 D20',  101:'T17 S10 D20',
+  100:'T20 D20', 99:'T19 S10 D16', 98:'T20 D19', 97:'T19 D20', 96:'T20 D18',
+   95:'T19 D19',  94:'T18 D20',    93:'T19 D18', 92:'T20 D16', 91:'T17 D20',
+   90:'T18 D18',  89:'T19 D16',    88:'T20 D14', 87:'T17 D18', 86:'T18 D16',
+   85:'T19 D14',  84:'T20 D12',    83:'T17 D16', 82:'T14 D20', 81:'T19 D12',
+   80:'T20 D10',  79:'T13 D20',    78:'T18 D12', 77:'T19 D10', 76:'T20 D8',
+   75:'T17 D12',  74:'T14 D16',    73:'T19 D8',  72:'T16 D12', 71:'T13 D16',
+   70:'T18 D8',   69:'T19 D6',     68:'T20 D4',  67:'T17 D8',  66:'T10 D18',
+   65:'T19 D4',   64:'T16 D8',     63:'T17 D6',  62:'T10 D16', 61:'T15 D8',
+   60:'S20 D20',  59:'S19 D20',    58:'S18 D20', 57:'S17 D20', 56:'T16 D4',
+   55:'S15 D20',  54:'S14 D20',    53:'S13 D20', 52:'S12 D20', 51:'S11 D20',
+   50:'Bull',     49:'S9 D20',     48:'S8 D20',  47:'S7 D20',  46:'S6 D20',
+   45:'S5 D20',   44:'S4 D20',     43:'S3 D20',  42:'S2 D20',  41:'S1 D20',
+   40:'D20', 38:'D19', 36:'D18', 34:'D17', 32:'D16', 30:'D15',
+   28:'D14', 26:'D13', 24:'D12', 22:'D11', 20:'D10', 18:'D9',
+   16:'D8',  14:'D7',  12:'D6',  10:'D5',   8:'D4',   6:'D3',
+    4:'D2',   2:'D1',
+};
+
+function updateCheckoutPanel() {
+  const panel = document.getElementById('checkout-panel');
+  const hintEl = document.getElementById('checkout-hint');
+  const subEl  = document.getElementById('checkout-sub');
+  const isX01  = (gameMode === '501' || gameMode === '301');
+  if (!isX01 || gameOver || !playerTurn || playerScore > 170 || playerScore <= 1) {
+    panel.style.display = 'none'; return;
+  }
+  const co = CHECKOUT_TABLE[playerScore];
+  if (!co) { panel.style.display = 'none'; return; }
+  hintEl.textContent = co;
+  // Count darts needed
+  const parts = co.split(' ');
+  const dartsNeeded = parts.length;
+  subEl.textContent = dartsNeeded === 1 ? '1本で上がれます！' :
+                      dartsNeeded === 2 ? '2本で上がれます！' :
+                                          '3本で上がれます！';
+  panel.style.display = '';
+}
+
 loadStats();
 tryLoadSave();
 </script>

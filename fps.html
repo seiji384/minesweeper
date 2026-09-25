@@ -33,6 +33,10 @@ canvas{display:block;}
 #killfeed{position:absolute;top:148px;right:16px;width:210px;}
 .kill-entry{color:#fff;font-size:11px;background:rgba(0,0,0,0.65);padding:3px 7px;margin-bottom:3px;border-left:3px solid #ff2244;animation:kfade 3s forwards;}
 @keyframes kfade{0%,70%{opacity:1}100%{opacity:0;transform:translateX(10px);}}
+@keyframes waveClearFade{0%{opacity:0;transform:translate(-50%,-50%) scale(0.75)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(0.9)}}
+#wave-hud{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center;color:#ffaa00;text-shadow:0 0 10px #ff8800;display:none;}
+#wave-num-text{font-size:14px;letter-spacing:3px;}
+#wave-score-disp{font-size:22px;font-weight:bold;}
 
 #crosshair{position:absolute;top:50%;left:50%;pointer-events:none;}
 .chl{position:absolute;background:#fff;box-shadow:0 0 3px rgba(0,0,0,0.8);}
@@ -104,6 +108,10 @@ canvas{display:block;}
   <div id="round-info">
     <div id="round-text">ROUND 1 / 3</div>
     <div id="score-text">0</div>
+  </div>
+  <div id="wave-hud">
+    <div id="wave-num-text">WAVE 1</div>
+    <div id="wave-score-disp">0</div>
   </div>
   <div id="minimap"><canvas id="mm-canvas" width="120" height="120"></canvas></div>
   <div id="killfeed"></div>
@@ -188,6 +196,7 @@ canvas{display:block;}
     <span style="color:#ff0000;margin-left:6px">ボス★</span>
   </div>
   <button class="btn" id="start-btn">▶ START MISSION</button>
+  <button class="btn" id="wave-btn" style="margin-top:10px;font-size:15px;color:#ffaa00;border-color:#ffaa00;padding:12px 36px;">🌊 WAVE MODE</button>
 </div>
 
 <div id="round-screen" class="screen">
@@ -582,8 +591,9 @@ function PW(){ return player.weapons[player.wIdx]; }
 let recoilPitch=0, recoilZ=0;
 
 // ─── GAME STATE ───────────────────────────────────────────────
-let gameState='title'; // title|playing|roundover|gameover
+let gameState='title'; // title|playing|roundover|gameover|waveclear
 let round=1, roundKills=0, score=0, totalKills=0;
+let waveMode=false, currentWave=1;
 const clock=new THREE.Clock(false);
 
 // ─── ENEMY ───────────────────────────────────────────────────
@@ -959,8 +969,9 @@ function updateHUD(){
   document.getElementById('ammo-count').textContent=w.ammo;
   document.getElementById('ammo-reserve').textContent=`/ ${w.reserve}`;
   document.getElementById('weapon-name').textContent=w.nameJP;
-  document.getElementById('round-text').textContent=`ROUND ${round} / 3`;
+  document.getElementById('round-text').textContent=waveMode?`WAVE ${currentWave}`:`ROUND ${round} / 3`;
   document.getElementById('score-text').textContent=score.toLocaleString();
+  if(waveMode){ document.getElementById('wave-num-text').textContent=`WAVE ${currentWave}`; document.getElementById('wave-score-disp').textContent=score.toLocaleString(); }
   const lh=document.getElementById('lh-pulse');
   if(player.hp<30){ lh.style.opacity='1'; lh.style.animation='pulse 1s ease-in-out infinite'; }
   else { lh.style.opacity='0'; lh.style.animation='none'; }
@@ -1095,7 +1106,11 @@ function checkWin(){
   if(enemies.length===0) return;
   const alive=enemies.filter(e=>e.state!==ES.DEAD);
   if(alive.length===0){
-    if(round<3){ SFX.roundWin(); setTimeout(showRoundScreen,600); }
+    if(waveMode){
+      const waveBonus=currentWave*500; score+=waveBonus;
+      SFX.roundWin();
+      showWaveClear(currentWave, waveBonus);
+    } else if(round<3){ SFX.roundWin(); setTimeout(showRoundScreen,600); }
     else setTimeout(()=>endGame(true),800);
   }
 }
@@ -1130,6 +1145,9 @@ function endGame(win){
 }
 
 function resetGame(){
+  waveMode=false; currentWave=1;
+  document.getElementById('wave-hud').style.display='none';
+  document.getElementById('round-info').style.display='block';
   score=0; totalKills=0; killStreak=0; killStreakTimer=0;
   player.hp=100; player.shotsFired=0; player.shotsHit=0;
   player.pos.set(0,PH,10); player.yaw=0; player.pitch=0;
@@ -1513,6 +1531,80 @@ window.addEventListener('resize',()=>{
   if(player.isADS) drawScope();
 });
 
+// ─── WAVE MODE ────────────────────────────────────────────────
+function startWave(n){
+  currentWave=n; roundKills=0; killStreak=0; killStreakTimer=0;
+  enemies.forEach(e=>{ if(e.group.parent) scene.remove(e.group); }); enemies=[];
+  ammoDrops.forEach(a=>scene.remove(a.mesh)); ammoDrops=[];
+  healthDrops.forEach(h=>scene.remove(h.mesh)); healthDrops=[];
+  particlePool.forEach(p=>scene.remove(p)); particlePool.length=0;
+
+  const baseHP=60;
+  const hp=Math.round(baseHP*Math.pow(1.1,n-1));
+  const spd=3.0+Math.min((n-1)*0.3,4.0);
+  const totalCount=3+(n-1)*2;
+  const hasScouts=n>=3, hasHeavies=n>=5, hasElites=n>=7, hasBoss=(n>=8&&n%4===0);
+  let scouts  =hasScouts  ? Math.max(1,Math.floor(totalCount*0.2)):0;
+  let heavies =hasHeavies ? Math.max(1,Math.floor(totalCount*0.2)):0;
+  let elites  =hasElites  ? Math.max(1,Math.floor(totalCount*0.1)):0;
+  let bossCnt =hasBoss    ? 1:0;
+  let grunts  =Math.max(1, totalCount-scouts-heavies-elites-bossCnt);
+
+  const spawns=[[-22,-22],[-22,22],[22,-22],[22,22],[0,-26],[0,26],[-26,0],[26,0],[-18,-10],[18,10],[10,-18],[-10,18],[20,20],[-20,-20]];
+  spawns.sort(()=>Math.random()-0.5);
+  let si=0;
+  const spawnType=(type)=>{
+    const e=new Enemy(hp,spd,false,type);
+    e.spawnAt(spawns[si%spawns.length][0],spawns[si%spawns.length][1]);
+    enemies.push(e); si++;
+  };
+  for(let i=0;i<grunts;i++) spawnType('grunt');
+  for(let i=0;i<scouts;i++) spawnType('scout');
+  for(let i=0;i<heavies;i++) spawnType('heavy');
+  for(let i=0;i<elites;i++) spawnType('elite');
+  if(bossCnt){ const boss=new Enemy(Math.round(hp*2.5),spd*1.3,true,'grunt'); boss.spawnAt(0,-24); enemies.push(boss); }
+
+  player.hp=100; player.isADS=false;
+  document.getElementById('scope-overlay').style.display='none';
+  camera.fov=75; camera.updateProjectionMatrix();
+  updateHUD();
+  bigText(`WAVE ${n}`,2.0,0xffaa00);
+}
+
+function showWaveClear(waveNum, bonus){
+  gameState='waveclear';
+  const el=document.createElement('div');
+  el.id='wave-clear-banner';
+  el.style.cssText='position:fixed;top:50%;left:50%;background:rgba(0,5,15,0.92);border:2px solid #ffaa00;border-radius:10px;padding:22px 44px;text-align:center;z-index:60;pointer-events:none;animation:waveClearFade 1.5s forwards;';
+  el.innerHTML=`<div style="color:#ffaa00;font-size:30px;font-weight:bold;letter-spacing:5px;font-family:monospace;text-shadow:0 0 20px #ff8800;">WAVE ${waveNum} CLEAR!</div>`
+    +`<div style="color:#ffd700;font-size:17px;margin-top:8px;font-family:monospace;">BONUS  +${bonus.toLocaleString()}</div>`
+    +`<div style="color:#888;font-size:11px;margin-top:6px;letter-spacing:2px;font-family:monospace;">NEXT: WAVE ${waveNum+1}</div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.remove(); gameState='playing'; startWave(currentWave+1); }, 1500);
+}
+
+function startWaveMode(){
+  waveMode=true; currentWave=1;
+  document.getElementById('title-screen').classList.remove('active');
+  document.getElementById('round-info').style.display='none';
+  document.getElementById('wave-hud').style.display='block';
+  document.getElementById('hud').style.display='block';
+  document.getElementById('mobile-controls').style.display=IS_MOBILE?'block':'none';
+  score=0; totalKills=0; killStreak=0; killStreakTimer=0;
+  player.hp=100; player.shotsFired=0; player.shotsHit=0;
+  player.pos.set(0,PH,10); player.yaw=0; player.pitch=0;
+  player.wIdx=0; player.reloading=false; player.isADS=false;
+  player.weapons=WDEFS.map(w=>({...w}));
+  camera.fov=75; camera.updateProjectionMatrix();
+  document.getElementById('scope-overlay').style.display='none';
+  document.getElementById('reload-indicator').style.display='none';
+  buildGunMesh('ar');
+  clock.start();
+  startWave(1);
+  gameState='playing';
+  if(!IS_MOBILE) requestPointerLock();
+}
+
 // ─── BUTTON WIRING ────────────────────────────────────────────
 document.getElementById('start-btn').addEventListener('click',()=>{
   document.getElementById('title-screen').classList.remove('active');
@@ -1530,6 +1622,7 @@ document.getElementById('next-btn').addEventListener('click',()=>{
   if(!IS_MOBILE) requestPointerLock();
 });
 document.getElementById('restart-btn').addEventListener('click',resetGame);
+document.getElementById('wave-btn').addEventListener('click',startWaveMode);
 
 // ─── STARTUP ─────────────────────────────────────────────────
 (function startup(){

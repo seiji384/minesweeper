@@ -554,12 +554,8 @@ function drawLane(pins, ballX, ballY, knocked){
     const isDown=!pins[i];
     const anim=pinAnims[i];
 
-    if(isDown && !anim.animating){
-      // Already down, show faded
-      lctx.globalAlpha=0.2;
-      lctx.fillStyle='#666';
-      lctx.beginPath(); lctx.arc(p.x,p.y,7,0,Math.PI*2); lctx.fill();
-      lctx.globalAlpha=1;
+    if(isDown || (isKnocked && !anim.animating)){
+      // Pin is down (already knocked or animation complete) — completely invisible
     } else if(isKnocked && anim.animating){
       // Animate knocked pin: rotate and fade
       lctx.save();
@@ -601,54 +597,63 @@ function animateThrow(startX, targetX, pins, onDone){
   animating=true;
   document.getElementById('throw-btn').disabled=true;
   const ballX=startX;
-  let ballY=BALL_START_Y;
   const totalFrames=40;
   let f=0;
-  let hitFrame=Math.floor(totalFrames*0.85);
+  const hitFrame=Math.floor(totalFrames*0.85);
   let knocked=[];
-  let pinAnimFrames=0;
-  let pinAnimDone=false;
+  let ballPhase=true; // true = ball moving, false = pins-only fall phase
 
   // Reset pin animations
   pinAnims.forEach(a=>{ a.rot=0; a.alpha=1; a.knocked=false; a.animating=false; });
   playRumble();
 
-  function step(){
-    f++;
-    const t=f/totalFrames;
-    const cx=ballX+(targetX-ballX)*t;
-    const cy=BALL_START_Y-(BALL_START_Y-PIN_AREA_Y)*t;
-    const curve=(targetX-ballX)*Math.sin(t*Math.PI)*0.15;
-
-    if(f===hitFrame){
-      knocked=calcKnocked(aimPct, pins, rollInFrame===1);
-      // Start pin animations for knocked pins
-      knocked.forEach(i=>{
-        pinAnims[i].knocked=true;
-        pinAnims[i].animating=true;
-      });
-      if(knocked.length>0){
-        playCrash(Math.min(1, 0.4 + knocked.length * 0.06));
+  function advancePinAnims(){
+    pinAnims.forEach(a=>{
+      if(a.animating){
+        a.rot=Math.min(90, a.rot+9);
+        a.alpha=Math.max(0, a.alpha-0.055);
+        if(a.rot>=90 && a.alpha<=0) a.animating=false;
       }
-    }
+    });
+  }
 
-    // Advance pin animations after hit
-    if(f>hitFrame){
-      pinAnims.forEach((a,i)=>{
-        if(a.animating){
-          a.rot=Math.min(90, a.rot+9);
-          a.alpha=Math.max(0, a.alpha-0.06);
-          if(a.rot>=90 && a.alpha<=0) a.animating=false;
-        }
-      });
-    }
+  function anyPinAnimating(){
+    return pinAnims.some(a=>a.animating);
+  }
 
-    drawLane(pins, cx+curve, cy, f>=hitFrame?knocked:[]);
+  function step(){
+    if(ballPhase){
+      f++;
+      const t=f/totalFrames;
+      const cx=ballX+(targetX-ballX)*t;
+      const cy=BALL_START_Y-(BALL_START_Y-PIN_AREA_Y)*t;
+      const curve=(targetX-ballX)*Math.sin(t*Math.PI)*0.15;
 
-    if(f<totalFrames){
-      requestAnimationFrame(step);
+      if(f===hitFrame){
+        knocked=calcKnocked(aimPct, pins, rollInFrame===1);
+        knocked.forEach(i=>{ pinAnims[i].knocked=true; pinAnims[i].animating=true; });
+        if(knocked.length>0) playCrash(Math.min(1, 0.4 + knocked.length * 0.06));
+      }
+
+      if(f>hitFrame) advancePinAnims();
+      drawLane(pins, cx+curve, cy, f>=hitFrame?knocked:[]);
+
+      if(f<totalFrames){
+        requestAnimationFrame(step);
+      } else {
+        // Ball reached the pins area — switch to pin-fall-only phase
+        ballPhase=false;
+        requestAnimationFrame(step);
+      }
     } else {
-      onDone(knocked);
+      // Pin-fall phase: continue until all pin animations finish
+      if(anyPinAnimating()){
+        advancePinAnims();
+        drawLane(pins, null, null, knocked);
+        requestAnimationFrame(step);
+      } else {
+        onDone(knocked);
+      }
     }
   }
   step();

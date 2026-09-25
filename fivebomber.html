@@ -213,6 +213,13 @@ body {
 #next-cat-preview { background:rgba(255,204,0,0.12); border:1px solid rgba(255,204,0,0.3); border-radius:10px; padding:8px 16px; font-size:13px; text-align:center; margin-top:4px; }
 /* Input category hint */
 #cat-hint-box { background:rgba(255,204,0,0.1); border:1px solid rgba(255,204,0,0.25); border-radius:8px; padding:6px 12px; font-size:12px; text-align:center; color:#ffdd88; margin-bottom:4px; }
+/* Time attack */
+#ta-hud { position:fixed; top:0; left:0; right:0; z-index:50; display:none; justify-content:center; align-items:center; gap:16px; padding:8px 16px; background:linear-gradient(180deg,rgba(0,0,20,0.92),transparent); }
+#ta-timer-ring { font-size:22px; font-weight:900; color:#ffcc00; text-shadow:0 0 14px #ff8800; }
+#ta-score-display { font-size:18px; font-weight:bold; color:#44ff88; }
+/* Time attack result screen */
+#ta-result-screen { justify-content:center; gap:14px; background:linear-gradient(160deg,#050215,#0d0530); }
+.ta-rank-card { background:rgba(255,255,255,0.07); border-radius:14px; padding:14px 20px; width:90%; max-width:340px; }
 </style>
 </head>
 <body>
@@ -245,6 +252,11 @@ body {
       <div style="font-size:20px;font-weight:900;margin-bottom:4px">⌨️ 入力式</div>
       <div style="font-size:13px;opacity:0.8">答えを自分で入力する</div>
       <div style="font-size:11px;opacity:0.5;margin-top:4px">上級者・本格派向け</div>
+    </div>
+    <div onclick="startTimeAttack()" style="background:linear-gradient(135deg,#006622,#00cc44);border-radius:16px;padding:20px;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.56,0.64,1);border:2px solid rgba(255,255,255,0.2)" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+      <div style="font-size:20px;font-weight:900;margin-bottom:4px">⏱ タイムアタック</div>
+      <div style="font-size:13px;opacity:0.8">60秒で何問正解できる？</div>
+      <div style="font-size:11px;opacity:0.5;margin-top:4px">正解数を競おう！ランキングあり</div>
     </div>
   </div>
   <button onclick="showScreen('title-screen')" style="margin-top:20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;cursor:pointer;">← 戻る</button>
@@ -315,6 +327,31 @@ body {
   </div>
   <div id="next-cat-preview" style="display:none">次のカテゴリ: <span id="next-cat-text"></span></div>
   <button class="rbtn rbtn-retry" style="margin-top:8px" onclick="nextRound()">次のカテゴリへ →</button>
+</div>
+
+<!-- TIME ATTACK HUD overlay (shown on top of game-screen) -->
+<div id="ta-hud">
+  <div id="ta-timer-ring">⏱ <span id="ta-time-left">60</span>秒</div>
+  <div id="ta-score-display">✅ <span id="ta-correct-count">0</span>問正解</div>
+</div>
+
+<!-- TIME ATTACK RESULT -->
+<div id="ta-result-screen" class="screen">
+  <button onclick="location.href='index.html'" style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;">🏠 ホーム</button>
+  <div class="result-title">⏱ タイムアタック終了！</div>
+  <div class="result-card">
+    <div class="result-row"><span>正解数</span><span class="result-val" id="ta-res-correct">-</span></div>
+    <div class="result-row"><span>不正解数</span><span class="result-val" id="ta-res-wrong">-</span></div>
+    <div class="result-row"><span>正解率</span><span class="result-val" id="ta-res-rate">-</span></div>
+  </div>
+  <div class="ta-rank-card">
+    <div style="font-size:13px;color:#ffcc00;font-weight:bold;margin-bottom:8px">🏆 タイムアタックランキング</div>
+    <div id="ta-ranking-list"></div>
+  </div>
+  <div class="result-btns">
+    <button class="rbtn rbtn-retry" onclick="startTimeAttack()">もう一度</button>
+    <button class="rbtn rbtn-menu" onclick="showScreen('mode-screen')">モード選択</button>
+  </div>
 </div>
 
 <!-- RESULT -->
@@ -1086,6 +1123,186 @@ function flashScreen(type){
 document.getElementById('answer-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitFree();});
 
 // No live per-character feedback — blanks are shown statically in showQuestion()
+
+// ===== TIME ATTACK MODE =====
+const TA_RANK_KEY = 'fb_ta_ranking_v1';
+const TA_MEDALS = ['🥇','🥈','🥉','4位','5位'];
+
+function loadTARanking() { try { return JSON.parse(localStorage.getItem(TA_RANK_KEY))||[]; } catch(e){ return []; } }
+function saveTARanking(correct, wrong) {
+  const r = loadTARanking();
+  const today = new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+  r.push({correct, wrong, date:today});
+  r.sort((a,b)=>b.correct-a.correct||(a.wrong-b.wrong));
+  r.splice(5);
+  localStorage.setItem(TA_RANK_KEY, JSON.stringify(r));
+}
+function buildTARankingDisplay() {
+  const r = loadTARanking();
+  const list = document.getElementById('ta-ranking-list');
+  if(!list) return;
+  if(r.length===0) { list.innerHTML='<div style="opacity:0.5;font-size:13px">まだ記録なし</div>'; return; }
+  list.innerHTML = r.map((e,i)=>`<div class="rank-entry"><span class="rank-medal">${TA_MEDALS[i]||''}</span><span style="color:#ff44aa;flex:1">${e.correct}問正解</span><span style="opacity:0.6">${e.wrong}不正解</span><span style="opacity:0.35;margin-left:6px">${e.date}</span></div>`).join('');
+}
+
+// Build a flat pool of choice questions from all categories
+function buildTAPool() {
+  const pool = [];
+  CATEGORIES.forEach(cat => {
+    cat.qs.forEach(q => { if(q.opts) pool.push({...q, catName:cat.name}); });
+  });
+  // shuffle
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  return pool;
+}
+
+// Time Attack state
+G.timeAttack = false;
+G.taTimeLeft = 60;
+G.taTimer = null;
+G.taCorrect = 0;
+G.taWrong = 0;
+G.taPool = [];
+G.taPoolIdx = 0;
+
+function startTimeAttack() {
+  G.timeAttack = true;
+  G.mode = 'choice';
+  G.taCorrect = 0;
+  G.taWrong = 0;
+  G.taTimeLeft = 60;
+  G.taPool = buildTAPool();
+  G.taPoolIdx = 0;
+  G.answered = false;
+  G.inputAttempts = 0;
+  G.wrongs = 0; G.consecutive = 0; G.qi = 0;
+  G.currentCat = { name: '⏱ タイムアタック' };
+  G.questions = G.taPool;
+
+  // Setup game-screen
+  document.querySelector('#cat-header #cat-name').textContent = '⏱ タイムアタック';
+  document.querySelector('#cat-header #round-info').textContent = '60秒チャレンジ';
+  // Hide bomb area danger bars (keep bomb decorative)
+  document.getElementById('bomb-level-label').textContent = '60秒で何問正解？';
+  for(let i=0;i<5;i++) document.getElementById('db'+i).classList.remove('active');
+  document.getElementById('bomb').style.transform='scale(1)';
+  document.getElementById('bomb').style.filter='drop-shadow(0 0 20px rgba(0,200,100,0.6))';
+  document.getElementById('bomb').textContent = '⏱';
+
+  // Show TA HUD
+  document.getElementById('ta-hud').style.display = 'flex';
+  document.getElementById('ta-time-left').textContent = 60;
+  document.getElementById('ta-correct-count').textContent = 0;
+
+  showScreen('game-screen');
+  // Start 60s countdown
+  clearInterval(G.taTimer);
+  G.taTimer = setInterval(taCountdown, 1000);
+  // Show first question (per-question timer 20s for TA)
+  taShowQuestion();
+}
+
+function taCountdown() {
+  G.taTimeLeft--;
+  const el = document.getElementById('ta-time-left');
+  if(el) el.textContent = G.taTimeLeft;
+  // Color change when low
+  const hud = document.getElementById('ta-timer-ring');
+  if(G.taTimeLeft <= 10 && hud) hud.style.color = '#ff4444';
+  if(G.taTimeLeft <= 0) {
+    clearInterval(G.taTimer);
+    clearInterval(G.timer);
+    G.answered = true;
+    showTAResult();
+  }
+}
+
+function taShowQuestion() {
+  if(!G.timeAttack || G.taTimeLeft <= 0) return;
+  if(G.taPoolIdx >= G.taPool.length) {
+    // Reshuffle pool
+    G.taPool = buildTAPool();
+    G.taPoolIdx = 0;
+    G.questions = G.taPool;
+  }
+  G.answered = false;
+  G.qi = G.taPoolIdx;
+  const q = G.taPool[G.taPoolIdx];
+  document.getElementById('question-num').textContent = `Q${G.taCorrect+G.taWrong+1}`;
+  document.getElementById('question-text').textContent = q.q;
+  document.getElementById('consecutive').textContent = `✅ ${G.taCorrect}問正解`;
+  const optsEl = document.getElementById('options');
+  optsEl.style.display = 'grid';
+  document.getElementById('input-wrap').style.display = 'none';
+  document.getElementById('cat-hint-box').style.display = 'none';
+  document.getElementById('char-hint').style.display = 'none';
+  optsEl.innerHTML = '';
+  const shuffled = [...q.opts].sort(()=>Math.random()-0.5);
+  shuffled.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.onclick = () => taChooseOption(btn, opt, q.a);
+    optsEl.appendChild(btn);
+  });
+  // Per-question timer (20s in TA)
+  clearInterval(G.timer);
+  G.timeLeft = 20;
+  updateTimerDisplay();
+  G.timer = setInterval(()=>{
+    G.timeLeft--;
+    updateTimerDisplay();
+    if(G.timeLeft<=0){ clearInterval(G.timer); taTimeUpQuestion(); }
+  },1000);
+}
+
+function taChooseOption(btn, chosen, correct) {
+  if(G.answered || G.taTimeLeft <= 0) return;
+  G.answered = true;
+  clearInterval(G.timer);
+  if(chosen === correct) {
+    btn.classList.add('correct');
+    G.taCorrect++;
+    document.getElementById('ta-correct-count').textContent = G.taCorrect;
+    document.getElementById('consecutive').textContent = `✅ ${G.taCorrect}問正解`;
+    showFeedbackBig('⭕ せいかい！','#44ff88');
+    flashScreen('correct');
+    bombCorrect();
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.opt-btn').forEach(b=>{ if(b.textContent===correct)b.classList.add('correct'); });
+    G.taWrong++;
+    showFeedbackBig('❌ ざんねん…','#ff6644');
+    flashScreen('wrong');
+  }
+  G.taPoolIdx++;
+  setTimeout(taShowQuestion, 900);
+}
+
+function taTimeUpQuestion() {
+  if(G.answered) return;
+  G.answered = true;
+  G.taWrong++;
+  showFeedbackBig('⏰ タイムオーバー！','#ff8800');
+  flashScreen('wrong');
+  G.taPoolIdx++;
+  setTimeout(taShowQuestion, 900);
+}
+
+function showTAResult() {
+  G.timeAttack = false;
+  document.getElementById('ta-hud').style.display = 'none';
+  document.getElementById('bomb').textContent = '💣';
+  clearInterval(G.timer);
+  const total = G.taCorrect + G.taWrong;
+  const rate = total > 0 ? Math.round(G.taCorrect/total*100) : 0;
+  document.getElementById('ta-res-correct').textContent = G.taCorrect + '問';
+  document.getElementById('ta-res-wrong').textContent = G.taWrong + '回';
+  document.getElementById('ta-res-rate').textContent = rate + '%';
+  saveTARanking(G.taCorrect, G.taWrong);
+  buildTARankingDisplay();
+  showScreen('ta-result-screen');
+}
 </script>
 </body>
 </html>

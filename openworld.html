@@ -74,6 +74,20 @@
     .mon-icon { width:48px; height:48px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0; }
     .close-btn { position:sticky; bottom:0; background:rgba(255,255,255,0.15); border:none; color:#fff; border-radius:8px; padding:10px 18px; cursor:pointer; font-size:14px; margin-top:10px; align-self:flex-start; }
     #toast { position:fixed; bottom:160px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:opacity 0.3s; pointer-events:none; white-space:nowrap; }
+    /* Evolution modal */
+    #evo-modal { position:fixed; inset:0; background:rgba(0,0,20,0.97); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:620; padding:20px; }
+    .evo-card { background:rgba(255,255,255,0.07); border:2px solid rgba(255,200,50,0.45); border-radius:22px; padding:24px 20px; width:100%; max-width:340px; text-align:center; }
+    .evo-compare { display:flex; align-items:center; justify-content:center; gap:8px; margin:16px 0 20px; }
+    .evo-mon { background:rgba(255,255,255,0.06); border-radius:14px; padding:14px 10px; flex:1; }
+    .evo-mon.after { border:1px solid rgba(255,200,50,0.35); }
+    .evo-emoji { font-size:46px; line-height:1.1; margin-bottom:6px; }
+    .evo-name { font-size:13px; font-weight:bold; margin-bottom:6px; color:#fff; }
+    .evo-stats { font-size:11px; opacity:0.65; line-height:1.8; white-space:pre; }
+    .evo-arrow { font-size:28px; color:#ffcc44; flex-shrink:0; }
+    .evo-btn { padding:13px 24px; border-radius:30px; border:none; font-size:15px; font-weight:bold; cursor:pointer; width:100%; margin:5px 0; transition:transform 0.12s; }
+    .evo-btn:active { transform:scale(0.96); }
+    .evo-btn-yes { background:linear-gradient(135deg,#ffcc44,#ff9900); color:#000; }
+    .evo-btn-no  { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.65); }
   </style>
 </head>
 <body>
@@ -184,6 +198,29 @@
     </div>
   </div>
 
+  <!-- Evolution confirmation modal -->
+  <div id="evo-modal">
+    <div class="evo-card">
+      <div style="font-size:22px;font-weight:bold;color:#ffcc44;margin-bottom:4px">✨ 進化できる！</div>
+      <div id="evo-subtitle" style="font-size:13px;opacity:0.65;margin-bottom:4px"></div>
+      <div class="evo-compare">
+        <div class="evo-mon before">
+          <div class="evo-emoji" id="evo-from-emoji"></div>
+          <div class="evo-name" id="evo-from-name"></div>
+          <div class="evo-stats" id="evo-from-stats"></div>
+        </div>
+        <div class="evo-arrow">→</div>
+        <div class="evo-mon after">
+          <div class="evo-emoji" id="evo-to-emoji"></div>
+          <div class="evo-name" id="evo-to-name" style="color:#ffcc44"></div>
+          <div class="evo-stats" id="evo-to-stats"></div>
+        </div>
+      </div>
+      <button class="evo-btn evo-btn-yes" onclick="confirmEvolution(true)">進化する ✨</button>
+      <button class="evo-btn evo-btn-no"  onclick="confirmEvolution(false)">やめる</button>
+    </div>
+  </div>
+
   <!-- Opening story overlay -->
   <div id="opening-overlay" style="position:fixed;inset:0;z-index:1000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px">
     <button onclick="openingIdx=OPENING_SCENES.length-1;openingNext()"
@@ -241,6 +278,62 @@
       return WEATHER_MULT[S_weather][biomeIdx] || 1.0;
     }
 
+    // ===== EVOLUTION SYSTEM (Lv5 modal) =====
+    let _evoMon = null;
+
+    function showEvoModal(mon) {
+      _evoMon = mon;
+      const def    = MONS.find(m=>m.id===mon.id);
+      const evoDef = MONS.find(m=>m.id===def.evo);
+      if (!def || !evoDef) return;
+
+      const curAtk  = mon.atk != null ? mon.atk : def.atk;
+      const nextAtk = curAtk + 10;
+      const nextHp  = mon.maxHp + 30;
+
+      document.getElementById('evo-subtitle').textContent =
+        mon.nickname + ' がLv' + mon.lv + 'に達した！';
+
+      document.getElementById('evo-from-emoji').textContent = def.emoji;
+      document.getElementById('evo-from-name').textContent  = mon.nickname;
+      document.getElementById('evo-from-stats').textContent =
+        'HP  ' + mon.maxHp + '\nATK ' + curAtk;
+
+      document.getElementById('evo-to-emoji').textContent = evoDef.emoji;
+      document.getElementById('evo-to-name').textContent  = evoDef.name;
+      document.getElementById('evo-to-stats').textContent =
+        'HP  ' + nextHp + '\nATK ' + nextAtk;
+
+      document.getElementById('evo-modal').style.display = 'flex';
+    }
+
+    function confirmEvolution(yes) {
+      document.getElementById('evo-modal').style.display = 'none';
+      const mon = _evoMon;
+      _evoMon = null;
+      if (!mon) return;
+
+      if (yes) {
+        const def    = MONS.find(m=>m.id===mon.id);
+        const evoDef = MONS.find(m=>m.id===def.evo);
+        // Apply stat boosts
+        mon.atk    = (mon.atk != null ? mon.atk : def.atk) + 10;
+        mon.maxHp += 30;
+        mon.hp     = Math.min(mon.hp + 30, mon.maxHp);
+        // Swap identity
+        mon.id       = evoDef.id;
+        mon.nickname = evoDef.name;
+        mon.evolved  = true;
+        if (!S.pokedex.includes(evoDef.id)) S.pokedex.push(evoDef.id);
+        showToast('✨ ' + evoDef.name + 'に進化した！');
+        saveGame();
+      } else {
+        showToast('進化をやめた。');
+      }
+      // Still show skill allocation after deciding
+      setTimeout(()=>checkLevelUpSkill(mon), 300);
+    }
+
     // ===== SKILL POINTS =====
     let _skillMon = null;
     function checkLevelUpSkill(mon) {
@@ -252,7 +345,7 @@
     }
     function applySkill(type) {
       if(!_skillMon) return;
-      if(type==='atk') { _skillMon.atk = (_skillMon.atk||0) + 5; showToast('⚔️ こうげき +5！'); }
+      if(type==='atk') { const bd=MONS.find(m=>m.id===_skillMon.id); _skillMon.atk = (_skillMon.atk!=null?_skillMon.atk:bd.atk) + 5; showToast('⚔️ こうげき +5！'); }
       if(type==='hp')  { _skillMon.maxHp+=15; _skillMon.hp=Math.min(_skillMon.hp+15,_skillMon.maxHp); showToast('❤️ HP +15！'); }
       if(type==='spd') { _skillMon.spd = (_skillMon.spd||0) + 5; showToast('💨 すばやさ +5！'); }
       document.getElementById('skill-overlay').style.display='none';
@@ -287,12 +380,25 @@
       {id:'ignis', name:'イグニス', type:'fire', color:0xff5522, hp:42, atk:25, spd:15, catch:0.4, evo:'magmar', evoLv:18, emoji:'🔥'},
       {id:'magmar', name:'マグマール', type:'fire', color:0xff3300, hp:68, atk:35, spd:12, catch:0.3, evo:null, emoji:'🌋'},
       {id:'cinder', name:'シンダー', type:'fire', color:0xcc4400, hp:50, atk:28, spd:18, catch:0.35, evo:null, emoji:'💢'},
+      // === Lv5 evolution pairs (confirmation modal) ===
+      {id:'slime',    name:'スライム',     type:'grass',  color:0x33cc33, hp:28, atk:8,  spd:11, catch:0.75, evo:'bigslime',   evoLv:5, emoji:'🟢'},
+      {id:'bigslime', name:'大スライム',   type:'grass',  color:0x2244cc, hp:58, atk:18, spd:9,  catch:0.4,  evo:null,         emoji:'🔵'},
+      {id:'bat',      name:'コウモリ',     type:'ghost',  color:0x553366, hp:26, atk:10, spd:17, catch:0.7,  evo:'bigbat',     evoLv:5, emoji:'🦇'},
+      {id:'bigbat',   name:'大コウモリ',   type:'ghost',  color:0x993333, hp:56, atk:20, spd:15, catch:0.35, evo:null,         emoji:'👹'},
+      {id:'goblin',   name:'ゴブリン',     type:'normal', color:0x558833, hp:30, atk:11, spd:13, catch:0.65, evo:'hobgoblin',  evoLv:5, emoji:'👺'},
+      {id:'hobgoblin',name:'ホブゴブリン', type:'normal', color:0x226611, hp:60, atk:21, spd:11, catch:0.35, evo:null,         emoji:'👺'},
+      {id:'cat',      name:'ネコ',         type:'normal', color:0xddaa77, hp:33, atk:9,  spd:19, catch:0.75, evo:'tiger',      evoLv:5, emoji:'🐱'},
+      {id:'tiger',    name:'トラ',         type:'normal', color:0xee7722, hp:63, atk:19, spd:17, catch:0.35, evo:null,         emoji:'🐯'},
+      {id:'dog',      name:'イヌ',         type:'normal', color:0xccaa88, hp:36, atk:10, spd:16, catch:0.75, evo:'wolf',       evoLv:5, emoji:'🐶'},
+      {id:'wolf',     name:'オオカミ',     type:'normal', color:0x888888, hp:66, atk:20, spd:14, catch:0.3,  evo:null,         emoji:'🐺'},
+      {id:'snake',    name:'ヘビ',         type:'fire',   color:0x44aa44, hp:28, atk:12, spd:16, catch:0.7,  evo:'dragon',     evoLv:5, emoji:'🐍'},
+      {id:'dragon',   name:'ドラゴン',     type:'fire',   color:0xff4422, hp:58, atk:22, spd:14, catch:0.25, evo:null,         emoji:'🐉'},
     ];
 
     const BIOMES = [
-      {name:'グリーンフィールド', color:0x5aaa2a, fogColor:0x88bbdd, fogDensity:0.015, monsters:['leafy','bunni','rocko']},
-      {name:'ダークフォレスト', color:0x1a3a1a, fogColor:0x1a2a1a, fogDensity:0.04, monsters:['shadex','mossy','wisp']},
-      {name:'カエンゾーン', color:0x6a2510, fogColor:0x331108, fogDensity:0.025, monsters:['ignis','magmar','cinder']},
+      {name:'グリーンフィールド', color:0x5aaa2a, fogColor:0x88bbdd, fogDensity:0.015, monsters:['leafy','bunni','rocko','slime','cat','dog']},
+      {name:'ダークフォレスト', color:0x1a3a1a, fogColor:0x1a2a1a, fogDensity:0.04, monsters:['shadex','mossy','wisp','bat','goblin']},
+      {name:'カエンゾーン', color:0x6a2510, fogColor:0x331108, fogDensity:0.025, monsters:['ignis','magmar','cinder','snake']},
     ];
 
     function init() {
@@ -548,6 +654,7 @@
 
     function checkLevelUp(mon) {
       let leveled = false;
+      let pendingModalEvo = false;
       while ((mon.xp||0)>=mon.lv*50) {
         mon.xp-=mon.lv*50;
         mon.lv++;
@@ -555,17 +662,29 @@
         mon.maxHp=def.hp+mon.lv*3;
         mon.hp=mon.maxHp;
         leveled = true;
-        if (def.evo && mon.lv>=def.evoLv) {
-          mon.id=def.evo;
-          const nd=MONS.find(m=>m.id===def.evo);
-          mon.nickname=nd.name;
-          if (!S.pokedex.includes(def.evo)) S.pokedex.push(def.evo);
-          showToast(mon.nickname+'に進化！');
+        if (def.evo && mon.lv>=def.evoLv && !mon.evolved) {
+          if (def.evoLv <= 5) {
+            // Lv5 evolution: show confirmation modal (handled after loop)
+            pendingModalEvo = true;
+          } else {
+            // High-level auto-evolution (leafy→mossy, ignis→magmar)
+            mon.id=def.evo;
+            const nd=MONS.find(m=>m.id===def.evo);
+            mon.nickname=nd.name;
+            mon.evolved=true;
+            if (!S.pokedex.includes(def.evo)) S.pokedex.push(def.evo);
+            showToast(mon.nickname+'に進化！');
+          }
         }
       }
       mon.xpNext=mon.lv*50;
       if (leveled) {
-        setTimeout(()=>checkLevelUpSkill(mon), 500);
+        if (pendingModalEvo && !mon.evolved) {
+          // Show evolution modal; skill overlay shown after modal is dismissed
+          setTimeout(()=>showEvoModal(mon), 600);
+        } else {
+          setTimeout(()=>checkLevelUpSkill(mon), 500);
+        }
       }
     }
 
@@ -1148,7 +1267,8 @@
         if (!bt.playerMon) { setBattleMsg('仲間がいない！逃げるしかない！'); bt.phase='cmd'; return; }
         const pdef = MONS.find(m=>m.id===bt.playerMon.id);
         const wdef = MONS.find(m=>m.id===bt.wild.id);
-        const dmg = Math.max(1, Math.floor(pdef.atk*0.8+Math.random()*pdef.atk*0.4));
+        const baseAtk = bt.playerMon.atk != null ? bt.playerMon.atk : pdef.atk;
+        const dmg = Math.max(1, Math.floor(baseAtk*0.8+Math.random()*baseAtk*0.4));
         bt.wild.hp = Math.max(0, bt.wild.hp-dmg);
         setBattleMsg(pdef.name+'の攻撃！'+dmg+'ダメージ！');
         updateBattleUI();

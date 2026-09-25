@@ -232,6 +232,10 @@ body {
 .hs-record{color:#60ff90;font-weight:900;text-shadow:0 0 6px #60ff90;}
 .hs-val{color:#4038a0;}
 .hs-date{color:#7060a0;font-size:9px;margin-left:4px;}
+/* Free mode */
+.act-btn.on { background: linear-gradient(160deg,#6a1020 0%,#400810 100%) !important; color:#ffcccc !important; border-color:#aa3040 !important; box-shadow:0 0 10px rgba(230,57,70,0.4) !important; }
+#free-mode-area { padding: 8px 12px; }
+.free-dot { display:inline-block; width:14px; height:14px; border-radius:50%; flex-shrink:0; }
 </style>
 <style id="home-nav-css">
 #home-top-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(180deg,rgba(8,4,22,0.98) 0%,rgba(5,2,14,0.96) 100%);border-bottom:1px solid rgba(80,60,180,0.4);display:flex;align-items:center;padding:6px 12px;box-shadow:0 3px 18px rgba(0,0,0,0.9),0 1px 0 rgba(112,90,255,0.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
@@ -317,6 +321,14 @@ body{padding-top:44px!important;}
         <button class="start-btn" onclick="startGame()">▶ スタート</button>
       </div>
     </div>
+    <!-- フリーモード演奏履歴 -->
+    <div id="free-mode-area" style="display:none">
+      <div style="text-align:center;color:rgba(255,170,170,0.7);font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:6px">🎹 演奏履歴 (最大20個)</div>
+      <div id="free-history" style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;min-height:22px;padding:4px;"></div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="act-btn" onclick="clearFreeHistory()" style="font-size:11px;padding:5px 18px">クリア</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -324,6 +336,7 @@ body{padding-top:44px!important;}
 <div class="action-bar">
   <button class="act-btn" onclick="showModal('rules-modal')">📖 ルール</button>
   <button class="act-btn" onclick="resetGame()">🔄 新しいゲーム</button>
+  <button class="act-btn" id="free-btn" onclick="toggleFreeMode()">🎮 フリー</button>
   <button class="act-btn" onclick="showHighScore()">🏆 ハイスコア</button>
 </div>
 
@@ -448,6 +461,12 @@ let round = 0;
 let difficulty = 'easy';
 let accepting = false;
 let playing = false;
+let freeMode = false;
+
+const FREE_DOT_COLORS = {
+  red: '#ff2040', blue: '#2244ee', yellow: '#ffcc00',
+  green: '#00cc44', purple: '#7020cc', cyan: '#00aacc'
+};
 
 // Per-difficulty best scores
 let bestScores = JSON.parse(localStorage.getItem('simon_best_scores') || '{}');
@@ -488,6 +507,14 @@ function getActiveColors() { return DIFF_CFG[difficulty].colors; }
 // ── Reset / Start ──
 function resetGame() {
   sequence = []; playerPos = 0; round = 0; accepting = false; playing = false;
+  // フリーモードを終了
+  if (freeMode) {
+    freeMode = false;
+    const freeBtn = document.getElementById('free-btn');
+    if (freeBtn) { freeBtn.textContent = '🎮 フリー'; freeBtn.classList.remove('on'); }
+    const area = document.getElementById('free-mode-area');
+    if (area) area.style.display = 'none';
+  }
   document.getElementById('led-round').textContent = '0';
   setMsg('スタートボタンを押してください', '');
   setBtnsDisabled(true);
@@ -635,6 +662,13 @@ function showErrorFeedback() {
 
 // ── Player input ──
 function onBtnClick(color, evt) {
+  if (freeMode) {
+    const el = document.getElementById('btn-' + color);
+    if (el && evt) addRipple(el, evt);
+    lightBtn(color, 300);
+    addToFreeHistory(color);
+    return;
+  }
   if (!accepting) return;
   const el = document.getElementById('btn-' + color);
   if (el && evt) addRipple(el, evt);
@@ -734,9 +768,53 @@ setBtnsDisabled(true);
   el.addEventListener('touchend', function(e) { e.preventDefault(); if(!touchMoved) onBtnClick(color, e); }, {passive:false});
 });
 
+function toggleFreeMode() {
+  freeMode = !freeMode;
+  const btn = document.getElementById('free-btn');
+  const area = document.getElementById('free-mode-area');
+  if (freeMode) {
+    accepting = false;
+    sequence = [];
+    document.getElementById('start-overlay').style.display = 'none';
+    document.getElementById('home-btn').style.display = 'block';
+    if (area) area.style.display = 'block';
+    document.getElementById('led-round').textContent = '♪';
+    document.getElementById('led-round-label').textContent = 'フリー';
+    applyGridLayout();
+    setBtnsDisabled(false);
+    setMsg('自由に演奏を楽しんで！ 🎹', 'success');
+    if (btn) { btn.textContent = '🎮 フリーON'; btn.classList.add('on'); }
+  } else {
+    if (area) area.style.display = 'none';
+    if (btn) { btn.textContent = '🎮 フリー'; btn.classList.remove('on'); }
+    resetGame();
+  }
+}
+
+function addToFreeHistory(color) {
+  const history = document.getElementById('free-history');
+  if (!history) return;
+  const dot = document.createElement('span');
+  const col = FREE_DOT_COLORS[color] || '#888';
+  dot.className = 'free-dot';
+  dot.style.cssText = `background:${col};box-shadow:0 0 5px ${col};`;
+  dot.title = color;
+  history.appendChild(dot);
+  // 最大20個、古いものを削除
+  while (history.children.length > 20) {
+    history.removeChild(history.firstChild);
+  }
+}
+
+function clearFreeHistory() {
+  const history = document.getElementById('free-history');
+  if (history) history.innerHTML = '';
+}
+
 function goHome() {
   if (!confirm('ホーム画面に戻りますか？')) return;
   accepting = false; sequence = [];
+  freeMode = false;
   document.getElementById('home-btn').style.display = 'none';
   resetGame();
 }
